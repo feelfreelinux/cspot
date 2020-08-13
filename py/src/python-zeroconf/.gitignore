@@ -1,0 +1,16 @@
+build/
+*.pyc
+*.pyo
+Thumbs.db
+.DS_Store
+.project
+.pydevproject
+.settings
+.idea
+.vslick
+.cache
+.mypy_cache/
+docs/_build/
+.vscode
+/dist/
+/zeroconf.egg-info/

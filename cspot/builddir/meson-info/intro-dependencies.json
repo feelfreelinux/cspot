@@ -1,0 +1,1 @@
+[{"name": "libssl", "version": "1.1.1g", "compile_args": ["-I/usr/local/Cellar/openssl@1.1/1.1.1g/include"], "link_args": ["/usr/local/Cellar/openssl@1.1/1.1.1g/lib/libssl.dylib"]}, {"name": "libcrypto", "version": "1.1.1g", "compile_args": ["-I/usr/local/Cellar/openssl@1.1/1.1.1g/include"], "link_args": ["/usr/local/Cellar/openssl@1.1/1.1.1g/lib/libcrypto.dylib"]}]

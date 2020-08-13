@@ -1,0 +1,5 @@
+[options]
+backend = ninja
+
+[properties]
+

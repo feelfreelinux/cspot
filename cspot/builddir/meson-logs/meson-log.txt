@@ -1,0 +1,62 @@
+Build started at 2020-08-13T13:17:44.980480
+Main binary: /usr/local/opt/python@3.8/bin/python3.8
+Build Options: -Dbackend=ninja
+Python system: Darwin
+The Meson build system
+Version: 0.55.0
+Source dir: /Users/apultyna/Documents/clones/cspot/cspot
+Build dir: /Users/apultyna/Documents/clones/cspot/cspot/builddir
+Build type: native build
+Using 'PKG_CONFIG_PATH' from environment with value: '/usr/local/opt/openssl@1.1/lib/pkgconfig'
+WARNING: PKG_CONFIG_PATH environment variable has changed between configurations, meson ignores this. Use -Dpkg_config_path to change pkg-config search path instead.
+Using 'PKG_CONFIG_PATH' from environment with value: '/usr/local/opt/openssl@1.1/lib/pkgconfig'
+WARNING: PKG_CONFIG_PATH environment variable has changed between configurations, meson ignores this. Use -Dpkg_config_path to change pkg-config search path instead.
+Project name: cspot
+Project version: undefined
+C compiler for the build machine: cc (clang 11.0.3 "Apple clang version 11.0.3 (clang-1103.0.32.62)")
+C linker for the build machine: cc ld64 556.6
+None of 'AR' are defined in the environment, not changing global flags.
+C++ compiler for the build machine: c++ (clang 11.0.3 "Apple clang version 11.0.3 (clang-1103.0.32.62)")
+C++ linker for the build machine: c++ ld64 556.6
+C compiler for the host machine: cc (clang 11.0.3 "Apple clang version 11.0.3 (clang-1103.0.32.62)")
+C linker for the host machine: cc ld64 556.6
+None of 'AR' are defined in the environment, not changing global flags.
+C++ compiler for the host machine: c++ (clang 11.0.3 "Apple clang version 11.0.3 (clang-1103.0.32.62)")
+C++ linker for the host machine: c++ ld64 556.6
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+Dependency libssl found: YES 1.1.1g (cached)
+Dependency libcrypto found: YES 1.1.1g (cached)
+Build targets in project: 1
+
+Found ninja-1.10.0 at /usr/local/bin/ninja
+Running compile:
+Working directory:  /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmp813aoarx
+Command line:  c++ /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmp813aoarx/testfile.cpp -o /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmp813aoarx/output.obj -pipe -c -O0 -fpermissive --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ programs: =/Library/Developer/CommandLineTools/usr/bin
+libraries: =/Library/Developer/CommandLineTools/usr/lib/clang/11.0.3
+
+Compiler stderr:
+ 
+Running compile:
+Working directory:  /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmppczgj7il
+Command line:  cc /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmppczgj7il/testfile.c -o /Users/apultyna/Documents/clones/cspot/cspot/builddir/meson-private/tmppczgj7il/output.obj -pipe -c -O0 --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ programs: =/Library/Developer/CommandLineTools/usr/bin
+libraries: =/Library/Developer/CommandLineTools/usr/lib/clang/11.0.3
+
+Compiler stderr:
+ 
+None of 'STRIP' are defined in the environment, not changing global flags.
+None of 'STRIP' are defined in the environment, not changing global flags.
