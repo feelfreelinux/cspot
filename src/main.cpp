@@ -2,15 +2,17 @@
 #include <iostream>
 #include <string.h>
 #include <PlainConnection.h>
-#include <DiffieHellman.h>
+#include <Utils.h>
+#include <SHA1.h>
 
 int main()
 {
-    auto hellman = new DiffieHellman();
+     std::string str = "dd";
 
-    // hellman.publicKey 
-    // hellman.privateKey
-    // hellman.computeSharedKey(remoteKey)
+     std::vector<uint8_t> vec(str.begin(), str.end());
+
+     auto key = std::string("dd");
+     std::cout << SHA1HMAC(vec, key) << std::endl;
 
     return 0;
 }

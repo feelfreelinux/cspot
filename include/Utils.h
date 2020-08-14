@@ -8,8 +8,13 @@
 #include <cstdint>
 #include <netdb.h>
 
+#define HMAC_SHA1_BLOCKSIZE 64
+
 std::vector<uint8_t> blockRead(int fd, size_t readSize);
+
 ssize_t blockWrite (int fd, std::vector<uint8_t> data);
+
+std::string SHA1HMAC(std::vector<uint8_t> &inputKey, std::string &message);
 
 // Reads a type from vector of binary data
 template <typename T>
@@ -28,7 +33,6 @@ std::vector<uint8_t> pack(T data)
 
      return rawData;
 }
-
 
 
 #endif

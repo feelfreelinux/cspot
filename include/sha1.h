@@ -1,59 +1,59 @@
-/*	$OpenBSD: sha1.h,v 1.16 2004/01/22 21:48:02 espie Exp $	*/
-
 /*
- * SHA-1 in C
- * By Steve Reid <steve@edmweb.com>
- * 100% Public Domain
- */
+    sha1.h - header of
+ 
+    ============
+    SHA-1 in C++
+    ============
+ 
+    100% Public Domain.
+ 
+    Original C Code
+        -- Steve Reid <steve@edmweb.com>
+    Small changes to fit into bglibs
+        -- Bruce Guenter <bruce@untroubled.org>
+    Translation to simpler C++ Code
+        -- Volker Grabsch <vog@notjusthosting.com>
+*/
+ 
+#ifndef SHA1_H
+#define SHA1_H
+ 
+#include <vector>
+#include <iostream>
+#include <string>
 
-#ifndef _SHA1_H
-#define _SHA1_H
-
-#include <sys/types.h>
-
-typedef struct {
-    uint32_t state[5];
-    uint32_t count[2];
-    unsigned char buffer[64];
-} SHA1_CTX;
-
-#ifndef _WIN32
-#include <sys/cdefs.h>
-#else /* _WIN32 */
-/* C++ needs to know that types and declarations are C, not C++.  */
-#ifdef __cplusplus
-# define __BEGIN_DECLS extern "C" {
-# define __END_DECLS }
-#else /* __cplusplus */
-# define __BEGIN_DECLS
-# define __END_DECLS
-#endif /* __cplusplus */
-#endif /* _WIN32 */
-
-__BEGIN_DECLS
-void SHA1Transform(uint32_t [5], const unsigned char [64]);
-void SHA1Init(SHA1_CTX *);
-void SHA1Update(SHA1_CTX *, const unsigned char *, unsigned int);
-void SHA1Final(unsigned char [20], SHA1_CTX *);
-char *SHA1End(SHA1_CTX *, char *);
-char *SHA1File(char *, char *);
-char *SHA1Data(const unsigned char *, size_t, char *);
-__END_DECLS
-
-#define SHA1_DIGESTSIZE       20
-#define SHA1_BLOCKSIZE        64
-#define HTONDIGEST(x) do {                                              \
-        x[0] = htonl(x[0]);                                             \
-        x[1] = htonl(x[1]);                                             \
-        x[2] = htonl(x[2]);                                             \
-        x[3] = htonl(x[3]);                                             \
-        x[4] = htonl(x[4]); } while (0)
-
-#define NTOHDIGEST(x) do {                                              \
-        x[0] = ntohl(x[0]);                                             \
-        x[1] = ntohl(x[1]);                                             \
-        x[2] = ntohl(x[2]);                                             \
-        x[3] = ntohl(x[3]);                                             \
-        x[4] = ntohl(x[4]); } while (0)
-
-#endif /* _SHA1_H */
+class SHA1
+{
+public:
+    SHA1();
+    void update(const std::string &s);
+    void update(std::istream &is);
+    void update(std::vector<uint8_t> &vec);
+    std::string final();
+    std::vector<uint8_t> finalBytes();
+    static std::string from_file(const std::string &filename);
+ 
+private:
+    typedef unsigned long int uint32;   /* just needs to be at least 32bit */
+    typedef unsigned long long uint64;  /* just needs to be at least 64bit */
+ 
+    static const unsigned int DIGEST_INTS = 5;  /* number of 32bit integers per SHA1 digest */
+    static const unsigned int BLOCK_INTS = 16;  /* number of 32bit integers per SHA1 block */
+    static const unsigned int BLOCK_BYTES = BLOCK_INTS * 4;
+ 
+    uint32 digest[DIGEST_INTS];
+    std::string buffer;
+    uint64 transforms;
+ 
+    void reset();
+    void transform(uint32 block[BLOCK_BYTES]);
+ 
+    static void buffer_to_block(const std::string &buffer, uint32 block[BLOCK_BYTES]);
+    static void read(std::istream &is, std::string &s, int max);
+};
+ 
+std::string sha1(const std::string &string);
+ 
+ 
+ 
+#endif

@@ -57,7 +57,7 @@ std::vector<uint8_t> PlainConnection::recvPacket()
     return sizeData;
 }
 
-std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> prefix, std::vector<uint8_t> data)
+std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> &prefix, std::vector<uint8_t> &data)
 {
     // Calculate full packet length
     uint32_t actualSize = prefix.size() + data.size() + sizeof(uint32_t);

@@ -22,11 +22,11 @@ private:
     Shannon *recvCipher;
     uint32_t sendNonce = 0;
     uint32_t recvNonce = 0;
-    std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> data);
+    std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
 public:
-    ShannonConnection(PlainConnection conn, std::vector<uint8_t> sendKey, std::vector<uint8_t> recvKey);
+    ShannonConnection(PlainConnection conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
     int apSock;
-    void sendPacket(uint8_t cmd, std::vector<uint8_t> data);
+    void sendPacket(uint8_t cmd, std::vector<uint8_t> &data);
     Packet* recvPacket();
 };
 

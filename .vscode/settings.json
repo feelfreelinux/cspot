@@ -87,7 +87,8 @@
         "typeindex": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "__tree": "cpp"
+        "__tree": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

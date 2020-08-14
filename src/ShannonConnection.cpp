@@ -1,6 +1,6 @@
 #include "ShannonConnection.h"
 
-ShannonConnection::ShannonConnection(PlainConnection conn, std::vector<uint8_t> sendKey, std::vector<uint8_t> recvKey) {
+ShannonConnection::ShannonConnection(PlainConnection conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
     this->apSock = conn.apSock;
 
     this->sendCipher = new Shannon();
@@ -15,7 +15,7 @@ ShannonConnection::ShannonConnection(PlainConnection conn, std::vector<uint8_t> 
     this->recvCipher->key(recvKey);
 }
 
-void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> data) {
+void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
     auto rawPacket = this->cipherPacket(cmd, data);
 
     // Shannon encrypt the packet and write it to sock
@@ -67,7 +67,7 @@ Packet* ShannonConnection::recvPacket() {
     return new Packet(data[0], packetData);
 }
 
-std::vector<uint8_t> ShannonConnection::cipherPacket(uint8_t cmd, std::vector<uint8_t> data) {
+std::vector<uint8_t> ShannonConnection::cipherPacket(uint8_t cmd, std::vector<uint8_t> &data) {
     // Generate packet structure, [Command] [Size] [Raw data]
     auto sizeRaw = pack<uint16_t>(htons(uint16_t(data.size())));
 
