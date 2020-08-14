@@ -8,11 +8,13 @@
 #include <cstdint>
 #include <netdb.h>
 #include <unistd.h>
-#include <Packet.h>
+#include "Packet.h"
+#include "Utils.h"
 
 // @TODO: actually get these through apresolve.spotify.com
 #define AP_ADDRES "gew1-accesspoint-b-sk8w.ap.spotify.com"
 #define AP_PORT "4070"
+#define MAX_READ_COUNT 5
 
 enum class ConnectType
 {
@@ -25,8 +27,8 @@ class Connection
 private:
     int apSock;
     std::vector<uint8_t> partialBuffer;
-    ConnectType connectType;
-    std::vector<uint8_t> tryRecv(size_t size);
+    ConnectType connectType = ConnectType::Handshake;
+    std::vector<uint8_t> tryRecv(size_t readSize);
 
 public:
     Connection();

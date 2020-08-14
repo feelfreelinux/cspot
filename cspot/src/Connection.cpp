@@ -1,9 +1,10 @@
 
 #include "Connection.h"
 
-Connection::Connection(){
-
+Connection::Connection()
+{
 };
+
 void Connection::connectToAp()
 {
     struct addrinfo h, *airoot, *ai;
@@ -43,8 +44,23 @@ void Connection::connectToAp()
     printf("Connected to spotify server\n");
 }
 
+std::vector<uint8_t> Connection::tryRecv(size_t readSize) {
+    // Copy so it doesn't mess with partial buffer
+    // std::vector<uint8_t> result(readSize);
+    // blockRead(this->apSock, &result, readSize);
+    // this->partialBuffer = result;
+    // return result;
+}
+
 Packet Connection::recvPacket()
 {
+    if (this->connectType == ConnectType::Handshake) {
+        unsigned long packetSize;
+        recv(this->apSock, &packetSize, sizeof(packetSize), 0);
+        auto packetData = blockRead(this->apSock, packetSize);
+        auto packet = new Packet(0, packetSize, packetData);
+
+    }
 }
 
 void Connection::handshakeCompleted(std::vector<uint8_t> sendKey, std::vector<uint8_t> recvKey)
