@@ -55,6 +55,10 @@ Packet* ShannonConnection::recvPacket() {
     std::vector<uint8_t> mac2(MAC_SIZE);
     this->recvCipher->finish(mac2);
 
+    if (mac != mac2) {
+        printf("Shannon read: Mac doesn't match\n");
+    }
+
     // Update the nonce
 	this->recvNonce += 1;
     this->recvCipher->nonce(pack<uint32_t>(htonl(this->recvNonce)));
