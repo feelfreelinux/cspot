@@ -1,4 +1,4 @@
- #ifndef PLAINCONNECTION_H
+#ifndef PLAINCONNECTION_H
 #define PLAINCONNECTION_H
 
 #include <sys/socket.h>

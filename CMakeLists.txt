@@ -8,9 +8,9 @@ if(OPENSSL_FOUND)
     set(OPENSSL_USE_STATIC_LIBS TRUE)
 endif()
 
-include_directories(include)
+include_directories(include "protocol/impl")
 
-file(GLOB SOURCES "src/*.cpp" "src/*.c")
+file(GLOB SOURCES "src/*.cpp" "src/*.c", "protocol/impl/*.c")
  
 add_executable(cspot ${SOURCES})
 target_link_libraries(cspot OpenSSL::Crypto)

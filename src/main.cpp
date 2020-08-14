@@ -2,10 +2,15 @@
 #include <iostream>
 #include <string.h>
 #include <PlainConnection.h>
+#include <DiffieHellman.h>
 
 int main()
-{  
-    auto connection = new PlainConnection();
-    connection->connectToAp();
+{
+    auto hellman = new DiffieHellman();
+
+    // hellman.publicKey 
+    // hellman.privateKey
+    // hellman.computeSharedKey(remoteKey)
+
     return 0;
 }
