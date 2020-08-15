@@ -5,6 +5,7 @@ DiffieHellman::DiffieHellman()
     this->dh = DH_new();
     this->privateKey = std::vector<uint8_t>(KEY_SIZE);
     this->publicKey = std::vector<uint8_t>(KEY_SIZE);
+    this->sharedKey = std::vector<uint8_t>(KEY_SIZE);
 
     // Set prime and the generator
     DH_set0_pqg(this->dh, BN_bin2bn(DHPrime, KEY_SIZE, NULL), NULL, BN_bin2bn(DHGenerator, 1, NULL));
@@ -16,12 +17,9 @@ DiffieHellman::DiffieHellman()
 }
 
 std::vector<uint8_t> DiffieHellman::computeSharedKey(std::vector<uint8_t> remoteKey) {
-    // Prealocate 96 bytes for the key
-    auto sharedKey = std::vector<uint8_t>(KEY_SIZE);
-
     // Convert remote key to bignum and compute shared key
     auto pubKey = BN_bin2bn (&remoteKey[0], 96, NULL);
-    DH_compute_key (&sharedKey[0], pubKey, this->dh);
+    DH_compute_key (&this->sharedKey[0], pubKey, this->dh);
 
-    return sharedKey;
+    return this->sharedKey;
 }

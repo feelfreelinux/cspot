@@ -51,13 +51,13 @@ std::vector<uint8_t> PlainConnection::recvPacket()
     uint32_t packetSize = ntohl(extract<uint32_t>(sizeData, 0));
 
     // Read actual data
-    auto data = blockRead(this->apSock, packetSize);
+    auto data = blockRead(this->apSock, packetSize - 4);
     sizeData.insert(sizeData.end(), data.begin(), data.end());
 
     return sizeData;
 }
 
-std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> &prefix, std::vector<uint8_t> &data)
+std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> prefix, std::vector<uint8_t> &data)
 {
     // Calculate full packet length
     uint32_t actualSize = prefix.size() + data.size() + sizeof(uint32_t);

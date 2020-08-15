@@ -88,7 +88,9 @@
         "valarray": "cpp",
         "variant": "cpp",
         "__tree": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "filesystem": "cpp",
+        "keyexchange.pb.h": "c"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

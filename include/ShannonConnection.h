@@ -24,7 +24,8 @@ private:
     uint32_t recvNonce = 0;
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
 public:
-    ShannonConnection(PlainConnection conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
+    ShannonConnection();
+    void wrapConnection(PlainConnection *conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
     int apSock;
     void sendPacket(uint8_t cmd, std::vector<uint8_t> &data);
     Packet* recvPacket();

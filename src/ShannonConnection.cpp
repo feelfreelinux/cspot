@@ -1,7 +1,11 @@
 #include "ShannonConnection.h"
 
-ShannonConnection::ShannonConnection(PlainConnection conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
-    this->apSock = conn.apSock;
+ShannonConnection::ShannonConnection() {
+
+}
+
+void ShannonConnection::wrapConnection(PlainConnection *conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
+    this->apSock = conn->apSock;
 
     this->sendCipher = new Shannon();
     this->recvCipher = new Shannon();

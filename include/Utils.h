@@ -14,7 +14,7 @@ std::vector<uint8_t> blockRead(int fd, size_t readSize);
 
 ssize_t blockWrite (int fd, std::vector<uint8_t> data);
 
-std::string SHA1HMAC(std::vector<uint8_t> &inputKey, std::string &message);
+std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_t> &message);
 
 // Reads a type from vector of binary data
 template <typename T>

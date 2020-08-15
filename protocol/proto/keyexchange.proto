@@ -1,4 +1,3 @@
-
 message ClientHello {
     required BuildInfo build_info = 0xa; 
     repeated Fingerprint fingerprints_supported = 0x14; 
@@ -79,7 +78,7 @@ message LoginCryptoHelloUnion {
 
 
 message LoginCryptoDiffieHellmanHello {
-    required bytes gc = 0xa; 
+    required bytes gc = 0xa;
     required uint32 server_keys_known = 0x14; 
 }
 
