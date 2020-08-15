@@ -2,6 +2,10 @@
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
+const char *deviceId = "352198fd329622137e14901634264e6f332e5422";
+const char *informationString = "cspot";
+const char *versionString = "cspot-0.1";
+
 Session::Session()
 {
     // Generates the public and priv key
@@ -19,21 +23,22 @@ void Session::connect(PlainConnection *connection)
 void Session::authenticate(std::string username, std::string password)
 {
     ClientResponseEncrypted authRequest = {};
-    authRequest.login_credentials.username = strdup(username.c_str());
+    authRequest.login_credentials.username = (char *)(username.c_str());
     authRequest.login_credentials.auth_data = stringToPBBytes(password);
     authRequest.login_credentials.typ = AuthenticationType_AUTHENTICATION_USER_PASS;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
-    authRequest.system_info.system_information_string = strdup(INFORMATION_STRING);
-    authRequest.system_info.device_id = strdup(DEVICE_ID);
-    authRequest.version_string = strdup(VERSION_STRING);
+    authRequest.system_info.system_information_string = (char *)informationString;
+    authRequest.system_info.device_id = (char *)deviceId;
+    authRequest.version_string = (char *)versionString;
 
     auto data = encodePB(ClientResponseEncrypted_fields, &authRequest);
 
     // Send login request
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);
-    Packet *packet = this->shanConn->recvPacket();
+    free(authRequest.login_credentials.auth_data);
 
+    Packet *packet = this->shanConn->recvPacket();
     switch (packet->command)
     {
     case AUTH_SUCCESSFUL_COMMAND:
@@ -43,9 +48,11 @@ void Session::authenticate(std::string username, std::string password)
         auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
         break;
     }
-    case AUTH_DECLINED_COMMAND:{
+    case AUTH_DECLINED_COMMAND:
+    {
         printf("Authorization declined\n");
-        break;}
+        break;
+    }
     default:
         printf("Unknown auth fail code %d\n", packet->command);
     }
