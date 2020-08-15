@@ -14,10 +14,11 @@ find_package(Nanopb REQUIRED)
 include_directories(${NANOPB_INCLUDE_DIRS})
 
 
-file(GLOB PROTOS authentication.proto keyexchange.proto mercury.proto metadata.proto playlist.proto pubsub.proto radio.proto spirc.proto )
+set(PROTOS protocol/proto/authentication.proto protocol/proto/keyexchange.proto protocol/proto/mercury.proto protocol/proto/metadata.proto protocol/proto/playlist.proto protocol/proto/pubsub.proto protocol/proto/radio.proto protocol/proto/spirc.proto)
+message(${PROTOS})
 nanopb_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-#add_custom_target(generate_proto_sources DEPENDS ${PROTO_SRCS} ${PROTO_HDRS})
+add_custom_target(generate_proto_sources DEPENDS ${PROTO_SRCS} ${PROTO_HDRS})
 set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
     PROPERTIES GENERATED TRUE)
 
