@@ -20,6 +20,6 @@ std::vector<uint8_t> DiffieHellman::computeSharedKey(std::vector<uint8_t> remote
     // Convert remote key to bignum and compute shared key
     auto pubKey = BN_bin2bn (&remoteKey[0], 96, NULL);
     DH_compute_key (&this->sharedKey[0], pubKey, this->dh);
-
+    BN_free(pubKey);
     return this->sharedKey;
 }

@@ -38,7 +38,7 @@ void Session::authenticate(std::string username, std::string password)
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);
     free(authRequest.login_credentials.auth_data);
 
-    Packet *packet = this->shanConn->recvPacket();
+    auto packet = this->shanConn->recvPacket();
     switch (packet->command)
     {
     case AUTH_SUCCESSFUL_COMMAND:

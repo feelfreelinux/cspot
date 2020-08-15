@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <netdb.h>
 #include <cstring>
+#include <memory>
 
 #define HMAC_SHA1_BLOCKSIZE 64
 

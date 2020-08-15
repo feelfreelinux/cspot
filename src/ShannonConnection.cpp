@@ -38,7 +38,7 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
     blockWrite(this->apSock, mac);
 }
 
-Packet* ShannonConnection::recvPacket() {
+std::unique_ptr<Packet>  ShannonConnection::recvPacket() {
     // Receive 3 bytes, cmd + int16 size
     auto data = blockRead(this->apSock, 3);
     this->recvCipher->decrypt(data);
@@ -69,7 +69,7 @@ Packet* ShannonConnection::recvPacket() {
     this->recvCipher->nonce(pack<uint32_t>(htonl(this->recvNonce)));
 
     // data[0] == cmd
-    return new Packet(data[0], packetData);
+    return std::make_unique<Packet>(data[0], packetData);
 }
 
 std::vector<uint8_t> ShannonConnection::cipherPacket(uint8_t cmd, std::vector<uint8_t> &data) {
