@@ -16,7 +16,7 @@ void PlainConnection::connectToAp()
     h.ai_protocol = IPPROTO_TCP;
 
     // Lookup host
-    if (getaddrinfo(AP_ADDRES, AP_PORT, &h, &airoot))
+    if (getaddrinfo(AP_ADDRESS, AP_PORT, &h, &airoot))
     {
         printf("getaddrinfo failed\n");
     }

@@ -12,7 +12,7 @@
 #include "Utils.h"
 
 // @TODO: actually get these through apresolve.spotify.com
-#define AP_ADDRES "gew1-accesspoint-b-sk8w.ap.spotify.com"
+#define AP_ADDRESS "gew1-accesspoint-b-sk8w.ap.spotify.com"
 #define AP_PORT "4070"
 
 class PlainConnection
