@@ -53,7 +53,7 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket) {
         response.login_crypto_response.diffie_hellman.hmac);
 
     auto resultPacket = encodePB(ClientResponsePlaintext_fields, &response);
-    auto emptyPrefix = std::vector<uint8_t>(0);
+    auto emptyPrefix = std::vector<uint8_t>(0);g
 
     this->conn->sendPrefixPacket(emptyPrefix, resultPacket);
 

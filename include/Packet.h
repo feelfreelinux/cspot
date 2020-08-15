@@ -2,6 +2,7 @@
 #define PACKET_H
 
 #include <vector>
+#include <cstdint>
 
 class Packet
 {

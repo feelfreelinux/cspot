@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <cstdint>
 #include <netdb.h>
+#include <cstring>
 
 #define HMAC_SHA1_BLOCKSIZE 64
 

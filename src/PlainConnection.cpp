@@ -1,5 +1,6 @@
 
 #include "PlainConnection.h"
+#include <cstring>
 
 PlainConnection::PlainConnection()
 {
