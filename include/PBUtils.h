@@ -8,6 +8,8 @@
 
 std::vector<uint8_t> encodePB(const pb_msgdesc_t *fields, const void *src_struct);
 
+pb_bytes_array_t* stringToPBBytes(std::string stringToPack);
+
 void packString(char* &dst, std::string stringToPack);
 
 template <typename T>

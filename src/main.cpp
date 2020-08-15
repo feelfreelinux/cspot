@@ -14,8 +14,7 @@ int main()
 
     auto session = new Session();
     session->connect(connection);
-
-    ClientResponseEncrypted test = {};
+    session->authenticate("log", "pass");
     // test.login_credentials.username
     return 0;
 }

@@ -10,13 +10,13 @@ void ShannonConnection::wrapConnection(PlainConnection *conn, std::vector<uint8_
     this->sendCipher = new Shannon();
     this->recvCipher = new Shannon();
 
-    // Set initial nonce
-    this->sendCipher->nonce(pack<uint32_t>(htonl(0)));
-    this->recvCipher->nonce(pack<uint32_t>(htonl(0)));
-
     // Set keys
     this->sendCipher->key(sendKey);
     this->recvCipher->key(recvKey);
+
+    // Set initial nonce
+    this->sendCipher->nonce(pack<uint32_t>(htonl(0)));
+    this->recvCipher->nonce(pack<uint32_t>(htonl(0)));
 }
 
 void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
@@ -41,6 +41,7 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
 Packet* ShannonConnection::recvPacket() {
     // Receive 3 bytes, cmd + int16 size
     auto data = blockRead(this->apSock, 3);
+    this->recvCipher->decrypt(data);
 
     auto packetData = std::vector<uint8_t>();
 

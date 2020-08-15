@@ -17,6 +17,13 @@
 #include "Utils.h"
 
 #define SPOTIFY_VERSION 0x10800000000
+#define LOGIN_REQUEST_COMMAND 0xAB
+#define AUTH_SUCCESSFUL_COMMAND 0xAC
+#define AUTH_DECLINED_COMMAND 0xAD
+#define DEVICE_ID "352198fd329622137e14901634264e6f332e5422"
+#define INFORMATION_STRING "cspot"
+#define VERSION_STRING "cspot-0.1"
+
 class Session
 {
 private:

@@ -57,8 +57,8 @@ std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_
 	/* Pad key */
 	for (i = 0; i < digest.size(); i++)
 	{
-		ipad[i] ^= inputKey[i];
-		opad[i] ^= inputKey[i];
+		ipad[i] ^= digest[i];
+		opad[i] ^= digest[i];
 	}
 
 	/* First */
