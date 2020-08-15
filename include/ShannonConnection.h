@@ -19,8 +19,8 @@
 class ShannonConnection
 {
 private:
-    Shannon *sendCipher;
-    Shannon *recvCipher;
+    std::unique_ptr<Shannon> sendCipher;
+    std::unique_ptr<Shannon> recvCipher;
     uint32_t sendNonce = 0;
     uint32_t recvNonce = 0;
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);

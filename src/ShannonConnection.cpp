@@ -7,8 +7,8 @@ ShannonConnection::ShannonConnection() {
 void ShannonConnection::wrapConnection(PlainConnection *conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
     this->apSock = conn->apSock;
 
-    this->sendCipher = new Shannon();
-    this->recvCipher = new Shannon();
+    this->sendCipher = std::make_unique<Shannon>();
+    this->recvCipher = std::make_unique<Shannon>();
 
     // Set keys
     this->sendCipher->key(sendKey);
