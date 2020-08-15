@@ -34,17 +34,20 @@ void Session::authenticate(std::string username, std::string password)
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);
     Packet *packet = this->shanConn->recvPacket();
 
-    switch (packet->command) {
-        case AUTH_SUCCESSFUL_COMMAND:
-            printf("Authorization successful\n");
-            // @TODO store the reusable credentials
-            auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
-            break;
-        case AUTH_DECLINED_COMMAND:
-            printf("Authorization declined\n");
-            break;
-        default:
-            printf("Unknown auth fail code %d\n", packet->command);
+    switch (packet->command)
+    {
+    case AUTH_SUCCESSFUL_COMMAND:
+    {
+        printf("Authorization successful\n");
+        // @TODO store the reusable credentials
+        auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
+        break;
+    }
+    case AUTH_DECLINED_COMMAND:{
+        printf("Authorization declined\n");
+        break;}
+    default:
+        printf("Unknown auth fail code %d\n", packet->command);
     }
 }
 
