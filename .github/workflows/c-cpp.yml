@@ -16,7 +16,7 @@ jobs:
       with:
         submodules: true
     - name: Install python3-protobuf
-      run: sudo apt-get install -y python3-protobuf
+      run: sudo pip install protobuf grpcio-tools
     - name: cmake
       run: mkdir -p build && cd build && cmake ..
     - name: make
