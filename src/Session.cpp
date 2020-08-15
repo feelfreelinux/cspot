@@ -15,6 +15,14 @@ void Session::connect(PlainConnection *connection) {
     this->processAPHelloResponse(helloPacket);
 }
 
+void Session::authenticate(std::string username, std::string password) {
+    ClientResponseEncrypted authRequest = {};
+    packString(authRequest.login_credentials.username, username);
+
+    // std::vector<uint8_t> vec(password.begin(), password.end());
+    // authRequest.login_credentials.auth_data.bytes
+}
+
 void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket) {
     auto data = this->conn->recvPacket();
 

@@ -6,7 +6,8 @@
 #include "ShannonConnection.h"
 #include "DiffieHellman.h"
 #include <vector>
-#include <keyexchange.pb.h>
+#include "keyexchange.pb.h"
+#include "authentication.pb.h"
 #include <pb_encode.h>
 #include <random>
 #include <climits>
@@ -27,6 +28,7 @@ private:
 public:
     Session();
     void connect(PlainConnection *connection);
+    void authenticate(std::string login, std::string password);
 };
 
 #endif

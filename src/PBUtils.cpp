@@ -29,3 +29,8 @@ std::vector<uint8_t> encodePB(const pb_msgdesc_t *fields, const void *src_struct
 
     return vecData;
 }
+
+void packString(char* &dst, std::string stringToPack) {
+    dst = (char*)malloc((strlen(stringToPack.c_str())+1) * sizeof(char));
+    strcpy(dst, stringToPack.c_str());
+}
