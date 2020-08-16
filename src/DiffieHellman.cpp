@@ -16,10 +16,16 @@ DiffieHellman::DiffieHellman()
     BN_bn2bin(DH_get0_pub_key(dh), &this->publicKey[0]);
 }
 
-std::vector<uint8_t> DiffieHellman::computeSharedKey(std::vector<uint8_t> remoteKey) {
+DiffieHellman::~DiffieHellman()
+{
+    DH_free(this->dh);
+}
+
+std::vector<uint8_t> DiffieHellman::computeSharedKey(std::vector<uint8_t> remoteKey)
+{
     // Convert remote key to bignum and compute shared key
-    auto pubKey = BN_bin2bn (&remoteKey[0], 96, NULL);
-    DH_compute_key (&this->sharedKey[0], pubKey, this->dh);
+    auto pubKey = BN_bin2bn(&remoteKey[0], 96, NULL);
+    DH_compute_key(&this->sharedKey[0], pubKey, this->dh);
     BN_free(pubKey);
     return this->sharedKey;
 }

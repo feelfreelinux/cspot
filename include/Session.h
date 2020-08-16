@@ -4,6 +4,7 @@
 #include <vector>
 #include <random>
 #include <pb_encode.h>
+#include <memory>
 #include <functional>
 #include <climits>
 #include <algorithm>
@@ -22,20 +23,18 @@
 #define AUTH_SUCCESSFUL_COMMAND 0xAC
 #define AUTH_DECLINED_COMMAND 0xAD
 
-
-
 class Session
 {
 private:
-    PlainConnection *conn;
-    ShannonConnection *shanConn;
-    DiffieHellman *localKeys;
+    std::shared_ptr<PlainConnection> conn;
+    std::shared_ptr<ShannonConnection> shanConn;
+    std::unique_ptr<DiffieHellman> localKeys;
     std::vector<uint8_t> sendClientHelloRequest();
     void processAPHelloResponse(std::vector<uint8_t> &helloPacket);
 
 public:
     Session();
-    void connect(PlainConnection *connection);
+    void connect(std::shared_ptr<PlainConnection> connection);
     void authenticate(std::string login, std::string password);
 };
 

@@ -33,6 +33,7 @@ private:
     DH* dh;
 public:
     DiffieHellman();
+    ~DiffieHellman();
     std::vector<uint8_t> privateKey;
     std::vector<uint8_t> publicKey;
     std::vector<uint8_t> sharedKey;

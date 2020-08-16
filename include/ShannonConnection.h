@@ -27,7 +27,7 @@ private:
 
 public:
     ShannonConnection();
-    void wrapConnection(PlainConnection *conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
+    void wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
     int apSock;
     void sendPacket(uint8_t cmd, std::vector<uint8_t> &data);
     std::unique_ptr<Packet> recvPacket();

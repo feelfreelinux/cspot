@@ -4,7 +4,7 @@ ShannonConnection::ShannonConnection() {
 
 }
 
-void ShannonConnection::wrapConnection(PlainConnection *conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
+void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
     this->apSock = conn->apSock;
 
     this->sendCipher = std::make_unique<Shannon>();

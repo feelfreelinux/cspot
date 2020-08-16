@@ -14,12 +14,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    auto connection = std::make_unique<PlainConnection>();
+    auto connection = std::make_shared<PlainConnection>();
     connection->connectToAp();
 
     auto session = std::make_unique<Session>();
-    session->connect(connection.get());
+    session->connect(connection);
     session->authenticate(std::string(argv[1]), std::string(argv[2]));
-    // test.login_credentials.username
+
     return 0;
 }

@@ -9,11 +9,11 @@ const char *versionString = "cspot-0.1";
 Session::Session()
 {
     // Generates the public and priv key
-    this->localKeys = new DiffieHellman();
-    this->shanConn = new ShannonConnection();
+    this->localKeys = std::make_unique<DiffieHellman>();
+    this->shanConn = std::make_shared<ShannonConnection>();
 }
 
-void Session::connect(PlainConnection *connection)
+void Session::connect(std::shared_ptr<PlainConnection> connection)
 {
     this->conn = connection;
     auto helloPacket = this->sendClientHelloRequest();
