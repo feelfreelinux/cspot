@@ -20,7 +20,16 @@ int main(int argc, char **argv)
 
     auto session = std::make_unique<Session>();
     session->connect(connection);
-    session->authenticate(std::string(argv[1]), std::string(argv[2]));
+    auto token = session->authenticate(std::string(argv[1]), std::string(argv[2]));
+
+    // Auth successful
+    if (token.size() > 0) {
+        // @TODO Actually store this token somewhere
+        auto mercuryManager = std::make_unique<MercuryManager>(session->shanConn);
+        mercuryManager->startTask();
+
+        mercuryManager->waitForTaskToReturn();
+    }
 
     return 0;
 }

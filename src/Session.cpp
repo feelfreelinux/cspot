@@ -21,7 +21,7 @@ void Session::connect(std::shared_ptr<PlainConnection> connection)
     this->processAPHelloResponse(helloPacket);
 }
 
-void Session::authenticate(std::string username, std::string password)
+std::vector<uint8_t> Session::authenticate(std::string username, std::string password)
 {
     ClientResponseEncrypted authRequest = {};
     authRequest.login_credentials.username = (char *)(username.c_str());
@@ -45,9 +45,10 @@ void Session::authenticate(std::string username, std::string password)
     case AUTH_SUCCESSFUL_COMMAND:
     {
         printf("Authorization successful\n");
-        new MercuryManager(this->shanConn);
+
         // @TODO store the reusable credentials
         auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
+        return std::vector<uint8_t>({0x1}); // TODO: return actual reusable credentaials to be stored somewhere
         break;
     }
     case AUTH_DECLINED_COMMAND:
@@ -58,6 +59,8 @@ void Session::authenticate(std::string username, std::string password)
     default:
         printf("Unknown auth fail code %d\n", packet->command);
     }
+
+    return std::vector<uint8_t>(0);
 }
 
 void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)

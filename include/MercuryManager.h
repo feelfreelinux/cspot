@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "PBUtils.h"
 #include "mercury.pb.h"
+#include "Task.h"
 #include <stdint.h>
 #include <memory>
 
@@ -38,12 +39,13 @@ enum class RequestType {
   GET = 0xb2
 };
 
-class MercuryManager
+class MercuryManager : public Task
 {
 private:
     std::map<int64_t, mercuryCallback*> callbacks;
     std::map<std::string, mercuryCallback*> subscriptions;
     std::shared_ptr<ShannonConnection> conn;
+    void runTask();
     int64_t sequenceId;
 public:
     MercuryManager(std::shared_ptr<ShannonConnection> conn);

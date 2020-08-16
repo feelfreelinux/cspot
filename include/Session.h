@@ -27,15 +27,15 @@ class Session
 {
 private:
     std::shared_ptr<PlainConnection> conn;
-    std::shared_ptr<ShannonConnection> shanConn;
     std::unique_ptr<DiffieHellman> localKeys;
     std::vector<uint8_t> sendClientHelloRequest();
     void processAPHelloResponse(std::vector<uint8_t> &helloPacket);
 
 public:
     Session();
+    std::shared_ptr<ShannonConnection> shanConn;
     void connect(std::shared_ptr<PlainConnection> connection);
-    void authenticate(std::string login, std::string password);
+    std::vector<uint8_t> authenticate(std::string login, std::string password);
 };
 
 #endif

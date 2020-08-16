@@ -5,7 +5,9 @@ MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn) {
     this->subscriptions = std::map<std::string, mercuryCallback*>();
     this->conn = conn;
     this->sequenceId = 0x0000000000000000;
+}
 
+void MercuryManager::runTask() {
     while(true) {
         auto packet = this->conn->recvPacket();
         printf("Received packet with code %d of length %d\n", packet->command, packet->data.size());
