@@ -1,4 +1,5 @@
 #include "Session.h"
+#include "MercuryManager.h"
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
@@ -44,6 +45,7 @@ void Session::authenticate(std::string username, std::string password)
     case AUTH_SUCCESSFUL_COMMAND:
     {
         printf("Authorization successful\n");
+        new MercuryManager(this->shanConn.get());
         // @TODO store the reusable credentials
         auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
         break;

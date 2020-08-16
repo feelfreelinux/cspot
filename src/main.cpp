@@ -4,6 +4,7 @@
 #include <PlainConnection.h>
 #include <Session.h>
 #include <authentication.pb.h>
+#include <MercuryManager.h>
 
 int main(int argc, char **argv)
 {
