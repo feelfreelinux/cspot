@@ -35,12 +35,7 @@ enum class MercuryType : uint8_t
   COUNTRY_CODE_RESPONSE = 0x1B,
 };
 
-std::map<MercuryType, std::string> MercuryTypeMap({
-    {MercuryType::SEND, "SEND"},
-    {MercuryType::GET, "GET"},
-    {MercuryType::SUB, "SUB"},
-    {MercuryType::UNSUB, "UNSUB"},
-});
+extern std::map<MercuryType, std::string> MercuryTypeMap;
 
 class MercuryManager : public Task
 {

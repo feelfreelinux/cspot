@@ -1,5 +1,12 @@
 #include "MercuryManager.h"
 
+std::map<MercuryType, std::string> MercuryTypeMap({
+    {MercuryType::SEND, "SEND"},
+    {MercuryType::GET, "GET"},
+    {MercuryType::SUB, "SUB"},
+    {MercuryType::UNSUB, "UNSUB"},
+});
+
 MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
 {
     this->callbacks = std::map<int64_t, mercuryCallback>();
