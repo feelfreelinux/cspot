@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 #include "ShannonConnection.h"
+#include "MercuryResponse.h"
 #include "Packet.h"
 #include "Utils.h"
 #include "PBUtils.h"
@@ -14,45 +15,48 @@
 #include <stdint.h>
 #include <memory>
 
-#ifdef __APPLE__
-#include <libkern/OSByteOrder.h>
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#define htole64(x) OSSwapHostToLittleInt64(x)
-#endif
+typedef const std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
 
-typedef std::vector<std::vector<uint8_t>> mercuryParts;
-typedef const std::function<void(int, mercuryParts)> mercuryCallback;
-#define PING 0x04
-#define PONG_ACK 0x4a
-#define AUDIO_CHUNK_REQUEST_COMMAND 0x08
-#define AUDIO_CHUNK_SUCCESS_RESPONSE 0x09
-#define AUDIO_CHUNK_FAILURE_RESPONSE 0x0A
-#define AUDIO_KEY_REQUEST_COMMAND 0x0C
-#define AUDIO_KEY_SUCCESS_RESPONSE 0x0D
-#define AUDIO_KEY_FAILURE_RESPONSE 0x0E
-#define COUNTRY_CODE_RESPONSE 0x1B
-
-enum class RequestType {
+enum class MercuryType : uint8_t
+{
   SUB = 0xb3,
   UNSUB = 0xb4,
+  SUBRES = 0xb5,
   SEND = 0xb2,
-  GET = 0xb2
+  GET = 0xb2,
+  PING = 0x04,
+  PONG_ACK = 0x4a,
+  AUDIO_CHUNK_REQUEST_COMMAND = 0x08,
+  AUDIO_CHUNK_SUCCESS_RESPONSE = 0x09,
+  AUDIO_CHUNK_FAILURE_RESPONSE = 0x0A,
+  AUDIO_KEY_REQUEST_COMMAND = 0x0C,
+  AUDIO_KEY_SUCCESS_RESPONSE = 0x0D,
+  AUDIO_KEY_FAILURE_RESPONSE = 0x0E,
+  COUNTRY_CODE_RESPONSE = 0x1B,
 };
+
+std::map<MercuryType, std::string> MercuryTypeMap({
+    {MercuryType::SEND, "SEND"},
+    {MercuryType::GET, "GET"},
+    {MercuryType::SUB, "SUB"},
+    {MercuryType::UNSUB, "UNSUB"},
+});
 
 class MercuryManager : public Task
 {
 private:
-    std::map<int64_t, mercuryCallback*> callbacks;
-    std::map<std::string, mercuryCallback*> subscriptions;
-    std::shared_ptr<ShannonConnection> conn;
-    void runTask();
-    int64_t sequenceId;
+  std::map<int64_t, mercuryCallback> callbacks;
+  std::map<std::string, mercuryCallback> subscriptions;
+  std::shared_ptr<ShannonConnection> conn;
+  void runTask();
+  int64_t sequenceId;
+
 public:
-    MercuryManager(std::shared_ptr<ShannonConnection> conn);
-    void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
-    void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
-    void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
-    void execute(RequestType method, std::string uri, mercuryCallback &callback);
+  MercuryManager(std::shared_ptr<ShannonConnection> conn);
+  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
+  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
+  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
+  void execute(MercuryType method, std::string uri, mercuryCallback &callback);
 };
 
 #endif
