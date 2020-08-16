@@ -45,7 +45,7 @@ void Session::authenticate(std::string username, std::string password)
     case AUTH_SUCCESSFUL_COMMAND:
     {
         printf("Authorization successful\n");
-        new MercuryManager(this->shanConn.get());
+        new MercuryManager(this->shanConn);
         // @TODO store the reusable credentials
         auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
         break;

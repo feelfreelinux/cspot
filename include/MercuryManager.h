@@ -11,6 +11,7 @@
 #include "PBUtils.h"
 #include "mercury.pb.h"
 #include <stdint.h>
+#include <memory>
 
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
@@ -42,10 +43,10 @@ class MercuryManager
 private:
     std::map<int64_t, mercuryCallback*> callbacks;
     std::map<std::string, mercuryCallback*> subscriptions;
-    ShannonConnection *conn;
+    std::shared_ptr<ShannonConnection> conn;
     int64_t sequenceId;
 public:
-    MercuryManager(ShannonConnection* conn);
+    MercuryManager(std::shared_ptr<ShannonConnection> conn);
     void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
     void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
     void execute(RequestType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);

@@ -1,6 +1,6 @@
 #include "MercuryManager.h"
 
-MercuryManager::MercuryManager(ShannonConnection* conn) {
+MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn) {
     this->callbacks = std::map<int64_t, mercuryCallback*>();
     this->subscriptions = std::map<std::string, mercuryCallback*>();
     this->conn = conn;
