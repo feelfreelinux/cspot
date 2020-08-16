@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <memory>
 
-typedef const std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
+typedef std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
 
 enum class MercuryType : uint8_t
 {
@@ -23,7 +23,7 @@ enum class MercuryType : uint8_t
   UNSUB = 0xb4,
   SUBRES = 0xb5,
   SEND = 0xb2,
-  GET = 0xb2,
+  GET = 0xFF, // Shitty workaround, it's value is actually same as SEND
   PING = 0x04,
   PONG_ACK = 0x4a,
   AUDIO_CHUNK_REQUEST_COMMAND = 0x08,
@@ -40,11 +40,11 @@ extern std::map<MercuryType, std::string> MercuryTypeMap;
 class MercuryManager : public Task
 {
 private:
-  std::map<int64_t, mercuryCallback> callbacks;
+  std::map<uint32_t, mercuryCallback> callbacks;
   std::map<std::string, mercuryCallback> subscriptions;
   std::shared_ptr<ShannonConnection> conn;
   void runTask();
-  int64_t sequenceId;
+  int32_t sequenceId;
 
 public:
   MercuryManager(std::shared_ptr<ShannonConnection> conn);

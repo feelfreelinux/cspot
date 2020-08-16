@@ -1,18 +1,19 @@
 #include "MercuryManager.h"
+#include <iostream>
 
 std::map<MercuryType, std::string> MercuryTypeMap({
-    {MercuryType::SEND, "SEND"},
     {MercuryType::GET, "GET"},
+    {MercuryType::SEND, "SEND"},
     {MercuryType::SUB, "SUB"},
     {MercuryType::UNSUB, "UNSUB"},
 });
 
 MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
 {
-    this->callbacks = std::map<int64_t, mercuryCallback>();
+    this->callbacks = std::map<uint32_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
     this->conn = conn;
-    this->sequenceId = 0x0000000000000000;
+    this->sequenceId = 0x00000001;
 }
 
 void MercuryManager::runTask()
@@ -27,14 +28,25 @@ void MercuryManager::runTask()
             {
                 printf("Got ping\n");
                 this->conn->sendPacket(0x49, packet->data);
+                break;
             }
-            case MercuryType::GET:
+            case MercuryType::SEND: case MercuryType::SUB: case MercuryType::UNSUB:
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
                 if (this->callbacks.count(response->sequenceId) > 0)
                 {
                     this->callbacks[response->sequenceId](std::move(response));
                 }
+                break;
+            }
+            case MercuryType::SUBRES:
+            {
+                auto response = std::make_unique<MercuryResponse>(packet->data);
+                if (this->subscriptions.count(std::string(response->mercuryHeader.uri)) > 0)
+                {
+                    this->subscriptions[std::string(response->mercuryHeader.uri)](std::move(response));
+                }
+                break;
             }
         }
     }
@@ -44,9 +56,16 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
 {
 
     // Construct mercury header
+    std::cout << MercuryTypeMap[method] << std::endl;
     Header mercuryHeader = {};
     mercuryHeader.uri = (char *)(uri.c_str());
     mercuryHeader.method = (char *)(MercuryTypeMap[method].c_str());
+
+    // GET and SEND are actually the same. Therefore the override
+    // The difference between them is only in header's method
+    if (method == MercuryType::GET) {
+        method = MercuryType::SEND;
+    }
 
     auto headerBytes = encodePB(Header_fields, &mercuryHeader);
 
@@ -58,30 +77,34 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
 
     this->callbacks.insert({sequenceId, callback});
 
-    // Structure: [Command] [SequenceId] [0x1] [Payloads number]
+    // Structure: [Sequence size] [SequenceId] [0x1] [Payloads number]
     // [Header size] [Header] [Payloads (size + data)]
 
     // Pack sequenceId
-    auto sequenceIdBytes = pack<uint64_t>(htobe64(this->sequenceId));
-    auto command = std::vector<uint8_t>({0x00, 0x04});
+    auto sequenceIdBytes = pack<uint32_t>(htonl(this->sequenceId));
 
-    sequenceIdBytes.insert(sequenceIdBytes.begin(), command.begin(), command.end());
+    auto sequenceSizeBytes = pack<uint16_t>(htons(sequenceIdBytes.size()));
+
+    sequenceIdBytes.insert(sequenceIdBytes.begin(), sequenceSizeBytes.begin(), sequenceSizeBytes.end());
     sequenceIdBytes.push_back(0x01);
 
-    auto payloadNum = pack<uint32_t>(htonl(payload.size() + 1));
+    auto payloadNum = pack<uint16_t>(htons(payload.size() + 1));
     sequenceIdBytes.insert(sequenceIdBytes.end(), payloadNum.begin(), payloadNum.end());
 
-    auto headerSizePayload = pack<uint32_t>(htonl(headerBytes.size()));
+    auto headerSizePayload = pack<uint16_t>(htons(headerBytes.size()));
     sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(), headerSizePayload.end());
     sequenceIdBytes.insert(sequenceIdBytes.end(), headerBytes.begin(), headerBytes.end());
 
     // Encode all the payload parts
     for (int x = 0; x < payload.size(); x++)
     {
-        headerSizePayload = pack<uint32_t>(htonl(payload[x].size()));
+        headerSizePayload = pack<uint16_t>(htons(payload[x].size()));
         sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(), headerSizePayload.end());
         sequenceIdBytes.insert(sequenceIdBytes.end(), payload[x].begin(), payload[x].end());
     }
+
+    
+
 
     // Bump sequence id
     this->sequenceId += 1;
@@ -90,7 +113,7 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
 
 void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload)
 {
-    mercuryCallback &subscription = nullptr;
+    mercuryCallback subscription = nullptr;
     this->execute(method, uri, callback, subscription, payload);
 }
 

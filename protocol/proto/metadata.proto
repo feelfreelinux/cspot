@@ -69,7 +69,6 @@ message Track {
     optional sint32 disc_number = 6;
     optional sint32 duration = 7;
     optional sint32 popularity = 8;
-    optional bool explicit = 9;
     repeated ExternalId external_id = 10;
     repeated Restriction restriction = 11;
     repeated AudioFile file = 12;
@@ -90,7 +89,6 @@ message Show {
     optional sint32 deprecated_popularity = 65 [deprecated = true];
     optional string publisher = 66;
     optional string language = 67;
-    optional bool explicit = 68;
     optional ImageGroup cover_image = 69;
     repeated Episode episode = 70;
     repeated Copyright copyright = 71;
@@ -125,7 +123,6 @@ message Episode {
     optional sint32 deprecated_popularity = 67 [deprecated = true];
     optional ImageGroup cover_image = 68;
     optional string language = 69;
-    optional bool explicit = 70;
     optional Show show = 71;
     repeated VideoFile video = 72;
     repeated VideoFile video_preview = 73;

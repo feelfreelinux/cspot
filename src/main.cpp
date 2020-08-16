@@ -3,8 +3,10 @@
 #include <memory>
 #include <PlainConnection.h>
 #include <Session.h>
+#include "SpotifyTrack.h"
 #include <authentication.pb.h>
 #include <MercuryManager.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -25,9 +27,10 @@ int main(int argc, char **argv)
     // Auth successful
     if (token.size() > 0) {
         // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_unique<MercuryManager>(session->shanConn);
+        auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-
+        usleep(3000000);
+        auto track = std::make_unique<SpotifyTrack>(mercuryManager);
         mercuryManager->waitForTaskToReturn();
     }
 

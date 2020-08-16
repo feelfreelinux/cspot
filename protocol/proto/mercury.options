@@ -7,4 +7,4 @@ MercuryReply.content_type type:FT_POINTER
 Header.uri type:FT_POINTER
 Header.content_type type:FT_POINTER
 Header.method type:FT_POINTER
-Header.uri type:FT_POINTER
+Header.user_fields max_count:16

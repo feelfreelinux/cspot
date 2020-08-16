@@ -21,7 +21,9 @@ T decodePB(const pb_msgdesc_t *fields, std::vector<uint8_t> &data)
     pb_istream_t stream = pb_istream_from_buffer(&data[0], data.size());
 
     // Decode the message
-    pb_decode(&stream, fields, &result);
+    if (pb_decode(&stream, fields, &result) == false) {
+        printf("Decode failed: %s\n", PB_GET_ERROR(&stream));
+    }
     return result;
 }
 
