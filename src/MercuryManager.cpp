@@ -40,6 +40,8 @@ void MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, uint16_t index
     auto sampleStart = index * AUDIO_CHUNK_SIZE / 4;
     auto sampleFinish = (index + 1) * AUDIO_CHUNK_SIZE / 4;
     printf(
+        "%d\n", sampleStart);
+    printf(
         "%d\n", sampleFinish);
     auto sampleStartBytes = pack<uint32_t>(htonl(sampleStart));
     auto sampleEndBytes = pack<uint32_t>(htonl(sampleFinish));

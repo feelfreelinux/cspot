@@ -8,6 +8,8 @@
 #include "metadata.pb.h"
 #include "Utils.h"
 #include "MercuryResponse.h"
+#include <fstream>
+#include "aes.h"
 
 class SpotifyTrack
 {
@@ -22,6 +24,8 @@ private:
     std::vector<uint8_t> currentChunkData;
     std::vector<uint8_t> currentChunkHeader;
     std::vector<uint8_t> trackId;
+    std::ofstream oggFile;
+    struct AES_ctx ctx;
 public:
     SpotifyTrack(std::shared_ptr<MercuryManager> manager);
 };
