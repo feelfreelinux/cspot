@@ -3,9 +3,9 @@
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
-const char *deviceId = "352198fd329622137e14901634264e6f332e5422";
-const char *informationString = "cspot";
-const char *versionString = "cspot-0.1";
+const char *deviceId = "352198fd329622137e14901634264e6f332e2422";
+const char *informationString = "cspot2";
+const char *versionString = "cspot-0.2";
 
 Session::Session()
 {

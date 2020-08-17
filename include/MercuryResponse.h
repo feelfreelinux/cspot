@@ -15,10 +15,13 @@ typedef std::vector<std::vector<uint8_t>> mercuryParts;
 class MercuryResponse
 {
 private:
-    void parseResponse(std::vector<uint8_t> &response);
+    void parseResponse(std::vector<uint8_t> &data);
+    std::vector<uint8_t> data;
 public:
     MercuryResponse(std::vector<uint8_t> &data);
+    void decodeHeader();
     Header mercuryHeader;
+    uint8_t flags;
     mercuryParts parts;
     int64_t sequenceId;
 };
