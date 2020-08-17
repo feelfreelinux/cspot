@@ -1,6 +1,10 @@
 #ifndef _AES_H_
 #define _AES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 // #define the macros below to 1/0 to enable/disable the mode of operation.
@@ -42,6 +46,8 @@ void AES_ctx_set_iv(struct AES_ctx* ctx, const uint8_t* iv);
 //        no IV should ever be reused with the same key 
 void AES_CTR_xcrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _AES_H_
