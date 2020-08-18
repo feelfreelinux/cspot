@@ -88,9 +88,11 @@ void MercuryManager::runTask()
         case MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE:
         case MercuryType::AUDIO_CHUNK_FAILURE_RESPONSE:
         {
-
-            auto success = static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE;
-            this->chunkCallback(success, packet->data);
+            uint16_t seqId = ntohs(extract<uint16_t>(packet->data, 0));
+            if (seqId == this->audioChunkSequence - 1) {
+                auto success = static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE;
+                this->chunkCallback(success, packet->data);
+            }
             break;
         }
         case MercuryType::SEND:

@@ -40,7 +40,7 @@ size_t readCallback(ma_decoder *pDecoder, void *pBufferOut, size_t bytesToRead)
     printf("I got data btw\n");
     memcpy(pBufferOut, data.data(), data.size());
 
-    return bytesToRead;
+    return data.size();
 }
 
 ma_bool32 seekCallback(ma_decoder *pDecoder, int byteOffset, ma_seek_origin origin)
@@ -71,9 +71,9 @@ int main(int argc, char **argv)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-        usleep(3000000);
+        // usleep(3000000);
         auto track = new SpotifyTrack(mercuryManager);
-        usleep(5000000);
+        while (track->chunkBuffer.size() == 0);
         // auto oggFile = std::ofstream("dodo.ogg", std::ios_base::out | std::ios_base::binary);
         auto written = 0;
 

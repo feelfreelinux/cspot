@@ -16,7 +16,7 @@ SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager)
     };
     pthread_mutex_init(&this->writeMutex, NULL);
 
-    this->manager->execute(MercuryType::GET, "hm://metadata/3/track/93bc414a606747b2b612491ef83d5a3e", responseLambda);
+    this->manager->execute(MercuryType::GET, "hm://metadata/3/track/108e943f2b3d4f4ea0aa7a56b25d0024", responseLambda);
     // oggFile = std::ofstream("asd.ogg", std::ios_base::out | std::ios_base::binary);
 }
 
@@ -32,32 +32,27 @@ std::vector<uint8_t> SpotifyTrack::read(size_t bytes)
         int16_t chunk = this->pos / AUDIO_CHUNK_SIZE;
         int32_t offset = this->pos % AUDIO_CHUNK_SIZE;
 
-        printf("Read called \n");
+        // printf("Read called \n");
         pthread_mutex_lock(&this->writeMutex);
         if (this->chunkBuffer.size() == 0)
         {
-            printf("NON! \n");
-            if (!loadingChunks)
+            if (!loadingChunks && !finished)
             {
                 audioChunkCallback audioChunkLambda = [=](bool success, std::vector<uint8_t> r2es) {
                     this->processAudioChunk(success, r2es);
                 };
                 this->manager->fetchAudioChunk(fileId, this->currentChunk + this->chunkBuffer.size(), audioChunkLambda);
             }
-            // Wait for chunk
-            usleep(100000);
+
+            return res;
         }
         else if (toRead < this->chunkBuffer[0].size() - offset)
         {
-            printf("Read begin, from %d to %d\n", offset, offset + toRead);
             res.insert(res.end(), this->chunkBuffer[0].begin() + offset, this->chunkBuffer[0].begin() + offset + toRead);
             this->pos += toRead;
         }
         else
         {
-            printf("NON2 \n");
-            printf("Read begin, from %d to %d\n", offset, offset + toRead);
-            printf("Size %d\n", this->chunkBuffer[0].size());
             res.insert(res.end(), this->chunkBuffer[0].begin() + offset, this->chunkBuffer[0].end());
             this->pos += this->chunkBuffer[0].size() - offset;
             printf("Read %d\n", this->chunkBuffer[0].size() - offset);
@@ -100,9 +95,9 @@ void SpotifyTrack::processAudioChunk(bool status, std::vector<uint8_t> res)
             // Last packet has always 2 bytes
             if (res.size() == 2)
             {
-                pthread_mutex_lock(&this->writeMutex);
 
                 AES_CTR_xcrypt_buffer(&this->ctx, &this->currentChunkData[0], this->currentChunkData.size());
+                pthread_mutex_lock(&this->writeMutex);
                 if (this->currentChunk == 0)
                 {
                     printf("Successfully got audio chunk %d\n", this->currentChunk);
@@ -120,12 +115,13 @@ void SpotifyTrack::processAudioChunk(bool status, std::vector<uint8_t> res)
                 {
                     // this->oggFile.close();
                     printf("Finished! \n");
+                    this->finished = true;
                     return;
                 }
                 // Bump chunk index
                 this->currentChunkData = std::vector<uint8_t>();
                 this->currentChunkHeader = std::vector<uint8_t>();
-                if (this->chunkBuffer.size() < 10)
+                if (this->chunkBuffer.size() < 6 && !finished)
                 {
                     this->manager->fetchAudioChunk(fileId, this->currentChunk + this->chunkBuffer.size(), audioChunkLambda);
                 }
@@ -142,7 +138,7 @@ void SpotifyTrack::processAudioChunk(bool status, std::vector<uint8_t> res)
     }
     else
     {
-        this->oggFile.close();
+        // this->oggFile.close();
         printf("Audio chunk failed\n");
     }
 }
