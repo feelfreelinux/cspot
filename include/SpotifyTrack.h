@@ -25,9 +25,16 @@ private:
     std::vector<uint8_t> currentChunkHeader;
     std::vector<uint8_t> trackId;
     std::ofstream oggFile;
+    size_t pos = 167;
+    std::vector<std::vector<uint8_t>> chunkBuffer;
+    pthread_mutex_t writeMutex;
+    bool loadingChunks;
+
     struct AES_ctx ctx;
 public:
     SpotifyTrack(std::shared_ptr<MercuryManager> manager);
+    std::vector<uint8_t> read(size_t bytes);
+    size_t seek(size_t pos);
 };
 
 
