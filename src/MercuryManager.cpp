@@ -10,7 +10,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
 
 MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
 {
-    this->callbacks = std::map<uint32_t, mercuryCallback>();
+    this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
     this->conn = conn;
     this->sequenceId = 0x00000001;
@@ -109,6 +109,7 @@ void MercuryManager::runTask()
         case MercuryType::SUBRES:
         {
             auto response = std::make_unique<MercuryResponse>(packet->data);
+
             if (this->subscriptions.count(std::string(response->mercuryHeader.uri)) > 0)
             {
                 this->subscriptions[std::string(response->mercuryHeader.uri)](std::move(response));
@@ -149,8 +150,7 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
     // [Header size] [Header] [Payloads (size + data)]
 
     // Pack sequenceId
-    auto sequenceIdBytes = pack<uint32_t>(htonl(this->sequenceId));
-
+    auto sequenceIdBytes = pack<uint64_t>(htobe64(this->sequenceId));
     auto sequenceSizeBytes = pack<uint16_t>(htons(sequenceIdBytes.size()));
 
     sequenceIdBytes.insert(sequenceIdBytes.begin(), sequenceSizeBytes.begin(), sequenceSizeBytes.end());

@@ -4,6 +4,7 @@
 #include <PlainConnection.h>
 #include <Session.h>
 #include "SpotifyTrack.h"
+#include <SpircController.h>
 #include <authentication.pb.h>
 #include <MercuryManager.h>
 #include <unistd.h>
@@ -71,51 +72,54 @@ int main(int argc, char **argv)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-        // usleep(3000000);
-        auto track = new SpotifyTrack(mercuryManager);
-        while (track->chunkBuffer.size() == 0);
-        // auto oggFile = std::ofstream("dodo.ogg", std::ios_base::out | std::ios_base::binary);
-        auto written = 0;
+        usleep(1000000);
+        auto spircController = std::make_shared<SpircController>(mercuryManager, "fliperspotify");
+        
+        mercuryManager->waitForTaskToReturn();
+        // auto track = new SpotifyTrack(mercuryManager);
+        // while (track->chunkBuffer.size() == 0);
+        // // auto oggFile = std::ofstream("dodo.ogg", std::ios_base::out | std::ios_base::binary);
+        // auto written = 0;
 
-        ma_result result;
-        ma_decoder decoder;
-        ma_device_config deviceConfig;
-        ma_device device;
+        // ma_result result;
+        // ma_decoder decoder;
+        // ma_device_config deviceConfig;
+        // ma_device device;
 
-        result = ma_decoder_init_vorbis(readCallback, seekCallback, track, NULL, &decoder);
-        if (result != MA_SUCCESS)
-        {
-            printf("Yeah\n");
-            return -2;
-        }
+        // result = ma_decoder_init_vorbis(readCallback, seekCallback, track, NULL, &decoder);
+        // if (result != MA_SUCCESS)
+        // {
+        //     printf("Yeah\n");
+        //     return -2;
+        // }
 
-        deviceConfig = ma_device_config_init(ma_device_type_playback);
-        deviceConfig.playback.format = decoder.outputFormat;
-        deviceConfig.playback.channels = 2;
-        deviceConfig.sampleRate = decoder.outputSampleRate;
-        deviceConfig.dataCallback = data_callback;
-        deviceConfig.pUserData = &decoder;
+        // deviceConfig = ma_device_config_init(ma_device_type_playback);
+        // deviceConfig.playback.format = decoder.outputFormat;
+        // deviceConfig.playback.channels = 2;
+        // deviceConfig.sampleRate = decoder.outputSampleRate;
+        // deviceConfig.dataCallback = data_callback;
+        // deviceConfig.pUserData = &decoder;
 
-        if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS)
-        {
-            printf("Failed to open playback device.\n");
-            ma_decoder_uninit(&decoder);
-            return -3;
-        }
+        // if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS)
+        // {
+        //     printf("Failed to open playback device.\n");
+        //     ma_decoder_uninit(&decoder);
+        //     return -3;
+        // }
 
-        if (ma_device_start(&device) != MA_SUCCESS)
-        {
-            printf("Failed to start playback device.\n");
-            ma_device_uninit(&device);
-            ma_decoder_uninit(&decoder);
-            return -4;
-        }
+        // if (ma_device_start(&device) != MA_SUCCESS)
+        // {
+        //     printf("Failed to start playback device.\n");
+        //     ma_device_uninit(&device);
+        //     ma_decoder_uninit(&decoder);
+        //     return -4;
+        // }
 
-        printf("Press Enter to quit...");
-        getchar();
+        // printf("Press Enter to quit...");
+        // getchar();
 
-        ma_device_uninit(&device);
-        ma_decoder_uninit(&decoder);
+        // ma_device_uninit(&device);
+        // ma_decoder_uninit(&decoder);
     }
     return 0;
 }

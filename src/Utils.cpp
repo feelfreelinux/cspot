@@ -19,6 +19,14 @@ std::vector<uint8_t> blockRead(int fd, size_t readSize)
 	return buf;
 }
 
+int64_t getCurrentTimestamp() {
+    struct timeval te; 
+    gettimeofday(&te, NULL); // get current time
+    uint64_t milliseconds = te.tv_sec*1000 + te.tv_usec/1000; // calculate milliseconds
+    // printf("milliseconds: %lld\n", milliseconds);
+    return milliseconds;
+}
+
 ssize_t blockWrite(int fd, std::vector<uint8_t> data)
 {
 	unsigned int idx = 0;

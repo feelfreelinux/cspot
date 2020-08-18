@@ -45,10 +45,10 @@ extern std::map<MercuryType, std::string> MercuryTypeMap;
 class MercuryManager : public Task
 {
 private:
-  std::map<uint32_t, mercuryCallback> callbacks;
+  std::map<uint64_t, mercuryCallback> callbacks;
   std::map<std::string, mercuryCallback> subscriptions;
   std::shared_ptr<ShannonConnection> conn;
-  uint32_t sequenceId;
+  uint64_t sequenceId;
   uint32_t audioKeySequence;
   uint16_t audioChunkSequence;
   audioChunkCallback chunkCallback;

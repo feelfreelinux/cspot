@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <cstring>
 #include <memory>
+#include <sys/time.h>
 
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
@@ -19,7 +20,7 @@
 #define HMAC_SHA1_BLOCKSIZE 64
 
 std::vector<uint8_t> blockRead(int fd, size_t readSize);
-
+int64_t getCurrentTimestamp();
 ssize_t blockWrite (int fd, std::vector<uint8_t> data);
 
 std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_t> &message);
