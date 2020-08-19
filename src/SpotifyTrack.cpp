@@ -5,19 +5,19 @@
 
 std::vector<uint8_t> audioAESIV({0x72, 0xe0, 0x67, 0xfb, 0xdd, 0xcb, 0xcf, 0x77, 0xeb, 0xe8, 0xbc, 0x64, 0x3f, 0x63, 0x0d, 0x93});
 
-SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager)
+SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::string uri)
 {
     this->manager = manager;
     this->pos = 167;
     this->chunkBuffer = std::vector<std::vector<uint8_t>>();
 
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
+        printf("ress\n");
         this->trackInformationCallback(std::move(res));
     };
     pthread_mutex_init(&this->writeMutex, NULL);
 
-    this->manager->execute(MercuryType::GET, "hm://metadata/3/track/108e943f2b3d4f4ea0aa7a56b25d0024", responseLambda);
-    // oggFile = std::ofstream("asd.ogg", std::ios_base::out | std::ios_base::binary);
+    this->manager->execute(MercuryType::GET, "hm://metadata/3/track/93bc414a606747b2b612491ef83d5a3e", responseLambda);
 }
 
 std::vector<uint8_t> SpotifyTrack::read(size_t bytes)
@@ -100,6 +100,7 @@ void SpotifyTrack::processAudioChunk(bool status, std::vector<uint8_t> res)
                 pthread_mutex_lock(&this->writeMutex);
                 if (this->currentChunk == 0)
                 {
+
                     printf("Successfully got audio chunk %d\n", this->currentChunk);
                     this->chunkBuffer.insert(this->chunkBuffer.end(), std::vector<uint8_t>(this->currentChunkData.begin(), this->currentChunkData.end()));
                 }
@@ -111,6 +112,10 @@ void SpotifyTrack::processAudioChunk(bool status, std::vector<uint8_t> res)
                 }
                 pthread_mutex_unlock(&this->writeMutex);
 
+                if (!this->firstChunkLoaded) {
+                    this->firstChunkLoaded = true;
+                    loadedTrackCallback();
+                }
                 if (this->currentChunkData.size() < 0x20000)
                 {
                     // this->oggFile.close();

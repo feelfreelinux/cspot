@@ -173,6 +173,8 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
 
     // Bump sequence id
     this->sequenceId += 1;
+
+    printf("IMMA SEND\n");
     this->conn->sendPacket(static_cast<std::underlying_type<MercuryType>::type>(method), sequenceIdBytes);
 }
 

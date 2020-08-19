@@ -9,6 +9,7 @@
 #include "Utils.h"
 #include "MercuryResponse.h"
 #include <fstream>
+#include <functional>
 #include "aes.h"
 
 class SpotifyTrack
@@ -31,10 +32,12 @@ private:
     bool finished = false;
     struct AES_ctx ctx;
 public:
-    SpotifyTrack(std::shared_ptr<MercuryManager> manager);
+    SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::string UserField_CALLBACK);
+    std::function<void()> loadedTrackCallback;
     std::vector<std::vector<uint8_t>> chunkBuffer;
     std::vector<uint8_t> read(size_t bytes);
     size_t seek(size_t pos);
+    bool firstChunkLoaded = false;
 };
 
 
