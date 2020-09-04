@@ -22,6 +22,8 @@ private:
 
 public:
     Player(std::shared_ptr<MercuryManager> manager);
+    std::function<void()> endOfFileCallback;
+
     void handleLoad(TrackRef* track, std::function<void()> &trackLoadedCallback);
     void pause();
     void seekMs(size_t positionMs);

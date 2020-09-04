@@ -37,6 +37,7 @@ void Player::handleLoad(TrackRef *track, std::function<void()> &trackLoadedCallb
     currentTrack = new SpotifyTrack(this->manager, gid);
     currentTrack->loadedTrackCallback = [=]() {
         trackLoadedCallback();
+        currentTrack->audioStream->streamFinishedCallback = this->endOfFileCallback;
         currentTrack->audioStream->audioSink = audioSink;
         currentTrack->audioStream->startTask();
     };

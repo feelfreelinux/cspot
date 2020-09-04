@@ -55,6 +55,11 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     };
 
     manager->execute(MercuryType::SUB, "hm://remote/user/" + username + "/", responseLambda, subLambda);
+
+    player->endOfFileCallback = [=]() {
+        this->frame.state.playing_track_index++;
+        loadTrack();
+    };
 }
 
 void SpircController::handleFrame(std::vector<uint8_t> &data)
@@ -108,7 +113,16 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.state.status = PlayStatus_kPlayStatusPlay;
         this->frame.state.position_measured_at = getCurrentTimestamp();
         notify();
-
+        break;
+    case MessageType_kMessageTypeNext:
+        this->frame.state.playing_track_index++;
+        loadTrack();
+        notify();
+        break;
+    case MessageType_kMessageTypePrev:
+        this->frame.state.playing_track_index--;
+        loadTrack();
+        notify();
         break;
     case MessageType_kMessageTypeLoad:
         printf("Load frame!\n");
@@ -122,23 +136,28 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         std::copy(std::begin(receivedFrame.state.track), std::end(receivedFrame.state.track), std::begin(this->frame.state.track));
         this->frame.state.track_count = receivedFrame.state.track_count;
         this->frame.state.has_playing_track_index = true;
-        this->frame.state.position_ms = 0;
-        this->frame.state.position_measured_at = getCurrentTimestamp();
 
-        std::function<void()> loadedLambda = [=]() {
-            printf("%d\n", this->frame.state.playing_track_index);
-            this->frame.state.position_ms = 0;
-            this->frame.state.position_measured_at = getCurrentTimestamp();
-            this->frame.state.status = PlayStatus_kPlayStatusPlay;
-            this->notify();
-        };
-
-        player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
-
-        this->notify();
-
+        loadTrack();
         break;
     }
+}
+
+void SpircController::loadTrack()
+{
+    this->frame.state.position_ms = 0;
+    this->frame.state.position_measured_at = getCurrentTimestamp();
+
+    std::function<void()> loadedLambda = [=]() {
+        printf("%d\n", this->frame.state.playing_track_index);
+        this->frame.state.position_ms = 0;
+        this->frame.state.position_measured_at = getCurrentTimestamp();
+        this->frame.state.status = PlayStatus_kPlayStatusPlay;
+        this->notify();
+    };
+    this->notify();
+
+    player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
+
 }
 
 void SpircController::notify()

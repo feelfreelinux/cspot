@@ -33,6 +33,9 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data)
                 break;
             }
             case DATA_SIZE_FOOTER:
+                if (chunk->endPosition > chunk->headerFileSize) {
+                    chunk->endPosition = chunk->headerFileSize;
+                }
                 chunk->decrypt();
                 printf("ID: %d: Finished!\n", seqId);
                 break;

@@ -112,10 +112,15 @@ void ChunkedAudioStream::runTask()
     printf("Track finished \n");
 
     finished = true;
+
+    if (eof) {
+        this->streamFinishedCallback();
+    }
+
     usleep(500000);
     for (auto const &chunk : this->chunks)
     {
-        delete chunk.get();
+        // delete chunk.get();
     }
 }
 
@@ -131,12 +136,8 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    while (endChunk->isLoaded == false)
-        ;
-    printf("BRUH o %d\n", endChunk->decryptedData.size());
-    printf("LAST START o %d\n", startPosition);
-    printf("LAST START o %d\n", endChunk->startPosition);
-    printf("LAST END o %d\n", endChunk->endPosition);
+    while (endChunk->isLoaded == false);
+
 
     loadedMeta = true;
 }

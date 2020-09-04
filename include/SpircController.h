@@ -27,6 +27,7 @@ private:
     void sendCmd(MessageType typ);
     void notify();
     void handleFrame(std::vector<uint8_t> &data);
+    void loadTrack();
 public:
     SpircController(std::shared_ptr<MercuryManager> manager, std::string username);
 };
