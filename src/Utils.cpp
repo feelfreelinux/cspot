@@ -25,6 +25,18 @@ unsigned long long getCurrentTimestamp()
 	return now;
 }
 
+std::string bytesToHexString(std::vector<uint8_t>& v) {
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0');
+    std::vector<uint8_t>::const_iterator it;
+
+    for (it = v.begin(); it != v.end(); it++) {
+        ss << std::setw(2) << static_cast<unsigned>(*it);
+    }
+
+    return ss.str();
+}
+
 ssize_t blockWrite(int fd, std::vector<uint8_t> data)
 {
 	unsigned int idx = 0;

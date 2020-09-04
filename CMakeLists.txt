@@ -9,6 +9,7 @@ if(OPENSSL_FOUND)
 endif()
 
 include_directories("include")
+include_directories("tremor")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/extra)
 find_package(Nanopb REQUIRED)
 include_directories(${NANOPB_INCLUDE_DIRS})
@@ -25,7 +26,7 @@ set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
     PROPERTIES GENERATED TRUE)
 
 
-file(GLOB SOURCES "src/*.cpp" "src/*.c")
+file(GLOB SOURCES "src/*.cpp" "src/*.c" "tremor/*.c")
  
 add_executable(cspot ${SOURCES} ${PROTO_SRCS})
 target_link_libraries(cspot OpenSSL::Crypto Threads::Threads)

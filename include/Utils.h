@@ -10,6 +10,10 @@
 #include <cstring>
 #include <memory>
 #include <chrono>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
@@ -24,6 +28,8 @@ unsigned long long getCurrentTimestamp();
 ssize_t blockWrite (int fd, std::vector<uint8_t> data);
 
 std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_t> &message);
+
+std::string bytesToHexString(std::vector<uint8_t> &bytes);
 
 // Reads a type from vector of binary data
 template <typename T>

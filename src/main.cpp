@@ -9,21 +9,13 @@
 #include <MercuryManager.h>
 #include <unistd.h>
 #include <fstream>
-extern "C"
-{
-
-#define MA_NO_WAV
-#define MA_NO_MP3
-#define MA_NO_FLAC
-#define STB_VORBIS_HEADER_ONLY
-#include "stb_vorbis.c" // Enables Vorbis decoding.
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-}
-
+#include "fstream"
+#include <inttypes.h>
+#include <ChunkedAudioStream.h>
 
 int main(int argc, char **argv)
 {
+
     if (argc != 3)
     {
         std::cout << "usage:\n";
@@ -44,11 +36,12 @@ int main(int argc, char **argv)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-        usleep(1000000);
         auto spircController = std::make_shared<SpircController>(mercuryManager, "fliperspotify");
-        
-        mercuryManager->waitForTaskToReturn();
 
+        mercuryManager->handleQueue();
     }
+
+    while(true);
+
     return 0;
 }

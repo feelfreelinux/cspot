@@ -14,11 +14,10 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     this->frame.state.has_shuffle = true;
     this->frame.state.shuffle = false;
     this->frame.state.has_status = true;
-    this->frame.state.shuffle = false;
     this->frame.state.status = PlayStatus_kPlayStatusStop;
-    this->frame.state.has_position_measured_at = false;
+    this->frame.state.has_position_measured_at = true;
     this->frame.state.position_measured_at = 0;
-    this->frame.state.has_position_ms = false;
+    this->frame.state.has_position_ms = true;
     this->frame.state.position_ms = 0;
 
     this->frame.device_state.sw_version = (char *)swVersion;
@@ -26,6 +25,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     this->frame.device_state.volume = 64;
     this->frame.device_state.can_play = true;
     this->frame.device_state.is_active = false;
+    this->frame.device_state.has_volume = true;
     this->frame.device_state.has_can_play = true;
     this->frame.device_state.has_is_active = true;
 
@@ -61,10 +61,12 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
     printf("Got frame!\n");
     auto receivedFrame = decodePB<Frame>(Frame_fields, data);
+    std::cout << std::string(receivedFrame.ident) << std::endl;
 
     switch (receivedFrame.typ)
     {
     case MessageType_kMessageTypeNotify:
+    {
         printf("Notify frame\n");
         // Pause the playback if another player took control
         if (this->frame.device_state.is_active && receivedFrame.device_state.is_active && !sendingLoadFrame)
@@ -74,15 +76,37 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
             notify();
         }
         break;
+    }
+    case MessageType_kMessageTypeSeek:
+    {
+        this->frame.state.position_ms = receivedFrame.position;
+        printf("BRUH %d", receivedFrame.position);
+        this->player->seekMs(receivedFrame.position);
+        this->frame.state.position_measured_at = getCurrentTimestamp();
+        notify();
+        break;
+    }
     case MessageType_kMessageTypePause:
+    {
         printf("Pausae\n");
         player->pause();
         this->frame.state.status = PlayStatus_kPlayStatusPause;
+        uint32_t diff = getCurrentTimestamp() - this->frame.state.position_measured_at;
+        this->frame.state.position_ms = this->frame.state.position_ms + diff;
+        this->frame.state.position_measured_at = getCurrentTimestamp();
+        //         long now = System.currentTimeMillis();
+        // int pos = state.getPositionMs();
+        // int diff = (int) (now - state.getPositionMeasuredAt());
+        // state.setPositionMs(pos + diff);
+        // state.setPositionMeasuredAt(now);
         notify();
+
         break;
+    }
     case MessageType_kMessageTypePlay:
         player->play();
         this->frame.state.status = PlayStatus_kPlayStatusPlay;
+        this->frame.state.position_measured_at = getCurrentTimestamp();
         notify();
 
         break;
@@ -96,15 +120,21 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.state.status = PlayStatus_kPlayStatusLoading;
         this->frame.state.context_uri = receivedFrame.state.context_uri;
         std::copy(std::begin(receivedFrame.state.track), std::end(receivedFrame.state.track), std::begin(this->frame.state.track));
-        printf("post copy, gug\n");
+        this->frame.state.track_count = receivedFrame.state.track_count;
         this->frame.state.has_playing_track_index = true;
+        this->frame.state.position_ms = 0;
+        this->frame.state.position_measured_at = getCurrentTimestamp();
+
         std::function<void()> loadedLambda = [=]() {
+            printf("%d\n", this->frame.state.playing_track_index);
             this->frame.state.position_ms = 0;
             this->frame.state.position_measured_at = getCurrentTimestamp();
             this->frame.state.status = PlayStatus_kPlayStatusPlay;
             this->notify();
         };
-        this->player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
+
+        player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
+
         this->notify();
 
         break;
@@ -119,32 +149,35 @@ void SpircController::notify()
 void SpircController::sendCmd(MessageType typ)
 {
     printf("\n%llu\n", getCurrentTimestamp());
-    if (this->frame.device_state.is_active)
+    if (this->frame.state.status == PlayStatus_kPlayStatusPause)
     {
-        printf("\nACTIV\n");
+        printf("\nPAUSED\n");
     }
     else
     {
         printf("NOT ACTIV\n");
     }
 
-    frame.version = 1;
-    frame.ident = (char *)"352198fd329622137e14901634264e6f332e2422";
-    frame.seq_nr = this->seqNum;
-    frame.protocol_version = (char *)"2.0.0";
+    this->frame.version = 1;
+    this->frame.ident = (char *)"352198fd329622137e14901634264e6f332e2422";
+    this->frame.seq_nr = this->seqNum;
+    this->frame.protocol_version = (char *)"2.0.0";
+
     //frame.state = this->frame.state;
     // frame.device_state = this->frame.device_state;
-    frame.typ = typ;
-    frame.state_update_id = getCurrentTimestamp();
-    frame.has_version = true;
-    frame.has_seq_nr = true;
-    frame.has_state = true;
-    frame.has_device_state = true;
-    frame.has_typ = true;
-    frame.has_state_update_id = true;
+    this->frame.typ = typ;
+    this->frame.state_update_id = getCurrentTimestamp();
+    this->frame.has_version = true;
+    this->frame.has_seq_nr = true;
+    this->frame.recipient_count = 0;
+    this->frame.has_state = true;
+    this->frame.has_device_state = true;
+    this->frame.has_typ = true;
+    this->frame.has_state_update_id = true;
 
     this->seqNum += 1;
-    auto encodedFrame = encodePB(Frame_fields, &frame);
+    auto testFram = this->frame;
+    auto encodedFrame = encodePB(Frame_fields, &testFram);
 
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));

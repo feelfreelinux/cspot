@@ -91,7 +91,8 @@
         "stack": "cpp",
         "filesystem": "cpp",
         "keyexchange.pb.h": "c",
-        "stb_vorbis.c": "cpp"
+        "stb_vorbis.c": "cpp",
+        "__memory": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

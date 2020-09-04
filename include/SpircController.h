@@ -13,7 +13,7 @@
 
 class SpircController {
 private:
-    uint32_t seqNum;
+    uint32_t seqNum = 0;
     std::shared_ptr<MercuryManager> manager;
     State state;
     DeviceState deviceState;
