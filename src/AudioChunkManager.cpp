@@ -1,4 +1,5 @@
 #include "AudioChunkManager.h"
+#include <algorithm>
 
 AudioChunkManager::AudioChunkManager()
 {

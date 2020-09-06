@@ -1,4 +1,5 @@
 #include "AudioChunk.h"
+#include <algorithm>
 
 std::vector<uint8_t> audioAESIV({0x72, 0xe0, 0x67, 0xfb, 0xdd, 0xcb, 0xcf, 0x77, 0xeb, 0xe8, 0xbc, 0x64, 0x3f, 0x63, 0x0d, 0x93});
 
@@ -11,11 +12,13 @@ AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t 
     this->decryptedData = std::vector<uint8_t>();
 }
 
-void AudioChunk::appendData(std::vector<uint8_t> &data) {
+void AudioChunk::appendData(std::vector<uint8_t> &data)
+{
     this->decryptedData.insert(this->decryptedData.end(), data.begin(), data.end());
 }
 
-void AudioChunk::decrypt() {
+void AudioChunk::decrypt()
+{
     // calculate the IV for right position
     auto calculatedIV = this->getIVSum(startPosition / 16);
     AES_init_ctx_iv(&this->ctx, &this->audioKey[0], &calculatedIV[0]);
