@@ -42,8 +42,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
 
-    while (beginChunk->headerFileSize == -1)
-        ;
+    while (beginChunk->headerFileSize == -1);
     this->fileSize = beginChunk->headerFileSize;
     chunks.push_back(beginChunk);
 
@@ -117,12 +116,6 @@ void ChunkedAudioStream::runTask()
     {
         this->streamFinishedCallback();
     }
-
-    usleep(500000);
-    for (auto const &chunk : this->chunks)
-    {
-        // delete chunk.get();
-    }
 }
 
 void ChunkedAudioStream::fetchTraillingPacket()
@@ -137,8 +130,7 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    while (endChunk->isLoaded == false)
-        ;
+    while (endChunk->isLoaded == false);
 
     loadedMeta = true;
 }

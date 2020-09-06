@@ -21,6 +21,8 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     auto trackInfo = decodePB<Track>(Track_fields, response->parts[0]);
     std::cout  << "--- Track name: " << std::string(trackInfo.name) << std::endl;
     auto trackId = std::vector<uint8_t>(trackInfo.gid->bytes, trackInfo.gid->bytes + trackInfo.gid->size);
+
+    // TODO: option to set file quality
     this->fileId = std::vector<uint8_t>(trackInfo.file[0].file_id->bytes, trackInfo.file[0].file_id->bytes + trackInfo.file[0].file_id->size);
 
     audioKeyCallback audioKeyLambda = [=](bool success, std::vector<uint8_t> res) {
@@ -28,6 +30,8 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         {
             printf("Successfully got audio key!\n");
             auto audioKey = std::vector<uint8_t>(res.begin() + 4, res.end());
+
+            // TODO: variable position from frame
             this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackInfo.duration, this->manager, 0);
             loadedTrackCallback(); 
         }
