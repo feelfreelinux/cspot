@@ -29,4 +29,4 @@ set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
 file(GLOB SOURCES "src/*.cpp" "src/*.c" "tremor/*.c")
  
 add_executable(cspot ${SOURCES} ${PROTO_SRCS})
-target_link_libraries(cspot OpenSSL::Crypto Threads::Threads)
+target_link_libraries(cspot OpenSSL::Crypto Threads::Threads ${CMAKE_DL_LIBS})
