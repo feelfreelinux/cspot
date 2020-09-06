@@ -14,6 +14,7 @@
 #include "AudioChunk.h"
 
 #define SPOTIFY_HEADER_SIZE 167
+#define BUFFER_SIZE 0x2000 * 2
 
 enum class Whence
 {
@@ -46,6 +47,7 @@ private:
 
     void requestChunk(size_t chunkIndex);
     void fetchTraillingPacket();
+    std::shared_ptr<AudioChunk> findChunkForPosition(size_t position);
     void runTask();
 
 public:

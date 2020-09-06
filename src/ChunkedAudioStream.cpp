@@ -113,7 +113,8 @@ void ChunkedAudioStream::runTask()
 
     finished = true;
 
-    if (eof) {
+    if (eof)
+    {
         this->streamFinishedCallback();
     }
 
@@ -136,8 +137,8 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    while (endChunk->isLoaded == false);
-
+    while (endChunk->isLoaded == false)
+        ;
 
     loadedMeta = true;
 }
@@ -161,41 +162,88 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
             return res;
         }
 
-        auto chunkFound = false;
+        auto chunk = findChunkForPosition(pos);
 
-        for (int i = 0; i < this->chunks.size(); i++)
+        if (chunk != nullptr)
         {
-            if (chunkFound)
-                break;
-            auto chunk = this->chunks[i];
-
-            if (chunk->startPosition <= pos && chunk->endPosition > pos)
+            auto offset = pos - chunk->startPosition;
+            if (chunk->isLoaded)
             {
-                auto offset = pos - chunk->startPosition;
-                chunkFound = true;
-                if (chunk->isLoaded)
+                if (chunk->decryptedData.size() - offset >= toRead)
                 {
-                    if (chunk->decryptedData.size() - offset >= toRead)
-                    {
-                        res.insert(res.end(), chunk->decryptedData.begin() + offset, chunk->decryptedData.begin() + offset + toRead);
-                        this->pos += toRead;
-                    }
-                    else
-                    {
-                        res.insert(res.end(), chunk->decryptedData.begin() + offset, chunk->decryptedData.end());
-                        this->pos += chunk->decryptedData.size() - offset;
-                        toRead -= chunk->decryptedData.size() - offset;
-                    }
+                    res.insert(res.end(), chunk->decryptedData.begin() + offset, chunk->decryptedData.begin() + offset + toRead);
+                    this->pos += toRead;
+                }
+                else
+                {
+                    res.insert(res.end(), chunk->decryptedData.begin() + offset, chunk->decryptedData.end());
+                    this->pos += chunk->decryptedData.size() - offset;
+                    toRead -= chunk->decryptedData.size() - offset;
                 }
             }
         }
-
-        if (!chunkFound)
+        else
         {
             this->requestChunk(chunkIndex);
         }
+
+        auto requestedOffset = 0;
+
+        while (requestedOffset < BUFFER_SIZE)
+        {
+            auto chunk = findChunkForPosition(pos + requestedOffset);
+
+            if (chunk != nullptr)
+            {
+                requestedOffset = chunk->endPosition - pos;
+            }
+
+            // if (pos + requestedOffset >= fileSize) {
+            //     break;
+            // }
+
+            else
+            {
+                auto chunkReq = manager->fetchAudioChunk(fileId, audioKey, (pos + requestedOffset) / 4, (pos + requestedOffset + AUDIO_CHUNK_SIZE) / 4);
+                printf("Chunk req end pos %d\n", chunkReq->endPosition);
+                this->chunks.push_back(chunkReq);
+            }
+        }
+        auto position = pos;
+
+        // Erase all chunks not close to current position
+        chunks.erase(std::remove_if(
+                         chunks.begin(), chunks.end(),
+                         [&position](const std::shared_ptr<AudioChunk> &chunk) {
+                             if (chunk->keepInMemory)
+                             {
+                                 return false;
+                             }
+
+                             if (chunk->endPosition < position || chunk->startPosition > position + BUFFER_SIZE)
+                             {
+                                 return true;
+                             }
+
+                             return false;
+                         }),
+                     chunks.end());
     }
     return res;
+}
+
+std::shared_ptr<AudioChunk> ChunkedAudioStream::findChunkForPosition(size_t position)
+{
+    for (int i = 0; i < this->chunks.size(); i++)
+    {
+        auto chunk = this->chunks[i];
+        if (chunk->startPosition <= position && chunk->endPosition > position)
+        {
+            return chunk;
+        }
+    }
+
+    return nullptr;
 }
 
 void ChunkedAudioStream::seek(size_t dpos, Whence whence)
