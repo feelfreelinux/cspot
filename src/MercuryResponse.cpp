@@ -8,15 +8,15 @@ MercuryResponse::MercuryResponse(std::vector<uint8_t> &data) {
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data) {
     auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-    this->sequenceId = ntohl(extract<uint32_t>(data, 2));
+    this->sequenceId = htobe64(extract<uint64_t>(data, 2));
 
-    auto partsNumber = ntohs(extract<uint16_t>(data, 7));
+    auto partsNumber = ntohs(extract<uint16_t>(data, 11));
 
-    auto headerSize = ntohs(extract<uint16_t>(data, 9));
+    auto headerSize = ntohs(extract<uint16_t>(data, 13));
     auto headerBytes 
-        = std::vector<uint8_t>(data.begin() + 11, data.begin() + 11 + headerSize);
+        = std::vector<uint8_t>(data.begin() + 15, data.begin() + 15 + headerSize);
     
-    auto pos = 11 + headerSize;
+    auto pos = 15 + headerSize;
     while (pos < data.size()) {
         auto partSize = ntohs(extract<uint16_t>(data, pos));
 

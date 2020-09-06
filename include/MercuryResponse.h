@@ -23,7 +23,7 @@ public:
     Header mercuryHeader;
     uint8_t flags;
     mercuryParts parts;
-    int64_t sequenceId;
+    uint64_t sequenceId;
 };
 
 #endif

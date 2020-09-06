@@ -12,12 +12,14 @@
 #include "PBUtils.h"
 #include "mercury.pb.h"
 #include "metadata.pb.h"
+#include "MercuryManager.h"
+#include "AudioChunk.h"
+#include "AudioChunkManager.h"
 #include "Task.h"
 #include <stdint.h>
 #include <memory>
 
 typedef std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
-typedef std::function<void(bool, std::vector<uint8_t>)> audioChunkCallback;
 typedef std::function<void(bool, std::vector<uint8_t>)> audioKeyCallback;
 
 #define AUDIO_CHUNK_SIZE 0x20000
@@ -45,13 +47,13 @@ extern std::map<MercuryType, std::string> MercuryTypeMap;
 class MercuryManager : public Task
 {
 private:
-  std::map<uint32_t, mercuryCallback> callbacks;
+  std::map<uint64_t, mercuryCallback> callbacks;
   std::map<std::string, mercuryCallback> subscriptions;
   std::shared_ptr<ShannonConnection> conn;
-  uint32_t sequenceId;
+  std::unique_ptr<AudioChunkManager> audioChunkManager;
+  std::vector<std::unique_ptr<Packet>> queue;
+  uint64_t sequenceId;
   uint32_t audioKeySequence;
-  uint16_t audioChunkSequence;
-  audioChunkCallback chunkCallback;
   audioKeyCallback keyCallback;
 
   void runTask();
@@ -59,12 +61,17 @@ private:
 
 public:
   MercuryManager(std::shared_ptr<ShannonConnection> conn);
+  uint16_t audioChunkSequence;
+
   void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
   void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
   void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
   void execute(MercuryType method, std::string uri, mercuryCallback &callback);
+  void handleQueue();
   void requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback);
-  void fetchAudioChunk(std::vector<uint8_t> fileId, uint16_t index, audioChunkCallback &callback);
+  std::shared_ptr<AudioChunk> fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint16_t index);
+  std::shared_ptr<AudioChunk> fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos);
+  void unregisterAudioCallback(uint16_t seqId);
 };
 
 #endif
