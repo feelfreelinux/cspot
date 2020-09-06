@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-        auto spircController = std::make_shared<SpircController>(mercuryManager, "fliperspotify");
+        auto spircController = std::make_shared<SpircController>(mercuryManager, std::string(argv[1]));
 
         mercuryManager->handleQueue();
     }
