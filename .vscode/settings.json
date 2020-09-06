@@ -92,7 +92,8 @@
         "filesystem": "cpp",
         "keyexchange.pb.h": "c",
         "stb_vorbis.c": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "forward_list": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

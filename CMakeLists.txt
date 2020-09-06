@@ -25,8 +25,9 @@ add_custom_target(generate_proto_sources DEPENDS ${PROTO_SRCS} ${PROTO_HDRS})
 set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
     PROPERTIES GENERATED TRUE)
 
+file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
-file(GLOB SOURCES "src/*.cpp" "src/*.c" "tremor/*.c")
+set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c")
  
 add_executable(cspot ${SOURCES} ${PROTO_SRCS})
 target_link_libraries(cspot OpenSSL::Crypto Threads::Threads ${CMAKE_DL_LIBS})
