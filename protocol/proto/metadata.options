@@ -1,4 +1,0 @@
-Track.name type:FT_POINTER
-Track.gid type:FT_POINTER
-Track.file type:FT_POINTER
-AudioFile.file_id type:FT_POINTER
