@@ -1,0 +1,7 @@
+[submodule "cspot/nanopb"]
+	path = cspot/nanopb
+	url = https://github.com/nanopb/nanopb
+[submodule "cspot/tremor"]
+	path = cspot/tremor
+	url = https://gitlab.xiph.org/xiph/tremor.git
+	branch = lowmem
