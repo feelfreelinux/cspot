@@ -1,0 +1,10 @@
+MercuryRequest.uri type:FT_POINTER
+MercuryRequest.content_type type:FT_POINTER
+MercuryRequest.body type:FT_POINTER
+MercuryReply.body type:FT_POINTER
+MercuryReply.status_message type:FT_POINTER
+MercuryReply.content_type type:FT_POINTER
+Header.uri type:FT_POINTER
+Header.content_type type:FT_POINTER
+Header.method type:FT_POINTER
+Header.user_fields type:FT_POINTER

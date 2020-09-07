@@ -1,7 +1,0 @@
-[submodule "nanopb"]
-	path = nanopb
-	url = https://github.com/nanopb/nanopb
-[submodule "tremor"]
-	path = tremor
-	branch = lowmem
-	url = https://gitlab.xiph.org/xiph/tremor.git

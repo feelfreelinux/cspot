@@ -1,0 +1,301 @@
+
+message ListChecksum {
+    optional int32 version = 0x1;
+    optional bytes sha1 = 0x4;
+}
+
+message DownloadFormat {
+    optional Codec codec = 0x1;
+    enum Codec {
+        CODEC_UNKNOWN = 0x0;
+        OGG_VORBIS = 0x1;
+        FLAC = 0x2;
+        MPEG_1_LAYER_3 = 0x3;
+    }
+}
+
+message ListAttributes {
+    optional string name = 0x1;
+    optional string description = 0x2;
+    optional bytes picture = 0x3;
+    optional bool collaborative = 0x4;
+    optional string pl3_version = 0x5;
+    optional bool deleted_by_owner = 0x6;
+    optional bool restricted_collaborative = 0x7;
+    optional int64 deprecated_client_id = 0x8;
+    optional bool public_starred = 0x9;
+    optional string client_id = 0xa;
+}
+
+message ItemAttributes {
+    optional string added_by = 0x1;
+    optional int64 timestamp = 0x2;
+    optional string message = 0x3;
+    optional bool seen = 0x4;
+    optional int64 download_count = 0x5;
+    optional DownloadFormat download_format = 0x6;
+    optional string sevendigital_id = 0x7;
+    optional int64 sevendigital_left = 0x8;
+    optional int64 seen_at = 0x9;
+    optional bool public = 0xa;
+}
+
+message StringAttribute {
+    optional string key = 0x1;
+    optional string value = 0x2;
+}
+
+message StringAttributes {
+    repeated StringAttribute attribute = 0x1;
+}
+ 
+message ClientIssue {
+    optional Level level = 0x1;
+    enum Level {
+        LEVEL_UNKNOWN = 0x0;
+        LEVEL_DEBUG = 0x1;
+        LEVEL_INFO = 0x2;
+        LEVEL_NOTICE = 0x3;
+        LEVEL_WARNING = 0x4;
+        LEVEL_ERROR = 0x5;
+    }
+    optional Code code = 0x2;
+    enum Code {
+        CODE_UNKNOWN = 0x0;
+        CODE_INDEX_OUT_OF_BOUNDS = 0x1;
+        CODE_VERSION_MISMATCH = 0x2;
+        CODE_CACHED_CHANGE = 0x3;
+        CODE_OFFLINE_CHANGE = 0x4;
+        CODE_CONCURRENT_CHANGE = 0x5;
+    }
+    optional int32 repeatCount = 0x3;
+}
+
+message ClientResolveAction {
+    optional Code code = 0x1;
+    enum Code {
+        CODE_UNKNOWN = 0x0;
+        CODE_NO_ACTION = 0x1;
+        CODE_RETRY = 0x2;
+        CODE_RELOAD = 0x3;
+        CODE_DISCARD_LOCAL_CHANGES = 0x4;
+        CODE_SEND_DUMP = 0x5;
+        CODE_DISPLAY_ERROR_MESSAGE = 0x6;
+    }
+    optional Initiator initiator = 0x2;
+    enum Initiator {
+        INITIATOR_UNKNOWN = 0x0;
+        INITIATOR_SERVER = 0x1;
+        INITIATOR_CLIENT = 0x2;
+    }
+}
+
+message Item {
+    optional string uri = 0x1;
+    optional ItemAttributes attributes = 0x2;
+}
+
+message ListItems {
+    optional int32 pos = 0x1;
+    optional bool truncated = 0x2;
+    repeated Item items = 0x3;
+}
+
+message ContentRange {
+    optional int32 pos = 0x1;
+    optional int32 length = 0x2;
+}
+
+message ListContentSelection {
+    optional bool wantRevision = 0x1;
+    optional bool wantLength = 0x2;
+    optional bool wantAttributes = 0x3;
+    optional bool wantChecksum = 0x4;
+    optional bool wantContent = 0x5;
+    optional ContentRange contentRange = 0x6;
+    optional bool wantDiff = 0x7;
+    optional bytes baseRevision = 0x8;
+    optional bytes hintRevision = 0x9;
+    optional bool wantNothingIfUpToDate = 0xa;
+    optional bool wantResolveAction = 0xc;
+    repeated ClientIssue issues = 0xd;
+    repeated ClientResolveAction resolveAction = 0xe;
+}
+  
+message Add {
+    optional int32 fromIndex = 0x1;
+    repeated Item items = 0x2;
+    optional ListChecksum list_checksum = 0x3;
+    optional bool addLast = 0x4;
+    optional bool addFirst = 0x5;
+}
+
+message Rem {
+    optional int32 fromIndex = 0x1;
+    optional int32 length = 0x2;
+    repeated Item items = 0x3;
+    optional ListChecksum list_checksum = 0x4;
+    optional ListChecksum items_checksum = 0x5;
+    optional ListChecksum uris_checksum = 0x6;
+    optional bool itemsAsKey = 0x7;
+}
+
+message Mov {
+    optional int32 fromIndex = 0x1;
+    optional int32 length = 0x2;
+    optional int32 toIndex = 0x3;
+    optional ListChecksum list_checksum = 0x4;
+    optional ListChecksum items_checksum = 0x5;
+    optional ListChecksum uris_checksum = 0x6;
+}
+
+message ItemAttributesPartialState {
+    optional ItemAttributes values = 0x1;
+    repeated ItemAttributeKind no_value = 0x2;
+
+    enum ItemAttributeKind {
+        ITEM_UNKNOWN = 0x0;
+        ITEM_ADDED_BY = 0x1;
+        ITEM_TIMESTAMP = 0x2;
+        ITEM_MESSAGE = 0x3;
+        ITEM_SEEN = 0x4;
+        ITEM_DOWNLOAD_COUNT = 0x5;
+        ITEM_DOWNLOAD_FORMAT = 0x6;
+        ITEM_SEVENDIGITAL_ID = 0x7;
+        ITEM_SEVENDIGITAL_LEFT = 0x8;
+        ITEM_SEEN_AT = 0x9;
+        ITEM_PUBLIC = 0xa;
+    }
+}
+
+message ListAttributesPartialState {
+    optional ListAttributes values = 0x1;
+    repeated ListAttributeKind no_value = 0x2;
+
+    enum ListAttributeKind {
+        LIST_UNKNOWN = 0x0;
+        LIST_NAME = 0x1;
+        LIST_DESCRIPTION = 0x2;
+        LIST_PICTURE = 0x3;
+        LIST_COLLABORATIVE = 0x4;
+        LIST_PL3_VERSION = 0x5;
+        LIST_DELETED_BY_OWNER = 0x6;
+        LIST_RESTRICTED_COLLABORATIVE = 0x7;
+    }
+}
+
+message UpdateItemAttributes {
+    optional int32 index = 0x1;
+    optional ItemAttributesPartialState new_attributes = 0x2;
+    optional ItemAttributesPartialState old_attributes = 0x3;
+    optional ListChecksum list_checksum = 0x4;
+    optional ListChecksum old_attributes_checksum = 0x5;
+}
+
+message UpdateListAttributes {
+    optional ListAttributesPartialState new_attributes = 0x1;
+    optional ListAttributesPartialState old_attributes = 0x2;
+    optional ListChecksum list_checksum = 0x3;
+    optional ListChecksum old_attributes_checksum = 0x4;
+}
+
+message Op {
+    optional Kind kind = 0x1;
+    enum Kind {
+        KIND_UNKNOWN = 0x0;
+        ADD = 0x2;
+        REM = 0x3;
+        MOV = 0x4;
+        UPDATE_ITEM_ATTRIBUTES = 0x5;
+        UPDATE_LIST_ATTRIBUTES = 0x6;
+    }
+    optional Add add = 0x2;
+    optional Rem rem = 0x3;
+    optional Mov mov = 0x4;
+    optional UpdateItemAttributes update_item_attributes = 0x5;
+    optional UpdateListAttributes update_list_attributes = 0x6;
+}
+
+message OpList {
+    repeated Op ops = 0x1;
+}
+
+message ChangeInfo {
+    optional string user = 0x1;
+    optional int32 timestamp = 0x2;
+    optional bool admin = 0x3;
+    optional bool undo = 0x4;
+    optional bool redo = 0x5;
+    optional bool merge = 0x6;
+    optional bool compressed = 0x7;
+    optional bool migration = 0x8;
+}
+
+message Delta {
+    optional bytes base_version = 0x1;
+    repeated Op ops = 0x2;
+    optional ChangeInfo info = 0x4;
+}
+
+message Merge {
+    optional bytes base_version = 0x1;
+    optional bytes merge_version = 0x2;
+    optional ChangeInfo info = 0x4;
+}
+
+message ChangeSet {
+    optional Kind kind = 0x1;
+    enum Kind {
+        KIND_UNKNOWN = 0x0;
+        DELTA = 0x2;
+        MERGE = 0x3;
+    }
+    optional Delta delta = 0x2;
+    optional Merge merge = 0x3;
+}
+
+message RevisionTaggedChangeSet {
+    optional bytes revision = 0x1;
+    optional ChangeSet change_set = 0x2;
+}
+
+message Diff {
+    optional bytes from_revision = 0x1;
+    repeated Op ops = 0x2;
+    optional bytes to_revision = 0x3;
+}
+
+message ListDump {
+    optional bytes latestRevision = 0x1;
+    optional int32 length = 0x2;
+    optional ListAttributes attributes = 0x3;
+    optional ListChecksum checksum = 0x4;
+    optional ListItems contents = 0x5;
+    repeated Delta pendingDeltas = 0x7;
+}
+
+message ListChanges {
+    optional bytes baseRevision = 0x1;
+    repeated Delta deltas = 0x2;
+    optional bool wantResultingRevisions = 0x3;
+    optional bool wantSyncResult = 0x4;
+    optional ListDump dump = 0x5;
+    repeated int32 nonces = 0x6;
+}
+
+message SelectedListContent {
+    optional bytes revision = 0x1;
+    optional int32 length = 0x2;
+    optional ListAttributes attributes = 0x3;
+    optional ListChecksum checksum = 0x4;
+    optional ListItems contents = 0x5;
+    optional Diff diff = 0x6;
+    optional Diff syncResult = 0x7;
+    repeated bytes resultingRevisions = 0x8;
+    optional bool multipleHeads = 0x9;
+    optional bool upToDate = 0xa;
+    repeated ClientResolveAction resolveAction = 0xc;
+    repeated ClientIssue issues = 0xd;
+    repeated int32 nonces = 0xe;
+}
+

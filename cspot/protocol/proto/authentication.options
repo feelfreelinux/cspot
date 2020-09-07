@@ -1,0 +1,6 @@
+LoginCredentials.username type:FT_POINTER
+LoginCredentials.auth_data type:FT_POINTER
+LoginCredentials.auth_data type:FT_POINTER
+SystemInfo.system_information_string type:FT_POINTER
+SystemInfo.device_id type:FT_POINTER
+ClientResponseEncrypted.version_string type:FT_POINTER
