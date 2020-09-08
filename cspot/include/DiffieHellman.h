@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdint>
+
 #ifdef USE_MBEDTLS
 #include <mbedtls/config.h>
 #include <mbedtls/error.h>
@@ -11,12 +12,10 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/dhm.h>
 #else
-
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/dh.h>
 #include <openssl/bn.h>
-
 #endif
 
 #define KEY_SIZE 96

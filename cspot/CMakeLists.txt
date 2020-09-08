@@ -1,20 +1,22 @@
 cmake_minimum_required(VERSION 2.8.9)
 set (CMAKE_CXX_STANDARD 17)
 
-find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-    set(OPENSSL_USE_STATIC_LIBS TRUE)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+if (APPLE)
+    set(MBEDTLS_ROOT_DIR /usr/local/Cellar/mbedtls/2.23.0)
+    set(SSL_LIBRARY mbedtls)
+    add_definitions(-DUSE_MBEDTLS)
+    find_package(mbedTLS REQUIRED)
+else()
+    find_package(OpenSSL REQUIRED)
+    if(OPENSSL_FOUND)
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+    endif()
+    set(SSL_LIBRARY OpenSSL::Crypto)
 endif()
 
 include_directories("include")
 include_directories("tremor")
-
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-if (APPLE)
-    set(MBEDTLS_ROOT_DIR /usr/local/Cellar/mbedtls/2.23.0)
-    add_definitions(-DUSE_MBEDTLS)
-endif()
-find_package(mbedTLS REQUIRED)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/extra)
 find_package(Nanopb REQUIRED)
@@ -37,6 +39,6 @@ set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/mi
  
 
 add_library(CSpotLib STATIC ${SOURCES} ${PROTO_SRCS})
-target_link_libraries(CSpotLib PRIVATE mbedtls OpenSSL::Crypto Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(CSpotLib PRIVATE Threads::Threads ${SSL_LIBRARY} ${CMAKE_DL_LIBS})
 
-target_include_directories(CSpotLib PUBLIC "include" mbedtls ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} "tremor")
+target_include_directories(CSpotLib PUBLIC "include" ${SSL_LIBRARY} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} "tremor")
