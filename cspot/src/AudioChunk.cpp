@@ -1,15 +1,24 @@
 #include "AudioChunk.h"
-#include <algorithm>
 
 std::vector<uint8_t> audioAESIV({0x72, 0xe0, 0x67, 0xfb, 0xdd, 0xcb, 0xcf, 0x77, 0xeb, 0xe8, 0xbc, 0x64, 0x3f, 0x63, 0x0d, 0x93});
 
 AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPosition, uint32_t predictedEndPosition)
 {
+#ifdef USE_MBEDTLS
+    mbedtls_aes_init(&ctx);
+#endif
     this->seqId = seqId;
     this->audioKey = audioKey;
     this->startPosition = startPosition;
     this->endPosition = predictedEndPosition;
     this->decryptedData = std::vector<uint8_t>();
+}
+
+AudioChunk::~AudioChunk()
+{
+#ifdef USE_MBEDTLS
+    mbedtls_aes_free(&ctx);
+#endif
 }
 
 void AudioChunk::appendData(std::vector<uint8_t> &data)
@@ -21,10 +30,23 @@ void AudioChunk::decrypt()
 {
     // calculate the IV for right position
     auto calculatedIV = this->getIVSum(startPosition / 16);
+#ifdef USE_MBEDTLS
+    size_t off = 0;
+    unsigned char streamBlock[16] = {0};
+    mbedtls_aes_setkey_enc(&ctx, &this->audioKey[0], audioKey.size() * 8);
+    mbedtls_aes_crypt_ctr(&ctx,
+                          this->decryptedData.size(),
+                          &off,
+                          &calculatedIV[0],
+                          streamBlock,
+                          &this->decryptedData[0],
+                          &this->decryptedData[0]);
+#else
     AES_init_ctx_iv(&this->ctx, &this->audioKey[0], &calculatedIV[0]);
     AES_CTR_xcrypt_buffer(&this->ctx, &this->decryptedData[0], this->decryptedData.size());
+#endif
 
-    this->startPosition = this->endPosition - this->decryptedData.size();
+        this->startPosition = this->endPosition - this->decryptedData.size();
     this->isLoaded = true;
 }
 

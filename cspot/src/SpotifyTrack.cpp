@@ -1,8 +1,6 @@
 #include "SpotifyTrack.h"
 #include "unistd.h"
-#include "aes.h"
 #include "MercuryManager.h"
-
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<uint8_t> &gid)
 {
