@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.8.9)
 set (CMAKE_CXX_STANDARD 17)
-project(cspot)
- 
 
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
@@ -29,5 +27,8 @@ file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
 set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c")
  
-add_executable(cspot ${SOURCES} ${PROTO_SRCS})
-target_link_libraries(cspot OpenSSL::Crypto Threads::Threads ${CMAKE_DL_LIBS})
+
+add_library(CSpotLib STATIC ${SOURCES} ${PROTO_SRCS})
+target_link_libraries(CSpotLib PRIVATE OpenSSL::Crypto Threads::Threads ${CMAKE_DL_LIBS})
+
+target_include_directories(CSpotLib PUBLIC "include" ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} "tremor")

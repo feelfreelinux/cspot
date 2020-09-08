@@ -1,3 +1,4 @@
 # cspot
 
-A Spotify COnnect player written in CPP targeting embedded devices (ESP32).
+A Spotify Connect player written in CPP targeting embedded devices (ESP32).
+
