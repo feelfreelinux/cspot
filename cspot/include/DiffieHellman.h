@@ -3,10 +3,21 @@
 
 #include <vector>
 #include <cstdint>
+#ifdef USE_MBEDTLS
+#include <mbedtls/config.h>
+#include <mbedtls/error.h>
+#include <mbedtls/bignum.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/dhm.h>
+#else
+
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/dh.h>
 #include <openssl/bn.h>
+
+#endif
 
 #define KEY_SIZE 96
 
@@ -30,11 +41,16 @@ static unsigned char DHGenerator[1] = {2};
 class DiffieHellman
 {
 private:
+#ifdef USE_MBEDTLS
+    mbedtls_ctr_drbg_context ctrDrbg;
+    mbedtls_entropy_context entropy;
+    mbedtls_dhm_context dhm;
+#else
     DH* dh;
+#endif
 public:
     DiffieHellman();
     ~DiffieHellman();
-    std::vector<uint8_t> privateKey;
     std::vector<uint8_t> publicKey;
     std::vector<uint8_t> sharedKey;
 

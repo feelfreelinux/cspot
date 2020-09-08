@@ -11,7 +11,6 @@ std::map<MercuryType, std::string> MercuryTypeMap({
 MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
 {
     this->callbacks = std::map<uint64_t, mercuryCallback>();
-    // this->audioCallbacks = std::map<uint16_t, audioChunkCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
     this->conn = conn;
     this->sequenceId = 0x00000001;

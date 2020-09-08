@@ -47,7 +47,7 @@ std::vector<uint8_t> Session::authenticate(std::string username, std::string pas
         printf("Authorization successful\n");
 
         // @TODO store the reusable credentials
-        auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
+        //auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
         return std::vector<uint8_t>({0x1}); // TODO: return actual reusable credentaials to be stored somewhere
         break;
     }
