@@ -2,18 +2,16 @@
 #include "PlainConnection.h"
 #include <cstring>
 
-PlainConnection::PlainConnection()
-{
-};
+PlainConnection::PlainConnection(){};
 
 void PlainConnection::connectToAp()
 {
     struct addrinfo h, *airoot, *ai;
 
     memset(&h, 0, sizeof(h));
-    h.ai_family = PF_UNSPEC;
+    h.ai_family = AF_INET;
     h.ai_socktype = SOCK_STREAM;
-    h.ai_protocol = IPPROTO_TCP;
+    h.ai_protocol = IPPROTO_IP;
 
     // Lookup host
     if (getaddrinfo(AP_ADDRESS, AP_PORT, &h, &airoot))
@@ -28,14 +26,17 @@ void PlainConnection::connectToAp()
             continue;
 
         this->apSock = socket(ai->ai_family,
-                        ai->ai_socktype, ai->ai_protocol);
+                              ai->ai_socktype, ai->ai_protocol);
         if (this->apSock < 0)
             continue;
 
         if (connect(this->apSock,
                     (struct sockaddr *)ai->ai_addr,
                     ai->ai_addrlen) != -1)
+        {
+
             break;
+        }
 
         close(this->apSock);
         apSock = -1;

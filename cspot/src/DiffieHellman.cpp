@@ -1,22 +1,35 @@
 #include "DiffieHellman.h"
 
+int dddRandomGenerator(void *pRng, unsigned char *output, size_t outputLen )
+{
+    // 🥖 
+    for (int x = 0; x < outputLen; x ++) {
+        output[x] = x;
+    }
+    return 0;
+}
+
 DiffieHellman::DiffieHellman()
 {
     this->publicKey = std::vector<uint8_t>(KEY_SIZE);
     this->sharedKey = std::vector<uint8_t>(KEY_SIZE);
-#ifdef USE_MBEDTLS
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctrDrbg);
-    mbedtls_ctr_drbg_seed(&ctrDrbg, mbedtls_entropy_func, &entropy, NULL, 0);
-    mbedtls_mpi prime, generator;
+    this->privateKey = std::vector<uint8_t>(KEY_SIZE);
+    dddRandomGenerator(NULL, &privateKey[0], 96);
+#ifdef ESP_PLATFORM
+    printf("---- DUPA\n");
+    mbedtls_mpi prime, generator, res, privKey;
     mbedtls_mpi_init(&prime);
     mbedtls_mpi_init(&generator);
+    mbedtls_mpi_init(&privKey);
+    mbedtls_mpi_init(&res);
+
     mbedtls_mpi_read_binary(&prime, DHPrime, sizeof(DHPrime));
     mbedtls_mpi_read_binary(&generator, DHGenerator, sizeof(DHGenerator));
-    mbedtls_dhm_init(&dhm);
-    mbedtls_dhm_set_group(&dhm, &prime, &generator);
-    mbedtls_dhm_make_public(&dhm, KEY_SIZE, &publicKey[0], KEY_SIZE,
-                            mbedtls_ctr_drbg_random, &ctrDrbg);
+    mbedtls_mpi_read_binary(&privKey, &privateKey[0], KEY_SIZE);
+    mbedtls_mpi_exp_mod(&res, &generator, &privKey, &prime, NULL);
+    
+    this->publicKey = std::vector<uint8_t>(KEY_SIZE);
+    mbedtls_mpi_write_binary(&res, publicKey.data(), KEY_SIZE);
 #else
     this->dh = DH_new();
 
@@ -31,10 +44,8 @@ DiffieHellman::DiffieHellman()
 
 DiffieHellman::~DiffieHellman()
 {
-#ifdef USE_MBEDTLS
-    mbedtls_entropy_free(&entropy);
-    mbedtls_ctr_drbg_free(&ctrDrbg);
-    mbedtls_dhm_free(&dhm);
+#ifdef ESP_PLATFORM
+
 #else
     DH_free(this->dh);
 #endif
@@ -42,11 +53,20 @@ DiffieHellman::~DiffieHellman()
 
 std::vector<uint8_t> DiffieHellman::computeSharedKey(std::vector<uint8_t> remoteKey)
 {
-    #ifdef USE_MBEDTLS
-    mbedtls_dhm_read_public(&dhm, &remoteKey[0], KEY_SIZE);
-    size_t keySize = KEY_SIZE;
-    mbedtls_dhm_calc_secret(&dhm, &this->sharedKey[0], KEY_SIZE, &keySize, 
-        mbedtls_ctr_drbg_random, &ctrDrbg);
+    #ifdef ESP_PLATFORM
+    mbedtls_mpi prime, remKey, res, privKey;
+    mbedtls_mpi_init(&prime);
+    mbedtls_mpi_init(&remKey);
+    mbedtls_mpi_init(&privKey);
+    mbedtls_mpi_init(&res);
+
+    mbedtls_mpi_read_binary(&prime, DHPrime, sizeof(DHPrime));
+    mbedtls_mpi_read_binary(&remKey, remoteKey.data(), remoteKey.size());
+    mbedtls_mpi_read_binary(&privKey, privateKey.data(), KEY_SIZE);
+    mbedtls_mpi_exp_mod(&res, &remKey, &privKey, &prime, NULL);
+    
+    this->sharedKey = std::vector<uint8_t>(KEY_SIZE);
+    mbedtls_mpi_write_binary(&res, sharedKey.data(), KEY_SIZE);
     #else
     // Convert remote key to bignum and compute shared key
     auto pubKey = BN_bin2bn(&remoteKey[0], 96, NULL);

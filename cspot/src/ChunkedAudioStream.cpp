@@ -41,8 +41,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
-
-    while (beginChunk->headerFileSize == -1);
+    beginChunk->isHeaderLoadedSemaphore->wait();
     this->fileSize = beginChunk->headerFileSize;
     chunks.push_back(beginChunk);
 
@@ -62,7 +61,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 void ChunkedAudioStream::seekMs(uint32_t positionMs)
 {
     pthread_mutex_lock(&seekMutex);
-    ov_time_seek(&vorbisFile, positionMs);
+    // ov_time_seek(&vorbisFile, positionMs);
     pthread_mutex_unlock(&seekMutex);
     printf("--- Finished seeking!");
 }
@@ -84,10 +83,10 @@ void ChunkedAudioStream::runTask()
     {
         if (!isPaused)
         {
-            std::vector<uint8_t> pcmOut(4096);
+            std::vector<uint8_t> pcmOut(4096 * 4);
             pthread_mutex_lock(&seekMutex);
 
-            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096, &currentSection);
+            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096 * 4, &currentSection);
             pthread_mutex_unlock(&seekMutex);
 
             if (ret == 0)
@@ -105,6 +104,10 @@ void ChunkedAudioStream::runTask()
                 auto data = std::vector<uint8_t>(pcmOut.begin(), pcmOut.begin() + ret);
                 audioSink->feedPCMFrames(data);
             }
+        } else {
+            #ifdef ESP_PLATFORM
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+            #endif
         }
     }
 
@@ -130,7 +133,7 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    while (endChunk->isLoaded == false);
+    endChunk->isLoadedSemaphore->wait();
 
     loadedMeta = true;
 }
@@ -144,6 +147,25 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
 
     while (res.size() < bytes)
     {
+        auto position = pos;
+
+        // Erase all chunks not close to current position
+        chunks.erase(std::remove_if(
+                         chunks.begin(), chunks.end(),
+                         [&position](const std::shared_ptr<AudioChunk> &chunk) {
+                             if (chunk->keepInMemory)
+                             {
+                                 return false;
+                             }
+
+                             if (chunk->endPosition < position || chunk->startPosition > position + BUFFER_SIZE)
+                             {
+                                 return true;
+                             }
+
+                             return false;
+                         }),
+                     chunks.end());
         int16_t chunkIndex = this->pos / AUDIO_CHUNK_SIZE;
         int32_t offset = this->pos % AUDIO_CHUNK_SIZE;
 
@@ -156,7 +178,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
 
         auto chunk = findChunkForPosition(pos);
 
-        if (chunk != nullptr)
+        if (chunk != nullptr && !chunk->hasFailed)
         {
             auto offset = pos - chunk->startPosition;
             if (chunk->isLoaded)
@@ -173,10 +195,15 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
                     toRead -= chunk->decryptedData.size() - offset;
                 }
             }
+            else
+            {
+                //chunk->isLoadedSemaphore->wait();
+            }
         }
         else
         {
-            this->requestChunk(chunkIndex);
+            //printf("LACK\n");
+            // this->requestChunk(chunkIndex);
         }
 
         auto requestedOffset = 0;
@@ -201,25 +228,6 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
                 this->chunks.push_back(chunkReq);
             }
         }
-        auto position = pos;
-
-        // Erase all chunks not close to current position
-        chunks.erase(std::remove_if(
-                         chunks.begin(), chunks.end(),
-                         [&position](const std::shared_ptr<AudioChunk> &chunk) {
-                             if (chunk->keepInMemory)
-                             {
-                                 return false;
-                             }
-
-                             if (chunk->endPosition < position || chunk->startPosition > position + BUFFER_SIZE)
-                             {
-                                 return true;
-                             }
-
-                             return false;
-                         }),
-                     chunks.end());
     }
     return res;
 }

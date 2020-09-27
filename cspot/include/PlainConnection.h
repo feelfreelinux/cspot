@@ -1,8 +1,7 @@
 #ifndef PLAINCONNECTION_H
 #define PLAINCONNECTION_H
 
-#include <sys/socket.h>
-#include <sys/types.h>
+#include "sys/socket.h"
 #include <vector>
 #include <string>
 #include <cstdint>

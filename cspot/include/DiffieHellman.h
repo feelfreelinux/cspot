@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstdint>
 
-#ifdef USE_MBEDTLS
+#ifdef ESP_PLATFORM
 #include <mbedtls/config.h>
 #include <mbedtls/error.h>
 #include <mbedtls/bignum.h>
@@ -40,7 +40,7 @@ static unsigned char DHGenerator[1] = {2};
 class DiffieHellman
 {
 private:
-#ifdef USE_MBEDTLS
+#ifdef ESP_PLATFORM
     mbedtls_ctr_drbg_context ctrDrbg;
     mbedtls_entropy_context entropy;
     mbedtls_dhm_context dhm;
@@ -52,6 +52,7 @@ public:
     ~DiffieHellman();
     std::vector<uint8_t> publicKey;
     std::vector<uint8_t> sharedKey;
+    std::vector<uint8_t> privateKey;
 
     std::vector<uint8_t> computeSharedKey(std::vector<uint8_t> remoteKey);
 };

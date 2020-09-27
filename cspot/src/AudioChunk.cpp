@@ -4,7 +4,7 @@ std::vector<uint8_t> audioAESIV({0x72, 0xe0, 0x67, 0xfb, 0xdd, 0xcb, 0xcf, 0x77,
 
 AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPosition, uint32_t predictedEndPosition)
 {
-#ifdef USE_MBEDTLS
+#ifdef ESP_PLATFORM
     mbedtls_aes_init(&ctx);
 #endif
     this->seqId = seqId;
@@ -12,11 +12,13 @@ AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t 
     this->startPosition = startPosition;
     this->endPosition = predictedEndPosition;
     this->decryptedData = std::vector<uint8_t>();
+    this->isHeaderLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
+    this->isLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
 }
 
 AudioChunk::~AudioChunk()
 {
-#ifdef USE_MBEDTLS
+#ifdef ESP_PLATFORM
     mbedtls_aes_free(&ctx);
 #endif
 }
@@ -30,7 +32,7 @@ void AudioChunk::decrypt()
 {
     // calculate the IV for right position
     auto calculatedIV = this->getIVSum(startPosition / 16);
-#ifdef USE_MBEDTLS
+#ifdef ESP_PLATFORM
     size_t off = 0;
     unsigned char streamBlock[16] = {0};
     mbedtls_aes_setkey_enc(&ctx, &this->audioKey[0], audioKey.size() * 8);

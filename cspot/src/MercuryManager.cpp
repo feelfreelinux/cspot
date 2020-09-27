@@ -1,6 +1,7 @@
 #include "MercuryManager.h"
 #include <iostream>
 
+
 std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::GET, "GET"},
     {MercuryType::SEND, "SEND"},
@@ -18,6 +19,7 @@ MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
     this->audioChunkSequence = 0;
     this->audioKeySequence = 0;
     this->queue = std::vector<std::unique_ptr<Packet>>();
+    queueSemaphore = std::make_unique<WrappedSemaphore>(200);
 }
 
 void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback)
@@ -43,6 +45,16 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
 std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
 {
+    printf("OK SO FILEID \n");
+    for (int x = 0; x < fileId.size(); x++)
+    {
+        printf("%d, ", fileId[x]);
+    }
+    printf("\n OK SO AUDIOKEY \n");
+    for (int x = 0; x < audioKey.size(); x++)
+    {
+        printf("%d, ", audioKey[x]);
+    }
     // Register audio callback
     printf(
         "Request from %d\n", startPos);
@@ -74,15 +86,25 @@ void MercuryManager::runTask()
     // Listen for mercury replies and handle them accordingly
     while (true)
     {
+        //ESP_LOGI("cspot", "Start wait\n");
 
         auto packet = this->conn->recvPacket();
-        if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
+        //ESP_LOGI("cspot", "End wait\n");
+        if (static_cast<MercuryType>(packet->command) == MercuryType::PING)
         {
+            printf("Got ping\n");
+            this->conn->sendPacket(0x49, packet->data);
+        }
+        else if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
+        {
+            //ESP_LOGI("cspot", "Start put\n");
             this->audioChunkManager->handleChunkData(packet->data);
+            //ESP_LOGI("cspot", "End put\n");
         }
         else
         {
             this->queue.push_back(std::move(packet));
+            queueSemaphore->give();
         }
     }
 }
@@ -91,6 +113,7 @@ void MercuryManager::handleQueue()
 {
     while (true)
     {
+        queueSemaphore->wait();
         if (this->queue.size() > 0)
         {
             auto packet = std::move(this->queue[0]);
@@ -98,12 +121,7 @@ void MercuryManager::handleQueue()
             printf("Received packet with code %d of length %d\n", packet->command, packet->data.size());
             switch (static_cast<MercuryType>(packet->command))
             {
-            case MercuryType::PING:
-            {
-                printf("Got ping\n");
-                this->conn->sendPacket(0x49, packet->data);
-                break;
-            }
+
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {
@@ -114,6 +132,7 @@ void MercuryManager::handleQueue()
             case MercuryType::AUDIO_CHUNK_FAILURE_RESPONSE:
             {
                 printf("Audio Chunk failure!\n");
+                this->audioChunkManager->handleChunkData(packet->data);
                 break;
             }
             case MercuryType::SEND:
@@ -139,6 +158,8 @@ void MercuryManager::handleQueue()
                 }
                 break;
             }
+            default:
+                break;
             }
         }
     }
@@ -174,7 +195,7 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
     // [Header size] [Header] [Payloads (size + data)]
 
     // Pack sequenceId
-    auto sequenceIdBytes = pack<uint64_t>(htobe64(this->sequenceId));
+    auto sequenceIdBytes = pack<uint64_t>(hton64(this->sequenceId));
     auto sequenceSizeBytes = pack<uint16_t>(htons(sequenceIdBytes.size()));
 
     sequenceIdBytes.insert(sequenceIdBytes.begin(), sequenceSizeBytes.begin(), sequenceSizeBytes.end());

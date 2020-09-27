@@ -1,7 +1,7 @@
 #ifndef CHUNKEDAUDIOSTREAM_H
 #define CHUNKEDAUDIOSTREAM_H
 
-#include <ivorbisfile.h>
+#include "ivorbisfile.h"
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -12,9 +12,13 @@
 #include "Task.h"
 #include "AudioSink.h"
 #include "AudioChunk.h"
+#ifdef ESP_PLATFORM
+#include "freertos/freertos.h"
+#include "freertos/task.h"
+#endif
 
 #define SPOTIFY_HEADER_SIZE 167
-#define BUFFER_SIZE 0x2000 * 2
+#define BUFFER_SIZE 0x20000 * 3
 
 enum class Whence
 {

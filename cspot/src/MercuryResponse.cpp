@@ -8,7 +8,7 @@ MercuryResponse::MercuryResponse(std::vector<uint8_t> &data) {
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data) {
     auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-    this->sequenceId = htobe64(extract<uint64_t>(data, 2));
+    this->sequenceId = hton64(extract<uint64_t>(data, 2));
 
     auto partsNumber = ntohs(extract<uint16_t>(data, 11));
 

@@ -22,6 +22,7 @@ private:
     bool sendingLoadFrame = false;
     uint8_t capabilitiyIndex = 0;
     std::unique_ptr<Player> player;
+    std::shared_ptr<AudioSink> audioSink;
 
     void addCapability(CapabilityType typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
     void sendCmd(MessageType typ);
@@ -29,7 +30,7 @@ private:
     void handleFrame(std::vector<uint8_t> &data);
     void loadTrack();
 public:
-    SpircController(std::shared_ptr<MercuryManager> manager, std::string username);
+    SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink);
 };
 
 #endif

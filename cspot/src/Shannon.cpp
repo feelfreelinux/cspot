@@ -1,5 +1,5 @@
 #include "Shannon.h"
-#include <bit>
+// #include <bit>
 #include <stdint.h> // for uint32_t
 #include <limits.h> // for CHAR_BIT
 // #define NDEBUG

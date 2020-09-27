@@ -75,6 +75,7 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + KEY_SIZE);
     auto sharedKey = this->localKeys->computeSharedKey(diffieKey);
 
+
     // Init client packet + Init server packets are required for the hmac challenge
     data.insert(data.begin(), helloPacket.begin(), helloPacket.end());
 

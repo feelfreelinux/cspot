@@ -1,5 +1,5 @@
 #include "AudioChunkManager.h"
-#include <algorithm>
+
 
 AudioChunkManager::AudioChunkManager()
 {
@@ -15,7 +15,7 @@ std::shared_ptr<AudioChunk> AudioChunkManager::registerNewChunk(uint16_t seqId, 
     return chunk;
 }
 
-void AudioChunkManager::handleChunkData(std::vector<uint8_t> data)
+void AudioChunkManager::handleChunkData(std::vector<uint8_t> data, bool hasFailed)
 {
     uint16_t seqId = ntohs(extract<uint16_t>(data, 0));
 
@@ -29,6 +29,12 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data)
 
     for (auto const &chunk : this->chunks)
     {
+        if (hasFailed) {
+            chunk->hasFailed = true;
+            chunk->isLoadedSemaphore->give();
+            chunk->isHeaderLoadedSemaphore->give();
+            return;
+        }
         // Found the right chunk
         if (chunk->seqId == seqId)
         {
@@ -39,7 +45,8 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data)
                 auto headerSize = ntohs(extract<uint16_t>(data, 2));
                 // Got file size!
                 chunk->headerFileSize = ntohl(extract<uint32_t>(data, 5)) * 4;
-                printf("ID: %d: Total size %d\n", seqId, chunk->headerFileSize);
+                //ESP_LOGI("cspot","ID: %d: Total size %d\n", seqId, chunk->headerFileSize);
+                chunk->isHeaderLoadedSemaphore->give();
                 break;
             }
             case DATA_SIZE_FOOTER:
@@ -47,12 +54,14 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data)
                 {
                     chunk->endPosition = chunk->headerFileSize;
                 }
+                // ESP_LOGI("cspot", "ID: %d: Starting decrypt!\n", seqId);
                 chunk->decrypt();
-                printf("ID: %d: Finished!\n", seqId);
+                //ESP_LOGI("cspot","ID: %d: Finished!\n", seqId);
+                chunk->isLoadedSemaphore->give();
                 break;
 
             default:
-                // printf("ID: %d: Got data chunk!\n", seqId);
+                // ESP_LOGI("cspot","ID: %d: Got data chunk!\n", seqId);
                 // 2 first bytes are size so we skip it
                 auto actualData = std::vector<uint8_t>(data.begin() + 2, data.end());
                 chunk->appendData(actualData);

@@ -1,9 +1,10 @@
 #include "Player.h"
 
-Player::Player(std::shared_ptr<MercuryManager> manager)
+Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink)
 {
+    this->audioSink = audioSink;
     this->manager = manager;
-    this->audioSink = std::make_shared<NamedPipeAudioSink>();
+    // this->audioSink = std::make_shared<I2SAudioSink>();
     
 }
 void Player::pause()
@@ -27,7 +28,9 @@ void Player::handleLoad(TrackRef *track, std::function<void()> &trackLoadedCallb
     {
         if (currentTrack->audioStream->isRunning) {
             currentTrack->audioStream->isRunning = false;
-            while (!currentTrack->audioStream->finished);
+            while (!currentTrack->audioStream->finished) {
+                        //vTaskDelay(100);
+            }
         }
 
         delete currentTrack;

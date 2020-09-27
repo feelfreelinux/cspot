@@ -12,7 +12,6 @@
 #include "Session.h"
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
-#include "NamedPipeAudioSink.h"
 
 class Player {
 private:
@@ -21,7 +20,7 @@ private:
     std::shared_ptr<AudioSink> audioSink;
 
 public:
-    Player(std::shared_ptr<MercuryManager> manager);
+    Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);
     std::function<void()> endOfFileCallback;
 
     void handleLoad(TrackRef* track, std::function<void()> &trackLoadedCallback);

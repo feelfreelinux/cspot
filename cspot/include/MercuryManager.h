@@ -16,6 +16,8 @@
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"
 #include "Task.h"
+#include "WrappedSemaphore.h"
+
 #include <stdint.h>
 #include <memory>
 
@@ -52,13 +54,12 @@ private:
   std::shared_ptr<ShannonConnection> conn;
   std::unique_ptr<AudioChunkManager> audioChunkManager;
   std::vector<std::unique_ptr<Packet>> queue;
+  std::unique_ptr<WrappedSemaphore> queueSemaphore;
   uint64_t sequenceId;
   uint32_t audioKeySequence;
   audioKeyCallback keyCallback;
 
   void runTask();
-
-
 public:
   MercuryManager(std::shared_ptr<ShannonConnection> conn);
   uint16_t audioChunkSequence;

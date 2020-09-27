@@ -18,11 +18,21 @@ std::vector<uint8_t> blockRead(int fd, size_t readSize)
 	}
 	return buf;
 }
-
 unsigned long long getCurrentTimestamp()
 {
 	unsigned long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	return now;
+}
+
+uint64_t hton64(uint64_t value) {
+    int num = 42;
+    if (*(char *)&num == 42) {
+        uint32_t high_part = htonl((uint32_t)(value >> 32));
+        uint32_t low_part = htonl((uint32_t)(value & 0xFFFFFFFFLL));
+        return (((uint64_t)low_part) << 32) | high_part;
+    } else {
+        return value;
+    }
 }
 
 std::string bytesToHexString(std::vector<uint8_t>& v) {
@@ -44,7 +54,7 @@ ssize_t blockWrite(int fd, std::vector<uint8_t> data)
 
 	while (idx < data.size())
 	{
-		if ((n = send(fd, &data[idx], data.size() - idx, 0)) <= 0)
+		if ((n = send(fd, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
 		{
 			return data.size();
 		}

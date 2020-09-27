@@ -1,13 +1,13 @@
 #include "SpircController.h"
 
 const char *swVersion = "2.1.0";
-const char *name = "CSpot";
+const char *name = "CSpot - ESP32 EDITION";
 
-SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username)
+SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
 
     this->manager = manager;
-    this->player = std::make_unique<Player>(manager);
+    this->player = std::make_unique<Player>(manager, audioSink);
     this->frame = {};
     this->frame.state.has_repeat = true;
     this->frame.state.repeat = false;
@@ -66,6 +66,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
     printf("Got frame!\n");
     auto receivedFrame = decodePB<Frame>(Frame_fields, data);
+
     std::cout << std::string(receivedFrame.ident) << std::endl;
 
     switch (receivedFrame.typ)
@@ -139,6 +140,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
         loadTrack();
         break;
+    default:
+        break;
     }
 }
 
@@ -148,7 +151,7 @@ void SpircController::loadTrack()
     this->frame.state.position_measured_at = getCurrentTimestamp();
 
     std::function<void()> loadedLambda = [=]() {
-        printf("%d\n", this->frame.state.playing_track_index);
+        printf("--- kompletne dupsko %d\n", this->frame.state.playing_track_index);
         this->frame.state.position_ms = 0;
         this->frame.state.position_measured_at = getCurrentTimestamp();
         this->frame.state.status = PlayStatus_kPlayStatusPlay;
@@ -195,8 +198,7 @@ void SpircController::sendCmd(MessageType typ)
     this->frame.has_state_update_id = true;
 
     this->seqNum += 1;
-    auto testFram = this->frame;
-    auto encodedFrame = encodePB(Frame_fields, &testFram);
+    auto encodedFrame = encodePB(Frame_fields, &this->frame);
 
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
@@ -221,7 +223,7 @@ void SpircController::addCapability(CapabilityType typ, int intValue, std::vecto
         this->frame.device_state.capabilities[capabilitiyIndex].intValue_count = 0;
     }
 
-    for (int x; x < stringValue.size(); x++)
+    for (int x = 0; x < stringValue.size(); x++)
     {
         stringValue[x].copy(this->frame.device_state.capabilities[capabilitiyIndex].stringValue[x], stringValue[x].size());
         this->frame.device_state.capabilities[capabilitiyIndex].stringValue[x][stringValue[x].size()] = '\0';
