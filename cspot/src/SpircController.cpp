@@ -1,7 +1,7 @@
 #include "SpircController.h"
 
 const char *swVersion = "2.1.0";
-const char *name = "CSpot - ESP32 EDITION";
+const char *name = "CSpot";
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
@@ -64,11 +64,8 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 
 void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
-    printf("Got frame!\n");
-    printf("before decode. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
-
+    printf("Got spirc frame!\n");
     auto receivedFrame = decodePB<Frame>(Frame_fields, data);
-    printf("after decode. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
 
     std::cout << std::string(receivedFrame.ident) << std::endl;
 
@@ -88,8 +85,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType_kMessageTypeSeek:
     {
+        printf("Seek command\n");
         this->frame.state.position_ms = receivedFrame.position;
-        printf("BRUH %d", receivedFrame.position);
         this->player->seekMs(receivedFrame.position);
         this->frame.state.position_measured_at = getCurrentTimestamp();
         notify();
@@ -97,7 +94,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType_kMessageTypePause:
     {
-        printf("Pausae\n");
+        printf("Pause command\n");
         player->pause();
         this->frame.state.status = PlayStatus_kPlayStatusPause;
         uint32_t diff = getCurrentTimestamp() - this->frame.state.position_measured_at;
@@ -154,7 +151,6 @@ void SpircController::loadTrack()
     this->frame.state.position_measured_at = getCurrentTimestamp();
 
     std::function<void()> loadedLambda = [=]() {
-        printf("--- kompletne dupsko %d\n", this->frame.state.playing_track_index);
         this->frame.state.position_ms = 0;
         this->frame.state.position_measured_at = getCurrentTimestamp();
         this->frame.state.status = PlayStatus_kPlayStatusPlay;
@@ -173,16 +169,6 @@ void SpircController::notify()
 
 void SpircController::sendCmd(MessageType typ)
 {
-    printf("\n%llu\n", getCurrentTimestamp());
-    if (this->frame.state.status == PlayStatus_kPlayStatusPause)
-    {
-        printf("\nPAUSED\n");
-    }
-    else
-    {
-        printf("NOT ACTIV\n");
-    }
-
     this->frame.version = 1;
     this->frame.ident = (char *)"352198fd329622137e14901634264e6f332e2422";
     this->frame.seq_nr = this->seqNum;
@@ -208,7 +194,6 @@ void SpircController::sendCmd(MessageType typ)
         this->sendingLoadFrame = false;
     };
     auto parts = mercuryParts({encodedFrame});
-    printf("before send. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
     this->manager->execute(MercuryType::SEND, "hm://remote/user/" + this->username + "/", responseLambda, parts);
 }
 

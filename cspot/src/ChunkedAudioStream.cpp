@@ -1,6 +1,4 @@
 #include "ChunkedAudioStream.h"
-#include "freertos/task.h"
-#include "esp_log.h"
 
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
@@ -113,7 +111,9 @@ void ChunkedAudioStream::runTask()
         }
         else
         {
+            #ifdef ESP_PLATFORM
             vTaskDelay(100 / portTICK_PERIOD_MS);
+            #endif
         }
     }
 
@@ -208,15 +208,12 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
             }
             else
             {
-                ESP_LOGI("cspot", "Starting to read data\n");
                 chunk->isLoadedSemaphore->wait();
-                ESP_LOGI("cspot", "Finished reading data\n");
                 // printf("underflow!\n");
             }
         }
         else
         {
-            ESP_LOGI("cspot", "Simple request huh\n");
             this->requestChunk(chunkIndex);
         }
     }

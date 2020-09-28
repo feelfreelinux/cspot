@@ -1,7 +1,5 @@
 #include "AudioChunkManager.h"
 #include <algorithm>
-#include "esp_log.h"
-#include "freertos/task.h"
 
 AudioChunkManager::AudioChunkManager()
 {
@@ -49,7 +47,6 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data, bool failed)
                 // Got file size!
                 chunk->headerFileSize = ntohl(extract<uint32_t>(data, 5)) * 4;
                 chunk->isHeaderFileSizeLoadedSemaphore->give();
-                ESP_LOGI("cspot", "ID: %d: Total size %d\n", seqId, chunk->headerFileSize);
                 break;
             }
             case DATA_SIZE_FOOTER:
@@ -59,8 +56,6 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> data, bool failed)
                 }
                 //ESP_LOGI("cspot", "ID: %d: Starting decrypt!\n", seqId);
                 chunk->decrypt();
-                ESP_LOGI("cspot", "ID: %d: Finished!\n", seqId);
-                vTaskDelay(10 / portTICK_PERIOD_MS);
                 chunk->isLoadedSemaphore->give();
                 break;
 

@@ -1,7 +1,5 @@
 #include "MercuryManager.h"
 #include <iostream>
-#include "freertos/task.h"
-#include <esp_log.h>
 
 std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::GET, "GET"},

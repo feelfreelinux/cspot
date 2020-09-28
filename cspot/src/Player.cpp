@@ -1,5 +1,4 @@
 #include "Player.h"
-#include "freertos/task.h"
 
 Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink)
 {
