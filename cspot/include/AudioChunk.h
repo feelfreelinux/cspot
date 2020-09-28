@@ -1,11 +1,10 @@
 #ifndef AUDIOCHUNK_H
 #define AUDIOCHUNK_H
-
+#include <memory>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include "pthread.h"
-#include <memory>
 #include "WrappedSemaphore.h"
 #ifdef ESP_PLATFORM
 #include <mbedtls/aes.h>
@@ -26,15 +25,16 @@ public:
     std::vector<uint8_t> decryptedData;
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;
-    bool hasFailed = false;
     pthread_mutex_t loadingMutex;
     uint32_t startPosition;
     uint32_t endPosition;
     uint16_t seqId;
+
     size_t headerFileSize = -1;
     bool isLoaded = false;
     std::unique_ptr<WrappedSemaphore> isLoadedSemaphore;
-    std::unique_ptr<WrappedSemaphore> isHeaderLoadedSemaphore;
+    std::unique_ptr<WrappedSemaphore> isHeaderFileSizeLoadedSemaphore;
+
 
 
     AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPosition, uint32_t predictedEndPosition);

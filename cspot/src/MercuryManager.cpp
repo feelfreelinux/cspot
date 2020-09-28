@@ -1,6 +1,7 @@
 #include "MercuryManager.h"
 #include <iostream>
-
+#include "freertos/task.h"
+#include <esp_log.h>
 
 std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::GET, "GET"},
@@ -45,21 +46,12 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
 std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
 {
-    printf("OK SO FILEID \n");
-    for (int x = 0; x < fileId.size(); x++)
-    {
-        printf("%d, ", fileId[x]);
-    }
-    printf("\n OK SO AUDIOKEY \n");
-    for (int x = 0; x < audioKey.size(); x++)
-    {
-        printf("%d, ", audioKey[x]);
-    }
-    // Register audio callback
-    printf(
-        "Request from %d\n", startPos);
-    printf(
-        "Request to %d\n", endPos);
+
+    // // Register audio callback
+    // printf(
+    //     "Request from %d\n", startPos);
+    // printf(
+    //     "Request to %d\n", endPos);
     auto sampleStartBytes = pack<uint32_t>(htonl(startPos));
     auto sampleEndBytes = pack<uint32_t>(htonl(endPos));
 
@@ -98,7 +90,7 @@ void MercuryManager::runTask()
         else if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
         {
             //ESP_LOGI("cspot", "Start put\n");
-            this->audioChunkManager->handleChunkData(packet->data);
+            this->audioChunkManager->handleChunkData(packet->data, false);
             //ESP_LOGI("cspot", "End put\n");
         }
         else
@@ -132,7 +124,7 @@ void MercuryManager::handleQueue()
             case MercuryType::AUDIO_CHUNK_FAILURE_RESPONSE:
             {
                 printf("Audio Chunk failure!\n");
-                this->audioChunkManager->handleChunkData(packet->data);
+                this->audioChunkManager->handleChunkData(packet->data, true);
                 break;
             }
             case MercuryType::SEND:

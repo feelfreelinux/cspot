@@ -1,4 +1,6 @@
 #include "ChunkedAudioStream.h"
+#include "freertos/task.h"
+#include "esp_log.h"
 
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
@@ -41,7 +43,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
-    beginChunk->isHeaderLoadedSemaphore->wait();
+    beginChunk->isHeaderFileSizeLoadedSemaphore->wait();
     this->fileSize = beginChunk->headerFileSize;
     chunks.push_back(beginChunk);
 
@@ -60,14 +62,19 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
 void ChunkedAudioStream::seekMs(uint32_t positionMs)
 {
-    pthread_mutex_lock(&seekMutex);
-    // ov_time_seek(&vorbisFile, positionMs);
-    pthread_mutex_unlock(&seekMutex);
+    pthread_mutex_lock(&this->seekMutex);
+
+    ov_time_seek(&vorbisFile, positionMs);
+    pthread_mutex_unlock(&this->seekMutex);
     printf("--- Finished seeking!");
 }
 
 void ChunkedAudioStream::runTask()
 {
+    if (this->startPositionMs == 0)
+    {
+        this->requestChunk(0);
+    }
     // while (!loadedMeta);
     isRunning = true;
 
@@ -83,11 +90,10 @@ void ChunkedAudioStream::runTask()
     {
         if (!isPaused)
         {
-            std::vector<uint8_t> pcmOut(4096 * 4);
-            pthread_mutex_lock(&seekMutex);
-
-            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096 * 4, &currentSection);
-            pthread_mutex_unlock(&seekMutex);
+            std::vector<uint8_t> pcmOut(4096);
+            pthread_mutex_lock(&this->seekMutex);
+            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096, &currentSection);
+            pthread_mutex_unlock(&this->seekMutex);
 
             if (ret == 0)
             {
@@ -104,10 +110,10 @@ void ChunkedAudioStream::runTask()
                 auto data = std::vector<uint8_t>(pcmOut.begin(), pcmOut.begin() + ret);
                 audioSink->feedPCMFrames(data);
             }
-        } else {
-            #ifdef ESP_PLATFORM
+        }
+        else
+        {
             vTaskDelay(100 / portTICK_PERIOD_MS);
-            #endif
         }
     }
 
@@ -134,7 +140,6 @@ void ChunkedAudioStream::fetchTraillingPacket()
 
     chunks.push_back(endChunk);
     endChunk->isLoadedSemaphore->wait();
-
     loadedMeta = true;
 }
 
@@ -144,6 +149,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
     auto res = std::vector<uint8_t>();
     // printf("Dupa, trying to read %d\n", bytes);
     // printf("Pos, trying to read %d\n", pos);
+    bool onlyKeptMemoryRead = false;
 
     while (res.size() < bytes)
     {
@@ -166,6 +172,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
                              return false;
                          }),
                      chunks.end());
+
         int16_t chunkIndex = this->pos / AUDIO_CHUNK_SIZE;
         int32_t offset = this->pos % AUDIO_CHUNK_SIZE;
 
@@ -178,8 +185,12 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
 
         auto chunk = findChunkForPosition(pos);
 
-        if (chunk != nullptr && !chunk->hasFailed)
+        if (chunk != nullptr)
         {
+            if (chunk->keepInMemory)
+            {
+                onlyKeptMemoryRead = true;
+            }
             auto offset = pos - chunk->startPosition;
             if (chunk->isLoaded)
             {
@@ -197,14 +208,21 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
             }
             else
             {
-                //chunk->isLoadedSemaphore->wait();
+                ESP_LOGI("cspot", "Starting to read data\n");
+                chunk->isLoadedSemaphore->wait();
+                ESP_LOGI("cspot", "Finished reading data\n");
+                // printf("underflow!\n");
             }
         }
         else
         {
-            //printf("LACK\n");
-            // this->requestChunk(chunkIndex);
+            ESP_LOGI("cspot", "Simple request huh\n");
+            this->requestChunk(chunkIndex);
         }
+    }
+
+    if (!onlyKeptMemoryRead)
+    {
 
         auto requestedOffset = 0;
 

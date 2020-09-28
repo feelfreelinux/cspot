@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "freertos/task.h"
 
 Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink)
 {
@@ -28,9 +29,7 @@ void Player::handleLoad(TrackRef *track, std::function<void()> &trackLoadedCallb
     {
         if (currentTrack->audioStream->isRunning) {
             currentTrack->audioStream->isRunning = false;
-            while (!currentTrack->audioStream->finished) {
-                        //vTaskDelay(100);
-            }
+            currentTrack->audioStream->waitForTaskToReturn();
         }
 
         delete currentTrack;

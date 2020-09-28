@@ -20,9 +20,9 @@ public:
    {
 #ifdef ESP_PLATFORM
       esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
-      cfg.stack_size = (12 * 1024);
+      cfg.stack_size = (8 * 1024);
       cfg.inherit_cfg = true;
-      cfg.pin_to_core = tskNO_AFFINITY;
+      cfg.pin_to_core = 1;
       esp_pthread_set_cfg(&cfg);
 #endif
       return (pthread_create(&_thread, NULL, taskEntryFunc, this) == 0);

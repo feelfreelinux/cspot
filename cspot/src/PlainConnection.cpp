@@ -1,7 +1,7 @@
 
 #include "PlainConnection.h"
 #include <cstring>
-
+#include <netinet/tcp.h>
 PlainConnection::PlainConnection(){};
 
 void PlainConnection::connectToAp()
@@ -34,7 +34,12 @@ void PlainConnection::connectToAp()
                     (struct sockaddr *)ai->ai_addr,
                     ai->ai_addrlen) != -1)
         {
-
+            int flag = 1;
+            setsockopt(this->apSock,  /* socket affected */
+                       IPPROTO_TCP,   /* set option at TCP level */
+                       TCP_NODELAY,   /* name of option */
+                       (char *)&flag, /* the cast is historical cruft */
+                       sizeof(int));  /* length of option value */
             break;
         }
 

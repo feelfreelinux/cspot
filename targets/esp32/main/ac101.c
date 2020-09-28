@@ -152,8 +152,8 @@ static bool init(int i2c_port_num, int i2s_num, i2s_config_t *i2s_config) {
 	i2c_write_reg(HPOUT_CTRL, 0xf801);
 	
 	// set gain for speaker and earphone
-	ac101_set_spk_volume(15);
-	ac101_set_earph_volume(15);
+	ac101_set_spk_volume(70);
+	ac101_set_earph_volume(70);
 	
 	ESP_LOGI(TAG, "DAC using I2S bck:%d, ws:%d, do:%d", i2s_pin_config.bck_io_num, i2s_pin_config.ws_io_num, i2s_pin_config.data_out_num);
 
@@ -284,7 +284,7 @@ static int ac101_get_spk_volume(void) {
  * Set normalized (0..100) volume
  */
 static void ac101_set_spk_volume(uint8_t volume) {
-	uint16_t value = max(volume, 100);
+	uint16_t value = min(volume, 100);
 	value = ((int) value * 0x1f) / 100;
 	value |= i2c_read_reg(SPKOUT_CTRL) & ~0x1f;
 	i2c_write_reg(SPKOUT_CTRL, value);
@@ -301,7 +301,7 @@ static int ac101_get_earph_volume(void) {
  * Set normalized (0..100) earphone volume
  */
 static void ac101_set_earph_volume(uint8_t volume) {
-	uint16_t value = max(volume, 100);
+	uint16_t value = min(volume, 100);
 	value = (((int) value * 0x3f) / 100) << 4;
 	value |= i2c_read_reg(HPOUT_CTRL) & ~(0x3f << 4);
 	i2c_write_reg(HPOUT_CTRL, value);

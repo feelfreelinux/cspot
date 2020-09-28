@@ -1,6 +1,6 @@
 
-#define SPOTI_LOGIN "login"
-#define SPOTI_PASSWORD "pass"
+#define SPOTI_LOGIN "log"
+#define SPOTI_PASSWORD "ddd"
 
 #include <stdio.h>
 #include "sdkconfig.h"
@@ -102,5 +102,5 @@ void app_main(void)
     time(&now);
     ESP_LOGI("TAG", "Connected to AP, start spotify receiver");
 
-    auto taskHandle = xTaskCreate(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL);
+    auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL, 0);
 }

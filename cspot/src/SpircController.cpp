@@ -65,7 +65,10 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
     printf("Got frame!\n");
+    printf("before decode. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
+
     auto receivedFrame = decodePB<Frame>(Frame_fields, data);
+    printf("after decode. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
 
     std::cout << std::string(receivedFrame.ident) << std::endl;
 
@@ -205,6 +208,7 @@ void SpircController::sendCmd(MessageType typ)
         this->sendingLoadFrame = false;
     };
     auto parts = mercuryParts({encodedFrame});
+    printf("before send. Free stack %d\n", uxTaskGetStackHighWaterMark(NULL));
     this->manager->execute(MercuryType::SEND, "hm://remote/user/" + this->username + "/", responseLambda, parts);
 }
 

@@ -12,8 +12,8 @@ AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t 
     this->startPosition = startPosition;
     this->endPosition = predictedEndPosition;
     this->decryptedData = std::vector<uint8_t>();
-    this->isHeaderLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
-    this->isLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
+    this->isHeaderFileSizeLoadedSemaphore = std::make_unique<WrappedSemaphore>(2);
+    this->isLoadedSemaphore = std::make_unique<WrappedSemaphore>(2);
 }
 
 AudioChunk::~AudioChunk()
@@ -48,7 +48,7 @@ void AudioChunk::decrypt()
     AES_CTR_xcrypt_buffer(&this->ctx, &this->decryptedData[0], this->decryptedData.size());
 #endif
 
-        this->startPosition = this->endPosition - this->decryptedData.size();
+    this->startPosition = this->endPosition - this->decryptedData.size();
     this->isLoaded = true;
 }
 
