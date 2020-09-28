@@ -16,7 +16,6 @@ DiffieHellman::DiffieHellman()
     this->privateKey = std::vector<uint8_t>(KEY_SIZE);
     dddRandomGenerator(NULL, &privateKey[0], 96);
 #ifdef ESP_PLATFORM
-    printf("---- DUPA\n");
     mbedtls_mpi prime, generator, res, privKey;
     mbedtls_mpi_init(&prime);
     mbedtls_mpi_init(&generator);

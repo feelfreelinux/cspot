@@ -3,7 +3,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 if(${ESP_PLATFORM})
     add_definitions(-DUSE_MBEDTLS)
-    set(EXTRA_REQ_LIBS idf::mbedtls idf::fatfs idf::vfs idf::sdmmc idf::pthread)
+    set(EXTRA_REQ_LIBS idf::mbedtls idf::pthread)
     add_definitions(-Wunused-const-variable -Wchar-subscripts -Wunused-label -Wmaybe-uninitialized -Wmisleading-indentation)
 else()
     find_package(OpenSSL REQUIRED)

@@ -147,8 +147,6 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
 {
     auto toRead = bytes;
     auto res = std::vector<uint8_t>();
-    // printf("Dupa, trying to read %d\n", bytes);
-    // printf("Pos, trying to read %d\n", pos);
     bool onlyKeptMemoryRead = false;
 
     while (res.size() < bytes)
