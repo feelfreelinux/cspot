@@ -4,17 +4,18 @@
 #include <netinet/tcp.h>
 PlainConnection::PlainConnection(){};
 
-void PlainConnection::connectToAp()
+void PlainConnection::connectToAp(std::string apAddress)
 {
     struct addrinfo h, *airoot, *ai;
-
+    std::string hostname = apAddress.substr(0, apAddress.find(":"));
+    std::string portStr = apAddress.substr(apAddress.find(":") + 1, apAddress.size());
     memset(&h, 0, sizeof(h));
     h.ai_family = AF_INET;
     h.ai_socktype = SOCK_STREAM;
     h.ai_protocol = IPPROTO_IP;
 
     // Lookup host
-    if (getaddrinfo(AP_ADDRESS, AP_PORT, &h, &airoot))
+    if (getaddrinfo(hostname.c_str(), portStr.c_str(), &h, &airoot))
     {
         printf("getaddrinfo failed\n");
     }

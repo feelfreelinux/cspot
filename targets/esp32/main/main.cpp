@@ -1,6 +1,6 @@
 
-#define SPOTI_LOGIN "log"
-#define SPOTI_PASSWORD "ddd"
+#define SPOTI_LOGIN "login"
+#define SPOTI_PASSWORD "password"
 
 #include <stdio.h>
 #include "sdkconfig.h"
@@ -26,8 +26,9 @@
 #include <Session.h>
 #include <SpircController.h>
 #include <MercuryManager.h>
+#include <ApResolve.h>
 #include <inttypes.h>
-#include <I2SAudioSink.h>
+#include <ES9018AudioSink.h>
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 
@@ -39,8 +40,11 @@ extern "C"
 }
 static void cspotTask(void *pvParameters)
 {
+    auto apResolver = std::make_shared<ApReolve>();
     auto connection = std::make_shared<PlainConnection>();
-    connection->connectToAp();
+
+    auto apAddr = apResolver->fetchFirstApAddress();
+    connection->connectToAp(apAddr);
 
     auto session = std::make_unique<Session>();
     session->connect(connection);
@@ -52,7 +56,7 @@ static void cspotTask(void *pvParameters)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
-        auto audioSink = std::make_shared<I2SAudioSink>();
+        auto audioSink = std::make_shared<ES9018AudioSink>();
         auto spircController = std::make_shared<SpircController>(mercuryManager, SPOTI_LOGIN, audioSink);
         mercuryManager->handleQueue();
     }

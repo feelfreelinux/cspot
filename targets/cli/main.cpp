@@ -8,6 +8,7 @@
 #include <authentication.pb.h>
 #include <MercuryManager.h>
 #include <NamedPipeAudioSink.h>
+#include <ApResolve.h>
 
 #include <unistd.h>
 #include <fstream>
@@ -17,29 +18,17 @@
 
 int main(int argc, char **argv)
 {
-//     auto dupa = new DiffieHellman();
-
-//     printf("\n");
-//     for(int x = 0; x < dupa->publicKey.size(); x++) {
-//         printf("%d, ", dupa->publicKey[x]);
-//     }
-//     printf("\n");
-// dupa = new DiffieHellman();
-
-//     printf("\n");
-//     for(int x = 0; x < dupa->publicKey.size(); x++) {
-//         printf("%d, ", dupa->publicKey[x]);
-//     }
-//     printf("\n");
     if (argc != 3)
     {
         std::cout << "usage:\n";
         std::cout << "    cspot <username> <password>\n";
         return 1;
     }
-
+    auto apResolver = std::make_unique<ApResolve>();
     auto connection = std::make_shared<PlainConnection>();
-    connection->connectToAp();
+
+    auto apAddr = apResolver->fetchFirstApAddress();
+    connection->connectToAp(apAddr);
 
     auto session = std::make_unique<Session>();
     session->connect(connection);
