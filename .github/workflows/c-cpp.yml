@@ -25,6 +25,8 @@ jobs:
       run: sudo pip3 install protobuf grpcio-tools
     - name: List files in cspot directory
       run: echo "cspot/ files:" && ls cspot && echo "cspot/cJSON files:" && ls cspot/cJSON
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
     - name: cmake
       run: cd targets/cli && mkdir -p build && cd build && cmake ..
     - name: make
