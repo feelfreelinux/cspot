@@ -23,6 +23,8 @@ jobs:
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
       run: sudo pip3 install protobuf grpcio-tools
+    - name: List files in cspot directory
+      run: echo "cspot/ files:" && ls cspot && echo "cspot/cJSON files:" && ls cspot/cJSON
     - name: cmake
       run: cd targets/cli && mkdir -p build && cd build && cmake ..
     - name: make
