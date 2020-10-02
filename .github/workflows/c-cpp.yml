@@ -23,8 +23,6 @@ jobs:
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
       run: sudo pip3 install protobuf grpcio-tools
-    - name: Install cjson
-      run: sudo apt-get install -y cjson cjson-dev
     - name: cmake
       run: cd targets/cli && mkdir -p build && cd build && cmake ..
     - name: make
