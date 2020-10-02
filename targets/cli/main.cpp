@@ -5,19 +5,16 @@
 #include <Session.h>
 #include "SpotifyTrack.h"
 #include <SpircController.h>
-#include <authentication.pb.h>
 #include <MercuryManager.h>
 #include <NamedPipeAudioSink.h>
 #include <ApResolve.h>
+#include "ZeroconfAuthenticator.h"
 
-#include <unistd.h>
-#include <fstream>
-#include "fstream"
 #include <inttypes.h>
-#include <ChunkedAudioStream.h>
 
 int main(int argc, char **argv)
 {
+    new ZeroconfAuthenticator();
     if (argc != 3)
     {
         std::cout << "usage:\n";

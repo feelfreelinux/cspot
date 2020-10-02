@@ -93,7 +93,8 @@
         "keyexchange.pb.h": "c",
         "stb_vorbis.c": "cpp",
         "__memory": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "__functional_base_03": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }
