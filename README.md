@@ -1,4 +1,4 @@
-# cspot - awesome project
+# cspot
 
 A Spotify Connect player written in CPP targeting, but not limited to embedded devices (ESP32).
 
