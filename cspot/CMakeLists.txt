@@ -1,3 +1,5 @@
+project(cspot)
+
 cmake_minimum_required(VERSION 2.8.9)
 set (CMAKE_CXX_STANDARD 17)
 
@@ -16,12 +18,11 @@ else()
 endif()
 
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/extra)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/extra)
 find_package(Nanopb REQUIRED)
 include_directories(${NANOPB_INCLUDE_DIRS})
 
-find_package(cJSON REQUIRED)
-include_directories(${CJSON_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/cJSON)
 
 include_directories("include")
 include_directories("tremor")
@@ -37,10 +38,10 @@ set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
 
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
-set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c")
+set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c" "cJSON/cJSON.c")
 
 
 add_library(cspot STATIC ${SOURCES} ${PROTO_SRCS})
-target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS} ${CJSON_LIBRARIES})
+target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS})
 
-target_include_directories(cspot PUBLIC "include" "tremor" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+target_include_directories(cspot PUBLIC "include" "tremor" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS})

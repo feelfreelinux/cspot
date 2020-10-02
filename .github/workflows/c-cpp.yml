@@ -15,11 +15,17 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v1.3
+      with:
+        cmake-version: '3.18.x'
     - name: Install python dependencies
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
       run: sudo pip3 install protobuf grpcio-tools
+    - name: List files in cspot directory
+      run: echo "cspot/ files:" && ls cspot && echo "cspot/cJSON files:" && ls cspot/cJSON
     - name: cmake
-      run: mkdir -p build && cd build && cmake ..
+      run: cd targets/cli && mkdir -p build && cd build && cmake ..
     - name: make
-      run: cd build && make
+      run: cd  targets/cli/build && make
