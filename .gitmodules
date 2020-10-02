@@ -5,3 +5,6 @@
 	path = cspot/tremor
 	url = https://gitlab.xiph.org/xiph/tremor.git
 	branch = lowmem
+[submodule "cspot/cJSON"]
+	path = cspot/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
