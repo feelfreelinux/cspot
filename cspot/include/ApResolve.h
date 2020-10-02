@@ -13,7 +13,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sstream>
-#include "cjson/cJSON.h"
+#include <cJSON.h>
 #include <fstream>
 
 class ApResolve {
