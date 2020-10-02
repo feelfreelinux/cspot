@@ -9,3 +9,4 @@ include_directories(".")
 
 add_executable(cspotcli ${SOURCES})
 target_link_libraries(cspotcli cspot ${CMAKE_DL_LIBS})
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
