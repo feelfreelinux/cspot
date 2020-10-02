@@ -20,6 +20,6 @@ jobs:
     - name: Install python3-protobuf
       run: sudo pip3 install protobuf grpcio-tools
     - name: cmake
-      run: cd targets/cli mkdir -p build && cd build && cmake ..
+      run: cd targets/cli && mkdir -p build && cd build && cmake ..
     - name: make
       run: cd  targets/cli/build && make
