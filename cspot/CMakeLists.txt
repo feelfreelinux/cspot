@@ -42,6 +42,6 @@ set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/mi
 
 
 add_library(cspot STATIC ${SOURCES} ${PROTO_SRCS})
-target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS} ${CJSON_LIBRARIES})
+target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS})
 
-target_include_directories(cspot PUBLIC "include" "tremor" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+target_include_directories(cspot PUBLIC "include" "tremor" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS})
