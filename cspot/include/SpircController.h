@@ -9,6 +9,7 @@
 #include "spirc.pb.h"
 #include "PBUtils.h"
 #include "Session.h"
+#include "ConstantParameters.h"
 #include "Player.h"
 
 class SpircController {

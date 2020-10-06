@@ -1,8 +1,5 @@
 #include "SpircController.h"
 
-const char *swVersion = "2.1.0";
-const char *name = "CSpot";
-
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
 
@@ -21,7 +18,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     this->frame.state.position_ms = 0;
 
     this->frame.device_state.sw_version = (char *)swVersion;
-    this->frame.device_state.name = (char *)name;
+    this->frame.device_state.name = (char *)defaultDeviceName;
     this->frame.device_state.volume = 64;
     this->frame.device_state.can_play = true;
     this->frame.device_state.is_active = false;
@@ -170,12 +167,9 @@ void SpircController::notify()
 void SpircController::sendCmd(MessageType typ)
 {
     this->frame.version = 1;
-    this->frame.ident = (char *)"352198fd329622137e14901634264e6f332e2422";
+    this->frame.ident = (char *)deviceId;
     this->frame.seq_nr = this->seqNum;
-    this->frame.protocol_version = (char *)"2.0.0";
-
-    //frame.state = this->frame.state;
-    // frame.device_state = this->frame.device_state;
+    this->frame.protocol_version = (char *)protocolVersion;
     this->frame.typ = typ;
     this->frame.state_update_id = getCurrentTimestamp();
     this->frame.has_version = true;
