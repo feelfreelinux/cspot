@@ -6,6 +6,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
 
     this->localKeys = std::make_unique<DiffieHellman>();
 
+    // @TODO: Maybe verify if given port is taken. We're running off pure luck rn
     this->serverPort = SERVER_PORT_MIN + (std::rand() % (SERVER_PORT_MAX - SERVER_PORT_MIN + 1));
 
     printf("Starting zeroconf auth server at port %d\n", this->serverPort);
@@ -27,7 +28,6 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
 
     // Standard http response header
     auto responseHeader = std::string("HTTP/1.1 200 OK\r\nServer: cspot\r\nContent-type: application/json\r\n\r\n");
-
 
     // Make it discoverable for spoti clients
     registerZeroconf();
@@ -57,6 +57,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
                 auto line = currentString.substr(0, currentString.find("\r\n"));
                 currentString = currentString.substr(currentString.find("\r\n") + 2, currentString.size());
 
+                // The only post is add User request
                 if (line.rfind("POST /", 0) == 0)
                 {
                     isAddUserRequest = true;
@@ -64,11 +65,20 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
             }
         }
 
-
         if (isAddUserRequest)
         {
             // Empty json response
-            auto response = responseHeader + std::string("{}");
+            cJSON *baseBody = cJSON_CreateObject();
+
+            cJSON_AddNumberToObject(baseBody, "status", 101);
+            cJSON_AddNumberToObject(baseBody, "spotifyError", 0);
+            cJSON_AddStringToObject(baseBody, "statusString", "ERROR-OK");
+
+            // Get body
+            char *body = cJSON_Print(baseBody);
+            cJSON_Delete(baseBody);
+
+            auto response = responseHeader + std::string(body);
             write(clientFd, response.c_str(), response.size());
             close(clientFd);
 
@@ -85,8 +95,10 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
     }
 }
 
-std::string ZeroconfAuthenticator::getParameterFromUrlEncoded(std::string data, std::string param) {
-    
+std::string ZeroconfAuthenticator::getParameterFromUrlEncoded(std::string data, std::string param)
+{
+    auto startStr = data.substr(data.find("&" + param + "=") + param.size() + 2, data.size());
+    return urlDecode(startStr.substr(0, startStr.find("&")));
 }
 
 void ZeroconfAuthenticator::registerZeroconf()
@@ -99,15 +111,37 @@ void ZeroconfAuthenticator::registerZeroconf()
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
     TXTRecordSetValue(&txtRecord, "CPath", 1, "/");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char*) informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
+    DNSServiceRegister(&ref, 0, 0, (char *)informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
 }
 
-void ZeroconfAuthenticator::handleAddUser(std::string userData) {
-    printf("Received addUser request\n");
-    std::cout << userData << std::endl;
-}
+void ZeroconfAuthenticator::handleAddUser(std::string userData)
+{
+    auto sha1 = std::make_unique<SHA1>();
 
+    // Get all urlencoded params
+    auto username = getParameterFromUrlEncoded(userData, "userName");
+    auto blobString = getParameterFromUrlEncoded(userData, "blob");
+    auto clientKeyString = getParameterFromUrlEncoded(userData, "clientKey");
+    auto deviceName = getParameterFromUrlEncoded(userData, "deviceName");
+
+    // client key and bytes are urlencoded
+    auto clientKeyBytes = base64_decode(clientKeyString);
+    auto blobBytes = base64_decode(blobString);
+
+    // Generated secret based on earlier generated DH
+    auto secretKey = localKeys->computeSharedKey(blobBytes);
+
+    auto iv = std::vector<uint8_t>(blobBytes.begin(), blobBytes.begin() + 16);
+    auto encrypted = std::vector<uint8_t>(blobBytes.begin() + 16, blobBytes.end() - 20);
+    auto checksum = std::vector<uint8_t>(blobBytes.end() - 20, blobBytes.end());
+
+    sha1->update(secretKey);
+    auto baseKey = sha1->finalBytes();
+
+
+
+}
 
 std::string ZeroconfAuthenticator::buildJsonInfo()
 {

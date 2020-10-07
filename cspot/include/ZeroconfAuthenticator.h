@@ -17,6 +17,7 @@
 #include "cJSON.h"
 #include "ConstantParameters.h"
 #include <fstream>
+#include "Utils.h"
 #include "DiffieHellman.h"
 #include "Base64.h"
 #include "dns_sd.h"

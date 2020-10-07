@@ -94,7 +94,8 @@
         "stb_vorbis.c": "cpp",
         "__memory": "cpp",
         "forward_list": "cpp",
-        "__functional_base_03": "cpp"
+        "__functional_base_03": "cpp",
+        "regex": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }
