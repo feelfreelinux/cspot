@@ -9,12 +9,16 @@
 #include <NamedPipeAudioSink.h>
 #include <ApResolve.h>
 #include "ZeroconfAuthenticator.h"
+#include "Crypto.h"
 
 #include <inttypes.h>
 
 int main(int argc, char **argv)
 {
-    new ZeroconfAuthenticator();
+    // auto crypto = new Crypto();
+    // auto str = std::string("dupa");
+    // printf("%d\n", crypto->generateVectorWithRandomData(96)[0]);
+    // new ZeroconfAuthenticator();
     if (argc != 3)
     {
         std::cout << "usage:\n";

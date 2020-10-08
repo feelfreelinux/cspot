@@ -6,22 +6,14 @@
 #include <algorithm>
 #include "pthread.h"
 #include "WrappedSemaphore.h"
-#ifdef ESP_PLATFORM
-#include <mbedtls/aes.h>
-#else
-#include <aes.h>
-#endif
+#include "Crypto.h"
 
 class AudioChunk {
 private:
     std::vector<uint8_t> getIVSum(uint32_t num);
-#ifdef ESP_PLATFORM
-    mbedtls_aes_context ctx;
-#else
-    struct AES_ctx ctx;
-#endif
 
 public:
+    std::unique_ptr<Crypto> crypto;
     std::vector<uint8_t> decryptedData;
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;

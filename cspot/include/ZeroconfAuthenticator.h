@@ -18,8 +18,7 @@
 #include "ConstantParameters.h"
 #include <fstream>
 #include "Utils.h"
-#include "DiffieHellman.h"
-#include "Base64.h"
+#include "Crypto.h"
 #include "dns_sd.h"
 #include <cstdlib>
 #include <ctime>
@@ -35,7 +34,7 @@
 class ZeroconfAuthenticator {
 private:
     int serverPort;
-    std::unique_ptr<DiffieHellman> localKeys;
+    std::unique_ptr<Crypto> crypto;
 
     void startServer();
     std::string buildJsonInfo();

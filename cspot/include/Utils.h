@@ -24,7 +24,6 @@ uint64_t hton64(uint64_t value);
 unsigned char h2int(char c);
 std::string urlDecode(std::string str);
 
-std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_t> &message);
 
 std::string bytesToHexString(std::vector<uint8_t> &bytes);
 

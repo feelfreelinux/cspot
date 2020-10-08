@@ -3,14 +3,12 @@
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
-
-
 Session::Session()
 {
     // Generates the public and priv key
-    this->localKeys = std::make_unique<DiffieHellman>();
+    this->crypto = std::make_unique<Crypto>();
     this->shanConn = std::make_shared<ShannonConnection>();
-}
+} 
 
 void Session::connect(std::shared_ptr<PlainConnection> connection)
 {
@@ -70,8 +68,8 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto res = decodePB<APResponseMessage>(APResponseMessage_fields, skipSize);
 
     // Compute the diffie hellman shared key based on the response
-    auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + KEY_SIZE);
-    auto sharedKey = this->localKeys->computeSharedKey(diffieKey);
+    auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
+    auto sharedKey = this->crypto->dhCalculateShared(diffieKey);
 
 
     // Init client packet + Init server packets are required for the hmac challenge
@@ -85,14 +83,14 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
         challengeVector[0] = x;
 
         challengeVector.insert(challengeVector.begin(), data.begin(), data.end());
-        auto digest = SHA1HMAC(sharedKey, challengeVector);
+        auto digest = crypto->sha1HMAC(sharedKey, challengeVector);
         resultData.insert(resultData.end(), digest.begin(), digest.end());
     }
 
     auto lastVec = std::vector<uint8_t>(resultData.begin(), resultData.begin() + 0x14);
 
     // Digest generated!
-    auto digest = SHA1HMAC(lastVec, data);
+    auto digest = crypto->sha1HMAC(lastVec, data);
 
     ClientResponsePlaintext response = {};
     response.login_crypto_response.has_diffie_hellman = true;
@@ -118,10 +116,13 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message
     ClientHello request = ClientHello_init_default;
+    printf("Dupo\n");
+    this->crypto->dhInit();
+    printf("Dupe\n");
 
     // Copy the public key into diffiehellman hello packet
-    std::copy(this->localKeys->publicKey.begin(),
-              this->localKeys->publicKey.end(),
+    std::copy(this->crypto->publicKey.begin(),
+              this->crypto->publicKey.end(),
               request.login_crypto_hello.diffie_hellman.gc);
 
     request.login_crypto_hello.diffie_hellman.server_keys_known = 1;
@@ -146,5 +147,6 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
     auto vecData = encodePB(ClientHello_fields, &request);
 
     auto prefix = std::vector<uint8_t>({0x00, 0x04});
+    printf("Dupa\n");
     return this->conn->sendPrefixPacket(prefix, vecData);
 }

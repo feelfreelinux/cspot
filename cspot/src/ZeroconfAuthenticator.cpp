@@ -4,7 +4,8 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
     srand((unsigned int)time(NULL));
 
-    this->localKeys = std::make_unique<DiffieHellman>();
+    this->crypto = std::make_unique<Crypto>();
+    this->crypto->dhInit();
 
     // @TODO: Maybe verify if given port is taken. We're running off pure luck rn
     this->serverPort = SERVER_PORT_MIN + (std::rand() % (SERVER_PORT_MAX - SERVER_PORT_MIN + 1));
@@ -117,7 +118,7 @@ void ZeroconfAuthenticator::registerZeroconf()
 
 void ZeroconfAuthenticator::handleAddUser(std::string userData)
 {
-    auto sha1 = std::make_unique<SHA1>();
+    //auto sha1 = std::make_unique<SHA1>();
 
     // Get all urlencoded params
     auto username = getParameterFromUrlEncoded(userData, "userName");
@@ -126,18 +127,18 @@ void ZeroconfAuthenticator::handleAddUser(std::string userData)
     auto deviceName = getParameterFromUrlEncoded(userData, "deviceName");
 
     // client key and bytes are urlencoded
-    auto clientKeyBytes = base64_decode(clientKeyString);
-    auto blobBytes = base64_decode(blobString);
+    auto clientKeyBytes = crypto->base64Decode(clientKeyString);
+    auto blobBytes = crypto->base64Decode(blobString);
 
     // Generated secret based on earlier generated DH
-    auto secretKey = localKeys->computeSharedKey(blobBytes);
+    auto secretKey = crypto->dhCalculateShared(blobBytes);
 
     auto iv = std::vector<uint8_t>(blobBytes.begin(), blobBytes.begin() + 16);
     auto encrypted = std::vector<uint8_t>(blobBytes.begin() + 16, blobBytes.end() - 20);
     auto checksum = std::vector<uint8_t>(blobBytes.end() - 20, blobBytes.end());
 
-    sha1->update(secretKey);
-    auto baseKey = sha1->finalBytes();
+    // sha1->update(secretKey);
+    // auto baseKey = sha1->finalBytes();
 
 
 
@@ -146,7 +147,7 @@ void ZeroconfAuthenticator::handleAddUser(std::string userData)
 std::string ZeroconfAuthenticator::buildJsonInfo()
 {
     // Encode publicKey into base64
-    auto encodedKey = base64_encode(localKeys->publicKey.data(), localKeys->publicKey.size());
+    auto encodedKey = crypto->base64Encode(crypto->publicKey);
     cJSON *baseBody = cJSON_CreateObject();
 
     cJSON_AddNumberToObject(baseBody, "status", 101);
