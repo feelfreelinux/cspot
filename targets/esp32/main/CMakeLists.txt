@@ -5,4 +5,4 @@ set(COMPONENT_SRCS
 )
 set(COMPONENT_ADD_INCLUDEDIRS "." "sinks")
 register_component(REQUIRES "cspot")
-component_compile_options(-std=c++17)
+component_compile_options(-std=gnu++17)
