@@ -20,4 +20,3 @@ jobs:
     - name: Build the firmware
       run: |
         docker run --rm -v $PWD:/project -w /project espressif/idf /bin/bash -c "python3 -m pip install --upgrade pip setuptools wheel && pip3 install protobuf grpcio-tools && cd targets/esp32 && idf.py build"
-        ls -lah build/
