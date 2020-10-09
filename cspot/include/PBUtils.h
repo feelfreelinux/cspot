@@ -8,7 +8,7 @@
 
 std::vector<uint8_t> encodePB(const pb_msgdesc_t *fields, const void *src_struct);
 
-pb_bytes_array_t* stringToPBBytes(std::string stringToPack);
+pb_bytes_array_t* vectorToPbArray(const std::vector<uint8_t>& vectorToPack);
 
 void packString(char* &dst, std::string stringToPack);
 

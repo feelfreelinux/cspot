@@ -17,12 +17,13 @@ void Session::connect(std::shared_ptr<PlainConnection> connection)
     this->processAPHelloResponse(helloPacket);
 }
 
-std::vector<uint8_t> Session::authenticate(std::string username, std::string password)
+std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 {
+    // prepare authentication request proto
     ClientResponseEncrypted authRequest = {};
-    authRequest.login_credentials.username = (char *)(username.c_str());
-    authRequest.login_credentials.auth_data = stringToPBBytes(password);
-    authRequest.login_credentials.typ = AuthenticationType_AUTHENTICATION_USER_PASS;
+    authRequest.login_credentials.username = (char *)(blob->username.c_str());
+    authRequest.login_credentials.auth_data = vectorToPbArray(blob->authData);
+    authRequest.login_credentials.typ = (AuthenticationType) blob->authType;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
     authRequest.system_info.system_information_string = (char *)informationString;
@@ -116,9 +117,7 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message
     ClientHello request = ClientHello_init_default;
-    printf("Dupo\n");
     this->crypto->dhInit();
-    printf("Dupe\n");
 
     // Copy the public key into diffiehellman hello packet
     std::copy(this->crypto->publicKey.begin(),
@@ -147,6 +146,5 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
     auto vecData = encodePB(ClientHello_fields, &request);
 
     auto prefix = std::vector<uint8_t>({0x00, 0x04});
-    printf("Dupa\n");
     return this->conn->sendPrefixPacket(prefix, vecData);
 }

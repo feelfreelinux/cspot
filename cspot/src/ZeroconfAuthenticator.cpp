@@ -9,6 +9,10 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
 
     // @TODO: Maybe verify if given port is taken. We're running off pure luck rn
     this->serverPort = SERVER_PORT_MIN + (std::rand() % (SERVER_PORT_MAX - SERVER_PORT_MIN + 1));
+}
+
+std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
+{
 
     printf("Starting zeroconf auth server at port %d\n", this->serverPort);
 
@@ -83,7 +87,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
             write(clientFd, response.c_str(), response.size());
             close(clientFd);
 
-            handleAddUser(currentString);
+            return handleAddUser(currentString);
             // break;
         }
         else
@@ -116,10 +120,9 @@ void ZeroconfAuthenticator::registerZeroconf()
     TXTRecordDeallocate(&txtRecord);
 }
 
-void ZeroconfAuthenticator::handleAddUser(std::string userData)
+std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::string userData)
 {
-    //auto sha1 = std::make_unique<SHA1>();
-
+    // std::cout <<userData<<std::endl;
     // Get all urlencoded params
     auto username = getParameterFromUrlEncoded(userData, "userName");
     auto blobString = getParameterFromUrlEncoded(userData, "blob");
@@ -131,17 +134,15 @@ void ZeroconfAuthenticator::handleAddUser(std::string userData)
     auto blobBytes = crypto->base64Decode(blobString);
 
     // Generated secret based on earlier generated DH
-    auto secretKey = crypto->dhCalculateShared(blobBytes);
+    auto secretKey = crypto->dhCalculateShared(clientKeyBytes);
 
-    auto iv = std::vector<uint8_t>(blobBytes.begin(), blobBytes.begin() + 16);
-    auto encrypted = std::vector<uint8_t>(blobBytes.begin() + 16, blobBytes.end() - 20);
-    auto checksum = std::vector<uint8_t>(blobBytes.end() - 20, blobBytes.end());
+    auto loginBlob = std::make_shared<LoginBlob>();
 
-    // sha1->update(secretKey);
-    // auto baseKey = sha1->finalBytes();
+    std::string deviceIdStr = deviceId;
 
+    loginBlob->loadZeroconf(blobBytes, secretKey, deviceIdStr, username);
 
-
+    return loginBlob;
 }
 
 std::string ZeroconfAuthenticator::buildJsonInfo()

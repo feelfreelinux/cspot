@@ -10,21 +10,16 @@
 #include <ApResolve.h>
 #include "ZeroconfAuthenticator.h"
 #include "Crypto.h"
+#include "LoginBlob.h"
 
 #include <inttypes.h>
 
 int main(int argc, char **argv)
 {
-    // auto crypto = new Crypto();
-    // auto str = std::string("dupa");
-    // printf("%d\n", crypto->generateVectorWithRandomData(96)[0]);
-    // new ZeroconfAuthenticator();
-    if (argc != 3)
-    {
-        std::cout << "usage:\n";
-        std::cout << "    cspot <username> <password>\n";
-        return 1;
-    }
+
+    auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+    auto blob = authenticator->listenForRequests();
+
     auto apResolver = std::make_unique<ApResolve>();
     auto connection = std::make_shared<PlainConnection>();
 
@@ -33,7 +28,7 @@ int main(int argc, char **argv)
 
     auto session = std::make_unique<Session>();
     session->connect(connection);
-    auto token = session->authenticate(std::string(argv[1]), std::string(argv[2]));
+    auto token = session->authenticate(blob);
 
     // Auth successful
     if (token.size() > 0)

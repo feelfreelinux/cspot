@@ -22,6 +22,7 @@
 #include "dns_sd.h"
 #include <cstdlib>
 #include <ctime>
+#include "LoginBlob.h"
 
 #ifndef SOCK_NONBLOCK
 #include <fcntl.h>
@@ -38,12 +39,12 @@ private:
 
     void startServer();
     std::string buildJsonInfo();
-    void handleAddUser(std::string user);
+    std::shared_ptr<LoginBlob> handleAddUser(std::string user);
     std::string getParameterFromUrlEncoded(std::string data, std::string param);
     void registerZeroconf();
 public:
     ZeroconfAuthenticator();
-    void listenForRequests();
+    std::shared_ptr<LoginBlob> listenForRequests();
 };
 
 #endif

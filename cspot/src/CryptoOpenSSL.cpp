@@ -10,6 +10,7 @@ namespace
 
 CryptoOpenSSL::CryptoOpenSSL()
 {
+    // OpenSSL init
     ENGINE_load_builtin_engines();
     ENGINE_register_all_complete();
     this->publicKey = std::vector<uint8_t>(DH_KEY_SIZE);
@@ -24,8 +25,9 @@ CryptoOpenSSL::~CryptoOpenSSL()
     }
 }
 
-std::vector<uint8_t> CryptoOpenSSL::base64Decode(std::string data)
+std::vector<uint8_t> CryptoOpenSSL::base64Decode(const std::string& data)
 {
+    // base64 in openssl is an absolute mess lmao
     std::unique_ptr<BIO, BIOFreeAll> b64(BIO_new(BIO_f_base64()));
     BIO_set_flags(b64.get(), BIO_FLAGS_BASE64_NO_NL);
     BIO *source = BIO_new_mem_buf(data.c_str(), -1); // read-only source
@@ -37,9 +39,12 @@ std::vector<uint8_t> CryptoOpenSSL::base64Decode(std::string data)
     return decoded;
 }
 
-std::string CryptoOpenSSL::base64Encode(std::vector<uint8_t> data)
+std::string CryptoOpenSSL::base64Encode(const std::vector<uint8_t>& data)
 {
+    // base64 in openssl is an absolute mess lmao x 2
     std::unique_ptr<BIO, BIOFreeAll> b64(BIO_new(BIO_f_base64()));
+
+    // No newline mode, put all the data into sink
     BIO_set_flags(b64.get(), BIO_FLAGS_BASE64_NO_NL);
     BIO *sink = BIO_new(BIO_s_mem());
     BIO_push(b64.get(), sink);
@@ -56,11 +61,11 @@ void CryptoOpenSSL::sha1Init()
     SHA1_Init(&sha1Context);
 }
 
-void CryptoOpenSSL::sha1Update(std::string s)
+void CryptoOpenSSL::sha1Update(const std::string& s)
 {
     sha1Update(std::vector<uint8_t>(s.begin(), s.end()));
 }
-void CryptoOpenSSL::sha1Update(std::vector<uint8_t> vec)
+void CryptoOpenSSL::sha1Update(const std::vector<uint8_t>& vec)
 {
     SHA1_Update(&sha1Context, vec.data(), vec.size());
 }
@@ -79,13 +84,12 @@ std::string CryptoOpenSSL::sha1Final()
 }
 
 // HMAC SHA1
-std::vector<uint8_t> CryptoOpenSSL::sha1HMAC(std::vector<uint8_t> inputKey, std::vector<uint8_t> message)
+std::vector<uint8_t> CryptoOpenSSL::sha1HMAC(const std::vector<uint8_t>& inputKey, const std::vector<uint8_t>& message)
 {
     std::vector<uint8_t> digest(20); // 20 is 160 bits
     auto hmacContext = HMAC_CTX_new();
     HMAC_Init_ex(hmacContext, inputKey.data(), inputKey.size(), EVP_sha1(), NULL);
     HMAC_Update(hmacContext, message.data(), message.size());
-
 
     unsigned int resLen = 0;
     HMAC_Final(hmacContext, digest.data(), &resLen);
@@ -96,10 +100,10 @@ std::vector<uint8_t> CryptoOpenSSL::sha1HMAC(std::vector<uint8_t> inputKey, std:
 }
 
 // AES CTR
-void CryptoOpenSSL::aesCTRXcrypt(std::vector<uint8_t> key, std::vector<uint8_t> iv, std::vector<uint8_t> &data)
+void CryptoOpenSSL::aesCTRXcrypt(const std::vector<uint8_t>& key, std::vector<uint8_t>& iv, std::vector<uint8_t> &data)
 {
     // Prepare AES_KEY
-	auto cryptoKey = AES_KEY();
+    auto cryptoKey = AES_KEY();
     AES_set_encrypt_key(key.data(), 128, &cryptoKey);
 
     // Needed for openssl internal cache
@@ -117,8 +121,21 @@ void CryptoOpenSSL::aesCTRXcrypt(std::vector<uint8_t> key, std::vector<uint8_t> 
         block128_f(AES_encrypt));
 }
 
+void CryptoOpenSSL::aesECBdecrypt(const std::vector<uint8_t>& key, std::vector<uint8_t>& data)
+{
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(ctx);
+    int len = 0;
+
+    EVP_DecryptInit_ex(ctx, EVP_aes_192_ecb(), NULL, key.data(), NULL);
+    EVP_DecryptUpdate(ctx, data.data(), &len, data.data(), data.size());
+    EVP_DecryptFinal_ex(ctx, data.data() + len, &len);
+
+    EVP_CIPHER_CTX_free(ctx);
+}
+
 // PBKDF2
-std::vector<uint8_t> CryptoOpenSSL::pbkdf2HmacSha1(std::vector<uint8_t> password, std::vector<uint8_t> salt, int iterations, int digestSize)
+std::vector<uint8_t> CryptoOpenSSL::pbkdf2HmacSha1(const std::vector<uint8_t>& password, const std::vector<uint8_t>& salt, int iterations, int digestSize)
 {
     std::vector<uint8_t> digest(digestSize);
 
@@ -146,7 +163,7 @@ void CryptoOpenSSL::dhInit()
     BN_bn2bin(DH_get0_pub_key(dhContext), this->publicKey.data());
 }
 
-std::vector<uint8_t> CryptoOpenSSL::dhCalculateShared(std::vector<uint8_t> remoteKey)
+std::vector<uint8_t> CryptoOpenSSL::dhCalculateShared(const std::vector<uint8_t>& remoteKey)
 {
     auto sharedKey = std::vector<uint8_t>(DH_KEY_SIZE);
     // Convert remote key to bignum and compute shared key

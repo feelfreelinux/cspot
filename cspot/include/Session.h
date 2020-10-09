@@ -11,6 +11,7 @@
 #include "Utils.h"
 #include "stdlib.h"
 #include "ShannonConnection.h"
+#include "LoginBlob.h"
 #include "PlainConnection.h"
 #include "PBUtils.h"
 #include "Packet.h"
@@ -36,7 +37,7 @@ public:
     Session();
     std::shared_ptr<ShannonConnection> shanConn;
     void connect(std::shared_ptr<PlainConnection> connection);
-    std::vector<uint8_t> authenticate(std::string login, std::string password);
+    std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
 };
 
 #endif

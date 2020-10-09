@@ -37,14 +37,12 @@ void packString(char *&dst, std::string stringToPack)
     strcpy(dst, stringToPack.c_str());
 }
 
-pb_bytes_array_t* stringToPBBytes(std::string stringToPack)
+pb_bytes_array_t* vectorToPbArray(const std::vector<uint8_t>& vectorToPack)
 {
-    auto size = static_cast<pb_size_t>(stringToPack.size());
+    auto size = static_cast<pb_size_t>(vectorToPack.size());
     auto result = static_cast<pb_bytes_array_t *>(
-        malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(size) + 1));
+        malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(size)));
     result->size = size;
-    memcpy(result->bytes, stringToPack.data(), size);
-    result->bytes[size] = '\0';
-
+    memcpy(result->bytes, vectorToPack.data(), size);
     return result;
 }
