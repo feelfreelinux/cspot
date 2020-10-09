@@ -15,6 +15,8 @@ jobs:
       uses: jwlawson/actions-setup-cmake@v1.3
       with:
         cmake-version: '3.18.x'
+    - name: Install avachi libraries (mDNS)
+      run: sudo apt-get install libavahi-compat-libdnssd-dev
     - name: Install python dependencies
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
