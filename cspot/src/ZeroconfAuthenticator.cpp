@@ -95,6 +95,7 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             // Respond with player info
             auto response = responseHeader + buildJsonInfo();
             write(clientFd, response.c_str(), response.size());
+            usleep(500000);
             close(clientFd);
         }
     }
@@ -122,7 +123,6 @@ void ZeroconfAuthenticator::registerZeroconf()
 
 std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::string userData)
 {
-    // std::cout <<userData<<std::endl;
     // Get all urlencoded params
     auto username = getParameterFromUrlEncoded(userData, "userName");
     auto blobString = getParameterFromUrlEncoded(userData, "blob");
