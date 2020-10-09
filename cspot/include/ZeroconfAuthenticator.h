@@ -19,7 +19,12 @@
 #include <fstream>
 #include "Utils.h"
 #include "Crypto.h"
+
+#ifdef ESP_PLATFORM
+#include "mdns.h"
+#else
 #include "dns_sd.h"
+#endif
 #include <cstdlib>
 #include <ctime>
 #include "LoginBlob.h"

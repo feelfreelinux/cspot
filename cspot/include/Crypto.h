@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#ifdef USE_MBEDTLS
+#ifdef CSPOT_USE_MBEDTLS
 #include "CryptoMbedTLS.h"
 #define Crypto CryptoMbedTLS
 #else

@@ -220,7 +220,7 @@ std::vector<uint8_t> CryptoMbedTLS::generateVectorWithRandomData(size_t length)
     // Seed the generator
     mbedtls_ctr_drbg_seed(&ctrDrbg, mbedtls_entropy_func, &entropy,
                           (const unsigned char *)pers,
-                          strlen(pers));
+                          7);
 
     // Generate random bytes
     mbedtls_ctr_drbg_random(&ctrDrbg, randomVector.data(), length);

@@ -111,6 +111,16 @@ void ZeroconfAuthenticator::registerZeroconf()
 {
     const char *service = "_spotify-connect._tcp";
 
+#ifdef ESP_PLATFORM
+    mdns_init();
+    mdns_hostname_set("cspot");
+    mdns_txt_item_t serviceTxtData[3] = {
+        {"VERSION", "1.0"},
+        {"CPath", "/"},
+        {"Stack", "SP"}};
+    mdns_service_add("cspot", "_spotify-connect", "_tcp", serverPort, serviceTxtData, 3);
+
+#else
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, NULL);
@@ -119,6 +129,7 @@ void ZeroconfAuthenticator::registerZeroconf()
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
     DNSServiceRegister(&ref, 0, 0, (char *)informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
+#endif
 }
 
 std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::string userData)

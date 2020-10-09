@@ -1,12 +1,9 @@
 
-#define SPOTI_LOGIN "login"
-#define SPOTI_PASSWORD "password"
-
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_sntp.h"
-#include <time.h>f
+#include <time.h>
 #include "esp_wifi.h"
 #include <sys/time.h>
 #include "freertos/task.h"
@@ -26,6 +23,8 @@
 #include <Session.h>
 #include <SpircController.h>
 #include <MercuryManager.h>
+#include <ZeroconfAuthenticator.h>
+
 #include <ApResolve.h>
 #include <inttypes.h>
 #include <I2SAudioSink.h>
@@ -40,6 +39,9 @@ extern "C"
 }
 static void cspotTask(void *pvParameters)
 {
+    auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
+    auto blob = zeroconfAuthenticator->listenForRequests();
+
     auto apResolver = std::make_shared<ApResolve>();
     auto connection = std::make_shared<PlainConnection>();
 
@@ -48,7 +50,7 @@ static void cspotTask(void *pvParameters)
 
     auto session = std::make_unique<Session>();
     session->connect(connection);
-    auto token = session->authenticate(SPOTI_LOGIN, SPOTI_PASSWORD);
+    auto token = session->authenticate(blob);
 
     // Auth successful
     if (token.size() > 0)
@@ -57,7 +59,7 @@ static void cspotTask(void *pvParameters)
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
         auto audioSink = std::make_shared<I2SAudioSink>();
-        auto spircController = std::make_shared<SpircController>(mercuryManager, SPOTI_LOGIN, audioSink);
+        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->handleQueue();
     }
 }

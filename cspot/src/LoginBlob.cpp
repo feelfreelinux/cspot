@@ -49,7 +49,7 @@ uint32_t LoginBlob::readBlobInt(const std::vector<uint8_t>& data)
 	auto hi = data[blobSkipPosition + 1];
     this->blobSkipPosition += 2;
 
-	return (uint32_t) (lo&0x7f | hi<<7);
+	return (uint32_t) ((lo&0x7f) | (hi<<7));
 }
 
 std::vector<uint8_t> LoginBlob::decodeBlobSecondary(const std::vector<uint8_t> &blob, const std::string &username, const std::string &deviceId)
