@@ -1,0 +1,29 @@
+name: ESP IDF
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: targets/esp32
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Cache build
+      id: cache-build
+      uses: actions/cache@v1
+      with:
+        path: ${{github.workspace}}/targets/esp32/build
+        key: ${{ runner.os }}-esp32-build2
+    - name: Install python dependencies
+      run: python3 -m pip install --upgrade pip setuptools wheel
+    - name: Install python3-protobuf
+      run: sudo pip3 install protobuf grpcio-tools
+    - name: Build the firmware
+      run: |
+        docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build
+        ls -lah build/
