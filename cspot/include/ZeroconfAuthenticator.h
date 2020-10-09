@@ -19,7 +19,6 @@
 #include <fstream>
 #include "Utils.h"
 #include "Crypto.h"
-
 #ifdef ESP_PLATFORM
 #include "mdns.h"
 #else
@@ -28,9 +27,8 @@
 #include <cstdlib>
 #include <ctime>
 #include "LoginBlob.h"
-
-#ifndef SOCK_NONBLOCK
 #include <fcntl.h>
+#ifndef SOCK_NONBLOCK
 #define SOCK_NONBLOCK O_NONBLOCK
 #endif
 
