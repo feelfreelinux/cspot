@@ -13,7 +13,7 @@
 #include "AudioSink.h"
 #include "AudioChunk.h"
 #ifdef ESP_PLATFORM
-#include "freertos/freertos.h"
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #endif
 

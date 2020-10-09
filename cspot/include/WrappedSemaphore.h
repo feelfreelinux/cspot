@@ -2,7 +2,7 @@
 #define WRAPPEDSEMAPHORE_H
 
 #ifdef ESP_PLATFORM
-#include "freertos/freertos.h"
+#include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #elif __APPLE__
 #include <dispatch/dispatch.h>
