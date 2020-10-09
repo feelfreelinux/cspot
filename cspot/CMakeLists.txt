@@ -7,7 +7,7 @@ file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
 if(${ESP_PLATFORM})
     list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/CryptoOpenSSL.cpp)
-    add_definitions(-DCSPOT_USE_MBEDTLS)
+    idf_build_set_property(COMPILE_DEFINITIONS "-DCSPOT_USE_MBEDTLS" APPEND)
     set(EXTRA_REQ_LIBS idf::mbedtls idf::pthread idf::mdns)
     add_definitions(-Wunused-const-variable -Wchar-subscripts -Wunused-label -Wmaybe-uninitialized -Wmisleading-indentation)
 else()
