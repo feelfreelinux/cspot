@@ -24,6 +24,8 @@
 #include "mdns.h"
 #else
 #include "dns_sd.h"
+#include <unistd.h>
+#include <fcntl.h>
 #endif
 #include <cstdlib>
 #include <ctime>
