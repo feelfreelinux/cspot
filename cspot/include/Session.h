@@ -11,11 +11,13 @@
 #include "Utils.h"
 #include "stdlib.h"
 #include "ShannonConnection.h"
+#include "LoginBlob.h"
 #include "PlainConnection.h"
 #include "PBUtils.h"
 #include "Packet.h"
 #include "keyexchange.pb.h"
-#include "DiffieHellman.h"
+#include "ConstantParameters.h"
+#include "Crypto.h"
 #include "authentication.pb.h"
 
 #define SPOTIFY_VERSION 0x10800000000
@@ -27,7 +29,7 @@ class Session
 {
 private:
     std::shared_ptr<PlainConnection> conn;
-    std::unique_ptr<DiffieHellman> localKeys;
+    std::unique_ptr<Crypto> crypto;
     std::vector<uint8_t> sendClientHelloRequest();
     void processAPHelloResponse(std::vector<uint8_t> &helloPacket);
 
@@ -35,7 +37,7 @@ public:
     Session();
     std::shared_ptr<ShannonConnection> shanConn;
     void connect(std::shared_ptr<PlainConnection> connection);
-    std::vector<uint8_t> authenticate(std::string login, std::string password);
+    std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
 };
 
 #endif

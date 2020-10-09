@@ -3,16 +3,12 @@
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
-const char *deviceId = "352198fd329622137e14901634264e6f332e2422";
-const char *informationString = "cspot2";
-const char *versionString = "cspot-0.2";
-
 Session::Session()
 {
     // Generates the public and priv key
-    this->localKeys = std::make_unique<DiffieHellman>();
+    this->crypto = std::make_unique<Crypto>();
     this->shanConn = std::make_shared<ShannonConnection>();
-}
+} 
 
 void Session::connect(std::shared_ptr<PlainConnection> connection)
 {
@@ -21,12 +17,13 @@ void Session::connect(std::shared_ptr<PlainConnection> connection)
     this->processAPHelloResponse(helloPacket);
 }
 
-std::vector<uint8_t> Session::authenticate(std::string username, std::string password)
+std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 {
+    // prepare authentication request proto
     ClientResponseEncrypted authRequest = {};
-    authRequest.login_credentials.username = (char *)(username.c_str());
-    authRequest.login_credentials.auth_data = stringToPBBytes(password);
-    authRequest.login_credentials.typ = AuthenticationType_AUTHENTICATION_USER_PASS;
+    authRequest.login_credentials.username = (char *)(blob->username.c_str());
+    authRequest.login_credentials.auth_data = vectorToPbArray(blob->authData);
+    authRequest.login_credentials.typ = (AuthenticationType) blob->authType;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
     authRequest.system_info.system_information_string = (char *)informationString;
@@ -72,8 +69,8 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto res = decodePB<APResponseMessage>(APResponseMessage_fields, skipSize);
 
     // Compute the diffie hellman shared key based on the response
-    auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + KEY_SIZE);
-    auto sharedKey = this->localKeys->computeSharedKey(diffieKey);
+    auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
+    auto sharedKey = this->crypto->dhCalculateShared(diffieKey);
 
 
     // Init client packet + Init server packets are required for the hmac challenge
@@ -87,14 +84,14 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
         challengeVector[0] = x;
 
         challengeVector.insert(challengeVector.begin(), data.begin(), data.end());
-        auto digest = SHA1HMAC(sharedKey, challengeVector);
+        auto digest = crypto->sha1HMAC(sharedKey, challengeVector);
         resultData.insert(resultData.end(), digest.begin(), digest.end());
     }
 
     auto lastVec = std::vector<uint8_t>(resultData.begin(), resultData.begin() + 0x14);
 
     // Digest generated!
-    auto digest = SHA1HMAC(lastVec, data);
+    auto digest = crypto->sha1HMAC(lastVec, data);
 
     ClientResponsePlaintext response = {};
     response.login_crypto_response.has_diffie_hellman = true;
@@ -120,10 +117,11 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message
     ClientHello request = ClientHello_init_default;
+    this->crypto->dhInit();
 
     // Copy the public key into diffiehellman hello packet
-    std::copy(this->localKeys->publicKey.begin(),
-              this->localKeys->publicKey.end(),
+    std::copy(this->crypto->publicKey.begin(),
+              this->crypto->publicKey.end(),
               request.login_crypto_hello.diffie_hellman.gc);
 
     request.login_crypto_hello.diffie_hellman.server_keys_known = 1;

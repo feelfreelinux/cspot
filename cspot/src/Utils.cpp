@@ -1,5 +1,4 @@
 #include "Utils.h"
-#include "SHA1.h"
 #include "pb_encode.h"
 
 std::vector<uint8_t> blockRead(int fd, size_t readSize)
@@ -63,42 +62,42 @@ ssize_t blockWrite(int fd, std::vector<uint8_t> data)
 	return data.size();
 }
 
-std::vector<uint8_t> SHA1HMAC(std::vector<uint8_t> &inputKey, std::vector<uint8_t> &message)
+unsigned char h2int(char c)
 {
-	std::vector<uint8_t> digest = inputKey;
-	std::vector<uint8_t> ipad(HMAC_SHA1_BLOCKSIZE);
-	std::vector<uint8_t> opad(HMAC_SHA1_BLOCKSIZE);
-	unsigned int i;
-	auto sha1 = std::make_unique<SHA1>();
+    if (c >= '0' && c <='9'){
+        return((unsigned char)c - '0');
+    }
+    if (c >= 'a' && c <='f'){
+        return((unsigned char)c - 'a' + 10);
+    }
+    if (c >= 'A' && c <='F'){
+        return((unsigned char)c - 'A' + 10);
+    }
+    return(0);
+}
 
-	/* Shorten key if needed */
-	if (inputKey.size() > HMAC_SHA1_BLOCKSIZE)
-	{
-		sha1->update(inputKey);
-		digest = sha1->finalBytes();
-	}
-
-	/* Padding */
-	memset(&ipad[0], 0x36, HMAC_SHA1_BLOCKSIZE);
-	memset(&opad[0], 0x5c, HMAC_SHA1_BLOCKSIZE);
-
-	/* Pad key */
-	for (i = 0; i < digest.size(); i++)
-	{
-		ipad[i] ^= digest[i];
-		opad[i] ^= digest[i];
-	}
-
-	/* First */
-	sha1 = std::make_unique<SHA1>();
-	sha1->update(ipad);
-	sha1->update(message);
-	digest = sha1->finalBytes();
-
-	/* Second */
-	sha1 = std::make_unique<SHA1>();
-	sha1->update(opad);
-	sha1->update(digest);
-
-	return sha1->finalBytes();
+std::string urlDecode(std::string str)
+{
+    std::string encodedString="";
+    char c;
+    char code0;
+    char code1;
+    for (int i =0; i < str.length(); i++){
+        c=str[i];
+      if (c == '+'){
+        encodedString+=' ';  
+      }else if (c == '%') {
+        i++;
+        code0=str[i];
+        i++;
+        code1=str[i];
+        c = (h2int(code0) << 4) | h2int(code1);
+        encodedString+=c;
+      } else{
+        
+        encodedString+=c;  
+      }
+    }
+    
+   return encodedString;
 }

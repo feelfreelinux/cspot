@@ -2,7 +2,10 @@
 
 NamedPipeAudioSink::NamedPipeAudioSink()
 {
+    printf("Start\n");
     this->namedPipeFile = std::ofstream("outputFifo", std::ios::binary);
+    printf("stop\n");
+
 }
 
 NamedPipeAudioSink::~NamedPipeAudioSink()

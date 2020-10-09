@@ -38,7 +38,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     pthread_mutex_init(&seekMutex, NULL);
 
     readBeforeSeek = getCurrentTimestamp();
-
+    printf("FETTCH START FETCH START FETCHS TART\n");
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
     beginChunk->isHeaderFileSizeLoadedSemaphore->wait();
@@ -92,7 +92,6 @@ void ChunkedAudioStream::runTask()
             pthread_mutex_lock(&this->seekMutex);
             long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096, &currentSection);
             pthread_mutex_unlock(&this->seekMutex);
-
             if (ret == 0)
             {
                 // and done :)
@@ -100,6 +99,7 @@ void ChunkedAudioStream::runTask()
             }
             else if (ret < 0)
             {
+
                 // Error in the stream
             }
             else
