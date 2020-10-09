@@ -38,18 +38,19 @@ std::vector<uint8_t> LoginBlob::decodeBlob(const std::vector<uint8_t> &blob, con
     return encrypted;
 }
 
-uint32_t LoginBlob::readBlobInt(const std::vector<uint8_t>& data)
+uint32_t LoginBlob::readBlobInt(const std::vector<uint8_t> &data)
 {
-	auto lo = data[blobSkipPosition];
-	if ( (int) (lo&0x80) == 0) {
+    auto lo = data[blobSkipPosition];
+    if ((int)(lo & 0x80) == 0)
+    {
         this->blobSkipPosition += 1;
-		return lo;
-	}
+        return lo;
+    }
 
-	auto hi = data[blobSkipPosition + 1];
+    auto hi = data[blobSkipPosition + 1];
     this->blobSkipPosition += 2;
 
-	return (uint32_t) ((lo&0x7f) | (hi<<7));
+    return (uint32_t)((lo & 0x7f) | (hi << 7));
 }
 
 std::vector<uint8_t> LoginBlob::decodeBlobSecondary(const std::vector<uint8_t> &blob, const std::string &username, const std::string &deviceId)
@@ -80,7 +81,7 @@ std::vector<uint8_t> LoginBlob::decodeBlobSecondary(const std::vector<uint8_t> &
     return blobData;
 }
 
-void LoginBlob::loadZeroconf(const std::vector<uint8_t> &blob, const std::vector<uint8_t> &sharedKey, const std::string& deviceId, const std::string& username)
+void LoginBlob::loadZeroconf(const std::vector<uint8_t> &blob, const std::vector<uint8_t> &sharedKey, const std::string &deviceId, const std::string &username)
 {
     auto partDecoded = this->decodeBlob(blob, sharedKey);
     auto loginData = this->decodeBlobSecondary(partDecoded, username, deviceId);
@@ -96,8 +97,37 @@ void LoginBlob::loadZeroconf(const std::vector<uint8_t> &blob, const std::vector
     this->authData = std::vector<uint8_t>(loginData.begin() + blobSkipPosition, loginData.begin() + blobSkipPosition + authSize);
 }
 
-void LoginBlob::loadUserPass(const std::string& username, const std::string& password) {
+void LoginBlob::loadUserPass(const std::string &username, const std::string &password)
+{
     this->username = username;
     this->authData = std::vector<uint8_t>(password.begin(), password.end());
     this->authType = AuthenticationType_AUTHENTICATION_USER_PASS;
+}
+
+void LoginBlob::loadJson(const std::string &json)
+{
+    auto root = cJSON_Parse(json.c_str());
+    auto authTypeObject = cJSON_GetObjectItemCaseSensitive(root, "authType");
+    auto usernameObject = cJSON_GetObjectItemCaseSensitive(root, "username");
+    auto authDataObject = cJSON_GetObjectItemCaseSensitive(root, "authData");
+
+    auto authDataString = std::string(cJSON_GetStringValue(authDataObject));
+    this->authData = crypto->base64Decode(authDataString);
+    
+    this->username = std::string(cJSON_GetStringValue(usernameObject));
+    this->authType = cJSON_GetNumberValue(authTypeObject);
+
+    cJSON_Delete(root);
+}
+
+std::string LoginBlob::toJson()
+{
+    cJSON *baseBody = cJSON_CreateObject();
+    cJSON_AddStringToObject(baseBody, "authData", crypto->base64Encode(authData).c_str());
+    cJSON_AddNumberToObject(baseBody, "authType", this->authType);
+    cJSON_AddStringToObject(baseBody, "username", this->username.c_str());
+
+    char *body = cJSON_Print(baseBody);
+    cJSON_Delete(baseBody);
+    return std::string(body);
 }

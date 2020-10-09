@@ -9,16 +9,42 @@
 #include <NamedPipeAudioSink.h>
 #include <ApResolve.h>
 #include "ZeroconfAuthenticator.h"
-#include "Crypto.h"
 #include "LoginBlob.h"
-
+#include <string>
+#include <fstream>
+#include <streambuf>
 #include <inttypes.h>
 
 int main(int argc, char **argv)
 {
+    std::string credentialsFileName = "authBlob.json";
 
-    auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-    auto blob = authenticator->listenForRequests();
+    std::ifstream blobFile(credentialsFileName);
+
+    std::shared_ptr<LoginBlob> blob;
+
+    // Check if credential file exists
+    if (!blobFile.good())
+    {
+        // Start zeroauth if not authenticated yet
+        auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+        blob = authenticator->listenForRequests();
+
+        // Store blob to file
+        std::ofstream blobJsonFile(credentialsFileName);
+        blobJsonFile << blob->toJson();
+        blobJsonFile.close();
+    }
+    else
+    {
+        // Load blob from json and reuse it
+        std::string jsonData((std::istreambuf_iterator<char>(blobFile)),
+                             std::istreambuf_iterator<char>());
+
+        blob = std::make_shared<LoginBlob>();
+        // Assemble blob from json
+        blob->loadJson(jsonData);
+    }
 
     auto apResolver = std::make_unique<ApResolve>();
     auto connection = std::make_shared<PlainConnection>();
@@ -42,7 +68,8 @@ int main(int argc, char **argv)
         mercuryManager->handleQueue();
     }
 
-    while(true);
+    while (true)
+        ;
 
     return 0;
 }
