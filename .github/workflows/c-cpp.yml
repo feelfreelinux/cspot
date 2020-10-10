@@ -4,8 +4,11 @@ on: [push, pull_request]
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+          os: [macos-latest, ubuntu-latest]
+        fail-fast: false
+    runs-on:  ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -17,6 +20,7 @@ jobs:
         cmake-version: '3.18.x'
     - name: Install avachi libraries (mDNS)
       run: sudo apt-get install libavahi-compat-libdnssd-dev
+      if: ${{ matrix.os == 'ubuntu-latest' }}
     - name: Install python dependencies
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
