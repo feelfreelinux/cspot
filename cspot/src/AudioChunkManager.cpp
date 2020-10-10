@@ -10,7 +10,7 @@ std::shared_ptr<AudioChunk> AudioChunkManager::registerNewChunk(uint16_t seqId, 
 {
     auto chunk = std::make_shared<AudioChunk>(seqId, audioKey, startPos * 4, endPos * 4);
     this->chunks.push_back(chunk);
-    printf("Currently holding %d chunks\n", this->chunks.size());
+    printf("Chunk requested %d\n", seqId);
 
     return chunk;
 }

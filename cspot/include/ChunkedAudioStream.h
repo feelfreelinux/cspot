@@ -18,7 +18,7 @@
 #endif
 
 #define SPOTIFY_HEADER_SIZE 167
-#define BUFFER_SIZE 0x20000 * 3
+#define BUFFER_SIZE 0x20000 * 1.5
 
 enum class Whence
 {

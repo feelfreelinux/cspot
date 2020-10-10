@@ -3,7 +3,6 @@
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
     auto data = self->read(nmemb);
-    self->readBeforeSeek += data.size();
     std::copy(data.begin(), data.end(), (char *)ptr);
     return data.size();
 }
@@ -37,8 +36,6 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     this->startPositionMs = startPositionMs;
     pthread_mutex_init(&seekMutex, NULL);
 
-    readBeforeSeek = getCurrentTimestamp();
-    printf("FETTCH START FETCH START FETCHS TART\n");
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
     beginChunk->isHeaderFileSizeLoadedSemaphore->wait();
@@ -210,6 +207,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
         }
         else
         {
+            printf("Actual request %d\n", chunkIndex);
             this->requestChunk(chunkIndex);
         }
     }
@@ -273,6 +271,18 @@ void ChunkedAudioStream::seek(size_t dpos, Whence whence)
     }
 
     auto currentChunk = this->pos / AUDIO_CHUNK_SIZE;
+
+    if (findChunkForPosition(this->pos) == nullptr)
+    {
+        // Seeking might look back - therefore we preload some past data
+        auto startPosition = (this->pos / 4) - (AUDIO_CHUNK_SIZE / 4);
+
+        // AES block size is 16, so the index must be divisible by it
+        while ((startPosition * 4) % 16 != 0)
+            startPosition++; // ik, ugly lol
+
+        this->chunks.push_back(manager->fetchAudioChunk(fileId, audioKey, startPosition, startPosition + (AUDIO_CHUNK_SIZE / 4)));
+    }
     printf("Change in current chunk %d\n", currentChunk);
 }
 
