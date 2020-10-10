@@ -23,9 +23,9 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
     - name: Install openssl on macos
       run: |
-        brew upgrade openssl
+        brew upgrade openssl@1.1
         brew link --force openssl
-        export PKG_CONFIG_PATH="/usr/local/opt/openssl@1.0.2t/lib/pkgconfig"
+        export PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1.0/lib/pkgconfig"
         pkg-config --modversion openssl
       if: ${{ matrix.os == 'macos-latest' }}
     - name: Install python dependencies

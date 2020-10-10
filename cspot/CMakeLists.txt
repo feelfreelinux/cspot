@@ -16,9 +16,13 @@ else()
     if(OPENSSL_FOUND)
         set(OPENSSL_USE_STATIC_LIBS TRUE)
     endif()
-    set(EXTRA_REQ_LIBS OpenSSL::Crypto Threads::Threads dns_sd)
+    set(EXTRA_REQ_LIBS OpenSSL::Crypto Threads::Threads)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
+endif()
+
+if(UNIX AND NOT APPLE)
+    set(EXTRA_REQ_LIBS ${EXTRA_REQ_LIBS} dns_sd)
 endif()
 
 
