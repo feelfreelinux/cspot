@@ -1,4 +1,5 @@
 #include "LoginBlob.h"
+#include "JSONObject.h"
 
 LoginBlob::LoginBlob()
 {
@@ -113,7 +114,7 @@ void LoginBlob::loadJson(const std::string &json)
 
     auto authDataString = std::string(cJSON_GetStringValue(authDataObject));
     this->authData = crypto->base64Decode(authDataString);
-    
+
     this->username = std::string(cJSON_GetStringValue(usernameObject));
     this->authType = cJSON_GetNumberValue(authTypeObject);
 
@@ -122,12 +123,10 @@ void LoginBlob::loadJson(const std::string &json)
 
 std::string LoginBlob::toJson()
 {
-    cJSON *baseBody = cJSON_CreateObject();
-    cJSON_AddStringToObject(baseBody, "authData", crypto->base64Encode(authData).c_str());
-    cJSON_AddNumberToObject(baseBody, "authType", this->authType);
-    cJSON_AddStringToObject(baseBody, "username", this->username.c_str());
-
-    char *body = cJSON_Print(baseBody);
-    cJSON_Delete(baseBody);
-    return std::string(body);
+    JSONObject obj;
+    obj["authData"] = crypto->base64Encode(authData);
+    obj["authType"] = this->authType;
+    obj["username"] = this->username;
+    
+    return obj.toString();
 }

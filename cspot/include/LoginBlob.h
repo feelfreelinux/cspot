@@ -5,7 +5,6 @@
 #include <memory>
 #include <iostream>
 #include "Crypto.h"
-#include "cJSON.h"
 #include "authentication.pb.h"
 
 class LoginBlob
