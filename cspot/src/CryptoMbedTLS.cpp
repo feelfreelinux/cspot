@@ -147,7 +147,6 @@ std::vector<uint8_t> CryptoMbedTLS::pbkdf2HmacSha1(const std::vector<uint8_t> &p
 void CryptoMbedTLS::dhInit()
 {
     privateKey = generateVectorWithRandomData(DH_KEY_SIZE);
-    printf("%d\n", privateKey[0]);
 
     // initialize big num
     mbedtls_mpi prime, generator, res, privKey;
