@@ -111,9 +111,7 @@ void ChunkedAudioStream::runTask()
         }
         else
         {
-            #ifdef ESP_PLATFORM
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-            #endif
+            usleep(100 * 1000);
         }
     }
 
