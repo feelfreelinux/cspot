@@ -8,6 +8,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../cspot ${CMAKE_CURRENT_BINARY_
 file(GLOB SOURCES "*.cpp")
 include_directories(".")
 
+if(UNIX AND NOT APPLE)
+    add_definitions(-DCSPOT_ENABLE_ALSA_SINK)
+endif()
 add_executable(cspotcli ${SOURCES})
-target_link_libraries(cspotcli cspot ${CMAKE_DL_LIBS})
+target_link_libraries(cspotcli cspot asound ${CMAKE_DL_LIBS})
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)

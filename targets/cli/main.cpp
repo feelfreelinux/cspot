@@ -1,19 +1,20 @@
-#include <iostream>
 #include <string>
-#include <memory>
-#include <PlainConnection.h>
-#include <Session.h>
-#include "SpotifyTrack.h"
+#include <string>
+#include <streambuf>
 #include <SpircController.h>
+#include <Session.h>
+#include <PlainConnection.h>
 #include <MercuryManager.h>
-#include <NamedPipeAudioSink.h>
+#include <memory>
+#include <iostream>
+#include <inttypes.h>
+#include <fstream>
 #include <ApResolve.h>
 #include "ZeroconfAuthenticator.h"
+#include "SpotifyTrack.h"
+#include "NamedPipeAudioSink.h"
 #include "LoginBlob.h"
-#include <string>
-#include <fstream>
-#include <streambuf>
-#include <inttypes.h>
+#include "ALSAAudioSink.h"
 
 int main(int argc, char **argv)
 {
@@ -62,7 +63,12 @@ int main(int argc, char **argv)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
+
+#ifdef CSPOT_ENABLE_ALSA_SINK
+        auto audioSink = std::make_shared<ALSAAudioSink>();
+#else
         auto audioSink = std::make_shared<NamedPipeAudioSink>();
+#endif
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
 
         mercuryManager->handleQueue();
