@@ -1,5 +1,6 @@
 #include "ZeroconfAuthenticator.h"
 #include "JSONObject.h"
+#include <sstream>
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -73,18 +74,13 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
 
         if (isAddUserRequest)
         {
-            // Empty json response
-            cJSON *baseBody = cJSON_CreateObject();
+            JSONObject obj;
+            obj["status"] = 101;
+            obj["spotifyError"] = 0;
+            obj["statusString"] = "ERROR-OK";
 
-            cJSON_AddNumberToObject(baseBody, "status", 101);
-            cJSON_AddNumberToObject(baseBody, "spotifyError", 0);
-            cJSON_AddStringToObject(baseBody, "statusString", "ERROR-OK");
-
-            // Get body
-            char *body = cJSON_Print(baseBody);
-            cJSON_Delete(baseBody);
-
-            auto response = responseHeader + std::string(body);
+        
+            auto response = responseHeader + obj.toString();
             write(clientFd, response.c_str(), response.size());
             close(clientFd);
 
@@ -93,10 +89,19 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
         }
         else
         {
+            std::string jsonInfo = buildJsonInfo();
+
+            std::stringstream stream;
+            stream << "HTTP/1.1 200 OK\r\n";
+            stream << "Server: cspot\r\n";
+            stream << "Content-type: application/json\r\n";
+            stream << "Content-length:" << jsonInfo.size() << "\r\n";
+            stream << "X-DDD: Ok, mocz\r\n";
+            stream << "\r\n";
+            stream << jsonInfo;
             // Respond with player info
-            auto response = responseHeader + buildJsonInfo();
+            auto response = stream.str();
             write(clientFd, response.c_str(), response.size());
-            usleep(500000);
             close(clientFd);
         }
     }
