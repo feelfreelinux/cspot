@@ -66,12 +66,11 @@ $ mkfifo outputFifo
 $ while true; ffplay  -volume 20 -autoexit -f s16le -ac 2 -i outputFifo; end
 
 # now in another terminal window you can finally run cspot
-$ ./cspotcli "spotify_username" "spotify_password"
+$ ./cspotcli
 
 ```
 
 Now open a real Spotify app and you should see a cspot device on your local network. Use it to play audio.
 
-Please not that if you use facebook login you can still generate a password on spotify.
 
 
