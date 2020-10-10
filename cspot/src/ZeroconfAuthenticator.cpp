@@ -1,6 +1,9 @@
 #include "ZeroconfAuthenticator.h"
 #include "JSONObject.h"
 #include <sstream>
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -33,35 +36,56 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
     struct sockaddr_storage client_addr;
     socklen_t addr_size = sizeof client_addr;
 
-    // Standard http response header
-    auto responseHeader = std::string("HTTP/1.1 200 OK\r\nServer: cspot\r\nContent-type: application/json\r\n\r\n");
-
     // Make it discoverable for spoti clients
     registerZeroconf();
 
     for (;;)
     {
         int clientFd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_size);
-        fcntl(clientFd, F_SETFL, O_NONBLOCK);
+        if (fcntl(clientFd, F_SETFL, O_NONBLOCK) == -1)
+        {
+            perror("failed to fcntl(clientFd, F_SETFL, O_NONBLOCK);");
+            continue;
+        };
         int readBytes = 0;
         std::vector<uint8_t> bufferVec(128);
 
         auto currentString = std::string();
         bool isAddUserRequest = false;
 
+        fd_set set;
+        struct timeval timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 30000;
+        FD_ZERO(&set);
+        FD_SET(clientFd, &set);
+
         for (;;)
         {
-            readBytes = read(clientFd, bufferVec.data(), 128);
+
+            int rv = select(clientFd + 1, &set, NULL, NULL, &timeout);
+            if (rv == -1)
+            {
+                perror("select"); /* an error accured */
+            }
+            else if (rv == 0)
+            {
+                break;
+            }
+            else
+            {
+                readBytes = read(clientFd, bufferVec.data(), 128);
+            }
 
             // Read entire response so lets yeeeet
             if (readBytes <= 0)
                 break;
-
             currentString += std::string(bufferVec.data(), bufferVec.data() + readBytes);
 
             while (currentString.find("\r\n") != std::string::npos)
             {
                 auto line = currentString.substr(0, currentString.find("\r\n"));
+
                 currentString = currentString.substr(currentString.find("\r\n") + 2, currentString.size());
 
                 // The only post is add User request
@@ -72,15 +96,28 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             }
         }
 
+        printf("RQ: %s\n", currentString.c_str());
+
         if (isAddUserRequest)
         {
+
+            printf("Got POST request!\n");
             JSONObject obj;
             obj["status"] = 101;
             obj["spotifyError"] = 0;
             obj["statusString"] = "ERROR-OK";
+            auto jsonString = obj.toString();
 
-        
-            auto response = responseHeader + obj.toString();
+            std::stringstream stream;
+            stream << "HTTP/1.1 200 OK\r\n";
+            stream << "Server: cspot\r\n";
+            stream << "Content-type: application/json\r\n";
+            stream << "Content-length:" << jsonString.size() << "\r\n";
+            stream << "X-DDD: ADD USER\r\n";
+            stream << "\r\n";
+            stream << jsonString;
+
+            auto response = stream.str();
             write(clientFd, response.c_str(), response.size());
             close(clientFd);
 
@@ -89,6 +126,8 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
         }
         else
         {
+
+            printf("Got GET request!\n");
             std::string jsonInfo = buildJsonInfo();
 
             std::stringstream stream;
@@ -96,7 +135,7 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             stream << "Server: cspot\r\n";
             stream << "Content-type: application/json\r\n";
             stream << "Content-length:" << jsonInfo.size() << "\r\n";
-            stream << "X-DDD: Ok, mocz\r\n";
+            stream << "X-DDD: Ok, mocz2\r\n";
             stream << "\r\n";
             stream << jsonInfo;
             // Respond with player info
