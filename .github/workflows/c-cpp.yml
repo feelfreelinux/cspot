@@ -21,6 +21,9 @@ jobs:
     - name: Install avachi libraries (mDNS)
       run: sudo apt-get install libavahi-compat-libdnssd-dev
       if: ${{ matrix.os == 'ubuntu-latest' }}
+    - name: Install openssl on macos
+      run: brew install openssl && export PATH="/usr/local/opt/openssl/bin:$PATH"
+      if: ${{ matrix.os == 'macos-latest' }}
     - name: Install python dependencies
       run: python3 -m pip install --upgrade pip setuptools wheel
     - name: Install python3-protobuf
