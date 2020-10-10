@@ -63,7 +63,7 @@ int main(int argc, char **argv)
         auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
         mercuryManager->startTask();
         auto audioSink = std::make_shared<NamedPipeAudioSink>();
-        auto spircController = std::make_shared<SpircController>(mercuryManager, std::string(argv[1]), audioSink);
+        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
 
         mercuryManager->handleQueue();
     }
