@@ -66,7 +66,8 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             int rv = select(clientFd + 1, &set, NULL, NULL, &timeout);
             if (rv == -1)
             {
-                perror("select"); /* an error accured */
+                perror("select"); /* an error occured */
+                break;
             }
             else if (rv == 0)
             {
