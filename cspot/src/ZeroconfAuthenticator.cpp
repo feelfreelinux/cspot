@@ -1,4 +1,5 @@
 #include "ZeroconfAuthenticator.h"
+#include "JSONObject.h"
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -160,30 +161,27 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
 {
     // Encode publicKey into base64
     auto encodedKey = crypto->base64Encode(crypto->publicKey);
-    cJSON *baseBody = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject(baseBody, "status", 101);
-    cJSON_AddStringToObject(baseBody, "statusString", "OK");
-    cJSON_AddStringToObject(baseBody, "version", (char *)protocolVersion);
-    cJSON_AddNumberToObject(baseBody, "spotifyError", 0);
-    cJSON_AddStringToObject(baseBody, "libraryVersion", (char *)swVersion);
-    cJSON_AddStringToObject(baseBody, "accountReq", "PREMIUM");
-    cJSON_AddStringToObject(baseBody, "brandDisplayName", (char *)brandName);
-    cJSON_AddStringToObject(baseBody, "modelDisplayName", (char *)defaultDeviceName);
-    cJSON_AddStringToObject(baseBody, "voiceSupport", "NO");
-    cJSON_AddStringToObject(baseBody, "availability", "");
-    cJSON_AddNumberToObject(baseBody, "productID", 0);
-    cJSON_AddStringToObject(baseBody, "tokenType", "default");
-    cJSON_AddStringToObject(baseBody, "groupStatus", "NONE");
-    cJSON_AddStringToObject(baseBody, "resolverVersion", "0");
-    cJSON_AddStringToObject(baseBody, "scope", "streaming,client-authorization-universal");
-    cJSON_AddStringToObject(baseBody, "activeUser", "");
-    cJSON_AddStringToObject(baseBody, "deviceID", (char *)deviceId);
-    cJSON_AddStringToObject(baseBody, "remoteName", (char *)defaultDeviceName);
-    cJSON_AddStringToObject(baseBody, "publicKey", encodedKey.c_str());
-    cJSON_AddStringToObject(baseBody, "deviceType", "SPEAKER");
-
-    char *body = cJSON_Print(baseBody);
-    cJSON_Delete(baseBody);
-    return std::string(body);
+    JSONObject obj;
+    obj["status"] = 101;
+    obj["statusString"] = "OK";
+    obj["version"] = protocolVersion;
+    obj["spotifyError"] = 0;
+    obj["libraryVersion"] = swVersion;
+    obj["accountReq"] = "PREMIUM";
+    obj["brandDisplayName"] = brandName;
+    obj["modelDisplayName"] = defaultDeviceName;
+    obj["voiceSupport"] = "NO";
+    obj["availability"] = "";
+    obj["productID"] = 0;
+    obj["tokenType"] = "default";
+    obj["groupStatus"] = "NONE";
+    obj["resolverVersion"] = "0";
+    obj["scope"] = "streaming,client-authorization-universal";
+    obj["activeUser"] = "";
+    obj["deviceID"] = deviceId;
+    obj["remoteName"] = defaultDeviceName;
+    obj["publicKey"] = encodedKey;
+    obj["deviceType"] = "SPEAKER";
+    return obj.toString();
 }
