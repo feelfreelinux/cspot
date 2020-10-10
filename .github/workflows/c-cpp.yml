@@ -27,7 +27,7 @@ jobs:
         brew link --force openssl@1.1
         export PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1/lib/pkgconfig"
         pkg-config --modversion openssl
-        echo "::set-env name=PKG_CONFIG_PATH::$PKG_CONFIG_PATH"
+        echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV
       if: ${{ matrix.os == 'macos-latest' }}
     - name: Install python dependencies
       run: python3 -m pip install --upgrade pip setuptools wheel
