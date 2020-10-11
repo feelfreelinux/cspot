@@ -141,9 +141,9 @@ void MercuryManager::handleQueue()
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
 
-                if (this->subscriptions.count(std::string(response->mercuryHeader.uri)) > 0)
+                if (this->subscriptions.count(std::string(response->mercuryHeader->uri)) > 0)
                 {
-                    this->subscriptions[std::string(response->mercuryHeader.uri)](std::move(response));
+                    this->subscriptions[std::string(response->mercuryHeader->uri)](std::move(response));
                     //this->subscriptions.erase(std::string(response->mercuryHeader.uri));
                 }
                 break;

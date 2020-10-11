@@ -20,7 +20,7 @@ private:
 public:
     MercuryResponse(std::vector<uint8_t> &data);
     void decodeHeader();
-    Header mercuryHeader;
+    PBWrapper<Header> mercuryHeader;
     uint8_t flags;
     mercuryParts parts;
     uint64_t sequenceId;

@@ -1,5 +1,7 @@
 #include "Player.h"
 
+// #include <valgrind/memcheck.h>
+
 Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink)
 {
     this->audioSink = audioSink;
@@ -20,6 +22,7 @@ void Player::play()
 void Player::seekMs(size_t positionMs) {
     printf("----- Tryin to seek %d\n", positionMs);
     this->currentTrack->audioStream->seekMs(positionMs);
+    // VALGRIND_DO_LEAK_CHECK;
 }
 
 void Player::handleLoad(TrackRef *track, std::function<void()> &trackLoadedCallback)

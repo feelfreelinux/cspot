@@ -62,17 +62,17 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
     printf("Got spirc frame!\n");
-    auto receivedFrame = decodePB<Frame>(Frame_fields, data);
+    PBWrapper<Frame> receivedFrame(data);
 
-    std::cout << std::string(receivedFrame.ident) << std::endl;
+    std::cout << std::string(receivedFrame->ident) << std::endl;
 
-    switch (receivedFrame.typ)
+    switch (receivedFrame->typ)
     {
     case MessageType_kMessageTypeNotify:
     {
         printf("Notify frame\n");
         // Pause the playback if another player took control
-        if (this->frame.device_state.is_active && receivedFrame.device_state.is_active && !sendingLoadFrame)
+        if (this->frame.device_state.is_active && receivedFrame->device_state.is_active && !sendingLoadFrame)
         {
             this->frame.device_state.is_active = false;
             this->frame.state.status = PlayStatus_kPlayStatusStop;
@@ -83,8 +83,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     case MessageType_kMessageTypeSeek:
     {
         printf("Seek command\n");
-        this->frame.state.position_ms = receivedFrame.position;
-        this->player->seekMs(receivedFrame.position);
+        this->frame.state.position_ms = receivedFrame->position;
+        this->player->seekMs(receivedFrame->position);
         this->frame.state.position_measured_at = getCurrentTimestamp();
         notify();
         break;
@@ -128,11 +128,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.device_state.is_active = true;
         this->frame.device_state.became_active_at = getCurrentTimestamp();
         this->frame.device_state.has_became_active_at = true;
-        this->frame.state.playing_track_index = receivedFrame.state.playing_track_index;
+        this->frame.state.playing_track_index = receivedFrame->state.playing_track_index;
         this->frame.state.status = PlayStatus_kPlayStatusLoading;
-        this->frame.state.context_uri = receivedFrame.state.context_uri;
-        std::copy(std::begin(receivedFrame.state.track), std::end(receivedFrame.state.track), std::begin(this->frame.state.track));
-        this->frame.state.track_count = receivedFrame.state.track_count;
+        this->frame.state.context_uri = receivedFrame->state.context_uri;
+        std::copy(std::begin(receivedFrame->state.track), std::end(receivedFrame->state.track), std::begin(this->frame.state.track));
+        this->frame.state.track_count = receivedFrame->state.track_count;
         this->frame.state.has_playing_track_index = true;
 
         loadTrack();
@@ -156,7 +156,6 @@ void SpircController::loadTrack()
     this->notify();
 
     player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
-
 }
 
 void SpircController::notify()

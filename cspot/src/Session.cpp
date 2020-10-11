@@ -8,7 +8,7 @@ Session::Session()
     // Generates the public and priv key
     this->crypto = std::make_unique<Crypto>();
     this->shanConn = std::make_shared<ShannonConnection>();
-} 
+}
 
 void Session::connect(std::shared_ptr<PlainConnection> connection)
 {
@@ -23,7 +23,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     ClientResponseEncrypted authRequest = {};
     authRequest.login_credentials.username = (char *)(blob->username.c_str());
     authRequest.login_credentials.auth_data = vectorToPbArray(blob->authData);
-    authRequest.login_credentials.typ = (AuthenticationType) blob->authType;
+    authRequest.login_credentials.typ = (AuthenticationType)blob->authType;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
     authRequest.system_info.system_information_string = (char *)informationString;
@@ -44,7 +44,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
         printf("Authorization successful\n");
 
         // @TODO store the reusable credentials
-        //auto welcomePacket = decodePB<APWelcome>(APWelcome_fields, packet->data);
+        // PBWrapper<APWelcome> welcomePacket(packet->data)
         return std::vector<uint8_t>({0x1}); // TODO: return actual reusable credentaials to be stored somewhere
         break;
     }
@@ -66,12 +66,11 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
 
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
-    auto res = decodePB<APResponseMessage>(APResponseMessage_fields, skipSize);
+    PBWrapper<APResponseMessage> res(skipSize);
 
     // Compute the diffie hellman shared key based on the response
-    auto diffieKey = std::vector<uint8_t>(res.challenge.login_crypto_challenge.diffie_hellman.gs, res.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
+    auto diffieKey = std::vector<uint8_t>(res->challenge.login_crypto_challenge.diffie_hellman.gs, res->challenge.login_crypto_challenge.diffie_hellman.gs + 96);
     auto sharedKey = this->crypto->dhCalculateShared(diffieKey);
-
 
     // Init client packet + Init server packets are required for the hmac challenge
     data.insert(data.begin(), helloPacket.begin(), helloPacket.end());
