@@ -5,6 +5,8 @@
 #include <string>
 #include <stdexcept>
 #include <type_traits>
+#include <iostream>
+#include <memory>
 
 #include "pb_encode.h"
 #include "pb_decode.h"
@@ -45,7 +47,8 @@ template <typename T>
 class PBWrapper
 {
 public:
-    T *innerData = nullptr;
+    std::shared_ptr<T> innerData;
+    T result = {};
 
     PBWrapper()
     {
@@ -53,25 +56,31 @@ public:
 
     PBWrapper(std::vector<uint8_t> &data)
     {
-        this->innerData = new T;
         // Create stream
         pb_istream_t stream = pb_istream_from_buffer(&data[0], data.size());
+        std::cout << typeid(T).name() << std::endl;
 
         auto fields = this->getFieldsForType();
+        std::cout << fields << std::endl;
+        std::cout << APResponseMessage_fields << std::endl;
 
         // Decode the message
-        if (pb_decode(&stream, fields, this->innerData) == false)
+        if (pb_decode(&stream, fields, &result) == false)
         {
+            auto dat = std::string("failed to decode nanoPB: ") + PB_GET_ERROR(&stream);
+            std::cout << dat << std::endl;
             throw std::runtime_error(std::string("failed to decode nanoPB: ") + PB_GET_ERROR(&stream));
         }
+
+        innerData = std::make_shared<T>(result);
     }
 
     ~PBWrapper()
     {
         if (this->innerData != nullptr)
         {
-            pb_release(getFieldsForType(), this->innerData);
-            delete this->innerData;
+            pb_release(getFieldsForType(), &result);
+            // delete this->innerData;
         }
     }
     PBWrapper(const PBWrapper &) = delete; // delete copy constructor since I don't even know how to copy PB structs
@@ -94,7 +103,7 @@ public:
         return *this;
     }
 
-    T *operator->() const
+    std::shared_ptr<T> operator->() const
     {
         return innerData;
     }

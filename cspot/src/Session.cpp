@@ -66,6 +66,7 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
 
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
+    printf("SKIPSIZE %d\n", skipSize.size());
     PBWrapper<APResponseMessage> res(skipSize);
 
     // Compute the diffie hellman shared key based on the response
