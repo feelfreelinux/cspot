@@ -85,9 +85,9 @@ void ChunkedAudioStream::runTask()
     {
         if (!isPaused)
         {
-            std::vector<uint8_t> pcmOut(4096);
+            std::vector<uint8_t> pcmOut(4096/ 4);
             pthread_mutex_lock(&this->seekMutex);
-            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096, &currentSection);
+            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096/ 4, &currentSection);
             pthread_mutex_unlock(&this->seekMutex);
             if (ret == 0)
             {
@@ -103,7 +103,8 @@ void ChunkedAudioStream::runTask()
             {
                 // Write the actual data
                 auto data = std::vector<uint8_t>(pcmOut.begin(), pcmOut.begin() + ret);
-                audioSink->feedPCMFrames(data);
+                pcmCallback(data);
+                // audioSink->feedPCMFrames(data);
             }
         }
         else

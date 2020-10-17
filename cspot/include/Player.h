@@ -22,10 +22,13 @@ private:
 public:
     Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);
     std::function<void()> endOfFileCallback;
+    int volume = 255;
 
+    void setVolume(uint16_t volume);
     void handleLoad(TrackRef* track, std::function<void()> &trackLoadedCallback);
     void pause();
     void seekMs(size_t positionMs);
+    void feedPCM(std::vector<uint8_t> &data);
     void play();
 
 };

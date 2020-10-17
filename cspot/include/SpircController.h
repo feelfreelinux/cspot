@@ -12,6 +12,8 @@
 #include "ConstantParameters.h"
 #include "Player.h"
 
+#define MAX_VOLUME 65536
+
 class SpircController {
 private:
     uint32_t seqNum = 0;

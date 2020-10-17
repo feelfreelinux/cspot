@@ -19,6 +19,7 @@
 
 #define SPOTIFY_HEADER_SIZE 167
 #define BUFFER_SIZE 0x20000 * 1.5
+typedef std::function<void(std::vector<uint8_t>&)> pcmDataCallback;
 
 enum class Whence
 {
@@ -65,6 +66,7 @@ public:
     bool isPaused = false;
     bool isRunning = false;
     bool finished = false;
+    pcmDataCallback pcmCallback;
     std::shared_ptr<AudioSink> audioSink;
 
     pthread_mutex_t seekMutex;
