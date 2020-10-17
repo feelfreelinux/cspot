@@ -28,7 +28,7 @@ Summary:
 - cmake (version 3.18 or higher)
 - gcc / clang for the CLI target
 - [esp-idf](https://github.com/espressif/esp-idf) for building for the esp32
-- ffmpeg for playback on the desktop CLI version
+- portaudio for playback on MacOS
 - downloaded submodules
 - python libraries for the [nanopb](https://github.com/nanopb/nanopb) generator
 
@@ -67,18 +67,9 @@ See running the CLI for information on how to run cspot on a desktop computer.
 
 ## The CLI version
 
-Currently the CLI version outputs the raw audio data to a FIFO-file named outputFifo. It has to be read by ffmpeg running as another process to get audio playback on a desktop computer. Portaudio output coming soon.
+After building the app, the only thing you need to do is to run it through CLI.
 
 ```shell
-# execute these comands in the directory where cspotcli was built.
-
-# creates a FIFO
-$ mkfifo outputFifo
-
-# run ffmpeg in an infinite loop to play the audio
-$ while true; ffplay  -volume 20 -autoexit -f s16le -ac 2 -i outputFifo; end
-
-# now in another terminal window you can finally run cspot
 $ ./cspotcli
 
 ```
