@@ -1,5 +1,7 @@
 #include "PortAudioSink.h"
 
+#ifdef CSPOT_ENABLE_PORTAUDIO_SINK
+
 PortAudioSink::PortAudioSink()
 {
     Pa_Initialize();
@@ -38,3 +40,5 @@ void PortAudioSink::feedPCMFrames(std::vector<uint8_t> &data)
 {
     Pa_WriteStream(stream, &data[0], data.size() / 4);
 }
+
+#endif
