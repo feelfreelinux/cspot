@@ -15,6 +15,7 @@
 #include "NamedPipeAudioSink.h"
 #include "LoginBlob.h"
 #include "PortAudioSink.h"
+#include "ALSAAudioSink.h"
 
 int main(int argc, char **argv)
 {
