@@ -14,7 +14,7 @@
 #include "SpotifyTrack.h"
 #include "NamedPipeAudioSink.h"
 #include "LoginBlob.h"
-#include "ALSAAudioSink.h"
+#include "PortAudioSink.h"
 
 int main(int argc, char **argv)
 {
@@ -66,6 +66,8 @@ int main(int argc, char **argv)
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
         auto audioSink = std::make_shared<ALSAAudioSink>();
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+        auto audioSink = std::make_shared<PortAudioSink>();
 #else
         auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif
