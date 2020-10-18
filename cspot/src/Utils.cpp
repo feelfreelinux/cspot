@@ -6,15 +6,18 @@ std::vector<uint8_t> blockRead(int fd, size_t readSize)
 	std::vector<uint8_t> buf(readSize);
 	unsigned int idx = 0;
 	ssize_t n;
+    // printf("START READ\n");
 
 	while (idx < readSize)
 	{
 		if ((n = recv(fd, &buf[idx], readSize - idx, 0)) <= 0)
 		{
+            printf("READ: 0 or something else %d\n ", n);
 			return buf;
 		}
 		idx += n;
 	}
+    // printf("FINISH READ\n");
 	return buf;
 }
 unsigned long long getCurrentTimestamp()
@@ -50,15 +53,19 @@ ssize_t blockWrite(int fd, std::vector<uint8_t> data)
 {
 	unsigned int idx = 0;
 	ssize_t n;
+    // printf("START WRITE\n");
 
 	while (idx < data.size())
 	{
 		if ((n = send(fd, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
 		{
+            printf("WRITE: 0 or something else %d\n ", n);
 			return data.size();
 		}
 		idx += n;
 	}
+    // printf("FINISH WRITE\n");
+
 	return data.size();
 }
 

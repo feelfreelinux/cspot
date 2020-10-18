@@ -19,7 +19,8 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 
     this->frame.device_state.sw_version = (char *)swVersion;
     this->frame.device_state.name = (char *)defaultDeviceName;
-    this->frame.device_state.volume = 64;
+    this->frame.device_state.volume = MAX_VOLUME;
+
     this->frame.device_state.can_play = true;
     this->frame.device_state.is_active = false;
     this->frame.device_state.has_volume = true;
@@ -89,6 +90,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         notify();
         break;
     }
+    case MessageType_kMessageTypeVolume:
+        this->frame.device_state.volume = receivedFrame.volume;
+        player->setVolume((receivedFrame.volume / (double) MAX_VOLUME) * 255);
+        notify();
+        break;
     case MessageType_kMessageTypePause:
     {
         printf("Pause command\n");
@@ -97,11 +103,6 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         uint32_t diff = getCurrentTimestamp() - this->frame.state.position_measured_at;
         this->frame.state.position_ms = this->frame.state.position_ms + diff;
         this->frame.state.position_measured_at = getCurrentTimestamp();
-        //         long now = System.currentTimeMillis();
-        // int pos = state.getPositionMs();
-        // int diff = (int) (now - state.getPositionMeasuredAt());
-        // state.setPositionMs(pos + diff);
-        // state.setPositionMeasuredAt(now);
         notify();
 
         break;
