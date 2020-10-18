@@ -91,8 +91,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     }
     case MessageType_kMessageTypeVolume:
-        this->frame.device_state.volume = receivedFrame.volume;
-        player->setVolume((receivedFrame.volume / (double) MAX_VOLUME) * 255);
+        this->frame.device_state.volume = receivedFrame->volume;
+        player->setVolume((receivedFrame->volume / (double) MAX_VOLUME) * 255);
         notify();
         break;
     case MessageType_kMessageTypePause:
