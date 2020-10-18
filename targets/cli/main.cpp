@@ -1,5 +1,4 @@
 #include <string>
-#include <string>
 #include <streambuf>
 #include <SpircController.h>
 #include <Session.h>
