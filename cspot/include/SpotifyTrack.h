@@ -24,9 +24,12 @@ private:
     std::vector<uint8_t> currentChunkHeader;
 public:
     SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<uint8_t> &gid);
+    ~SpotifyTrack();
+    uint64_t reqSeqNum = -1;
     std::function<void()> loadedTrackCallback;
     std::unique_ptr<ChunkedAudioStream> audioStream;
-
+    audioKeyCallback audioKeyLambda;
+    mercuryCallback responseLambda;
 };
 
 

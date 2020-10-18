@@ -64,15 +64,17 @@ public:
   MercuryManager(std::shared_ptr<ShannonConnection> conn);
   uint16_t audioChunkSequence;
 
-  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
-  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
-  void execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
-  void execute(MercuryType method, std::string uri, mercuryCallback &callback);
+  uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
+  uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
+  uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
+  uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback);
   void handleQueue();
   void requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback);
   std::shared_ptr<AudioChunk> fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint16_t index);
   std::shared_ptr<AudioChunk> fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos);
   void unregisterAudioCallback(uint16_t seqId);
+  void unregisterMercuryCallback(uint64_t seqId);
+  void freeAudioKeyCallback();
 };
 
 #endif

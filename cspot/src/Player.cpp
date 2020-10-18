@@ -16,7 +16,8 @@ void Player::play()
     this->currentTrack->audioStream->isPaused = false;
 }
 
-void Player::setVolume(uint16_t volume) {
+void Player::setVolume(uint16_t volume)
+{
     this->volume = volume;
 
     // Pass volume event to the sink if volume is sink-handled
@@ -26,7 +27,6 @@ void Player::setVolume(uint16_t volume) {
 }
 
 void Player::seekMs(size_t positionMs) {
-    printf("----- Tryin to seek %d\n", positionMs);
     this->currentTrack->audioStream->seekMs(positionMs);
 }
 
@@ -53,9 +53,10 @@ void Player::feedPCM(std::vector<uint8_t> &data) {
 
 void Player::handleLoad(TrackRef *track, std::function<void()> &trackLoadedCallback)
 {
+    std::lock_guard<std::mutex> guard(loadTrackMutex);
     if (currentTrack != nullptr)
     {
-        if (currentTrack->audioStream->isRunning) {
+        if (currentTrack->audioStream != nullptr && currentTrack->audioStream->isRunning) {
             currentTrack->audioStream->isRunning = false;
             currentTrack->audioStream->waitForTaskToReturn();
         }
