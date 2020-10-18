@@ -53,7 +53,7 @@ The cli target is used mainly for testing and development purposes, as of now it
 $ cd targets/cli
 
 # create a build directory and navigate to it
-$ mkdir -p build && cd build
+$ mkdir build && cd build
 
 # use cmake to generate build files
 $ cmake ..
@@ -75,6 +75,4 @@ $ ./cspotcli
 ```
 
 Now open a real Spotify app and you should see a cspot device on your local network. Use it to play audio.
-
-
 
