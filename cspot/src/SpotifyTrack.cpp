@@ -6,6 +6,7 @@ SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<
 {
     this->manager = manager;
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
+        std::cout << "[responseLambda] will move res with response->parts[0].size() = " << res->parts[0].size() << "\n";
         this->trackInformationCallback(std::move(res));
     };
 

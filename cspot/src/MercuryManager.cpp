@@ -130,6 +130,11 @@ void MercuryManager::handleQueue()
             case MercuryType::UNSUB:
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
+                std::cout << " response->parts.size() = " << response->parts.size() << "\n";
+                if (response->parts.size() > 0)
+                {
+                    std::cout << " MercuryType::UNSUB response->parts[0].size() " << response->parts[0].size() << "\n";
+                }
                 if (this->callbacks.count(response->sequenceId) > 0)
                 {
                     this->callbacks[response->sequenceId](std::move(response));
