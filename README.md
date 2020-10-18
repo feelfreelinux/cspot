@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="cspot_logo.png">
+</p>
 ![C/C++ CI](https://github.com/feelfreelinux/cspot/workflows/C/C++%20CI/badge.svg)
 ![ESP IDF](https://github.com/feelfreelinux/cspot/workflows/ESP%20IDF/badge.svg)
 [![Commits](https://badgen.net/github/commits/feelfreelinux/cspot?color=red)](https://github.com/feelfreelinux/cspot)
