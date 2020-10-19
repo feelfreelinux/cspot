@@ -117,7 +117,7 @@ public:
     void runTask();
 
 private:
-    RingbufferPointer<std::vector<uint8_t>, 2> ringbuffer;
+    RingbufferPointer<std::vector<uint8_t>, 3> ringbuffer;
     unsigned int pcm;
     snd_pcm_t *pcm_handle;
     snd_pcm_hw_params_t *params;
