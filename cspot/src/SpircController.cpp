@@ -1,4 +1,5 @@
 #include "SpircController.h"
+#include <cassert>
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
@@ -155,7 +156,8 @@ void SpircController::loadTrack()
         this->notify();
     };
     this->notify();
-
+    // TODO: implement something sane
+    assert(("reached end of playlist, aborting", this->frame.state.playing_track_index < this->frame.state.track_count));
     player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
 }
 
