@@ -141,11 +141,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.state.track_count = receivedFrame->state.track_count;
         for (int i = 0; i < receivedFrame->state.track_count; i++)
         {
-            this->frame.state.track[i] = TrackRef {
-                .has_uri = receivedFrame->state.track[i].has_uri,
-                .has_queued = receivedFrame->state.track[i].has_queued,
-                .queued = receivedFrame->state.track[i].queued,
-                .context = receivedFrame->state.track[i].context == nullptr ? nullptr : strdup(receivedFrame->state.track[i].context),
+            this->frame.state.track[i] = TrackRef{
+                has_uri : receivedFrame->state.track[i].has_uri,
+                has_queued : receivedFrame->state.track[i].has_queued,
+                queued : receivedFrame->state.track[i].queued,
+                context : receivedFrame->state.track[i].context == nullptr ? nullptr : strdup(receivedFrame->state.track[i].context),
             };
             memcpy(this->frame.state.track[i].uri, receivedFrame->state.track[i].uri, sizeof(receivedFrame->state.track[i].uri));
             auto result = static_cast<pb_bytes_array_t *>(
