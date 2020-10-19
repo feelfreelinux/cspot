@@ -58,7 +58,6 @@ public:
     {
         // Create stream
         pb_istream_t stream = pb_istream_from_buffer(&data[0], data.size());
-        std::cout << typeid(T).name() << std::endl;
 
         auto fields = this->getFieldsForType();
         std::cout << fields << std::endl;
