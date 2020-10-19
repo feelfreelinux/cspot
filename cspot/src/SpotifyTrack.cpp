@@ -42,14 +42,8 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
             auto audioKey = std::vector<uint8_t>(res.begin() + 4, res.end());
             if (this->fileId.size() > 0)
             {
-                // TODO: variable position from frame
-                this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackInfo.duration, this->manager, 0);
-                if (this->fileId.size() > 0)
-                {
-                    // TODO: variable position from frame
-                    this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackDuration, this->manager, 0);
-                    loadedTrackCallback();
-                }
+                this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackDuration, this->manager, 0);
+                loadedTrackCallback();
             }
             else
             {
