@@ -228,17 +228,17 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryParts &payload)
 {
     mercuryCallback subscription = nullptr;
-    this->execute(method, uri, callback, subscription, payload);
+    return this->execute(method, uri, callback, subscription, payload);
 }
 
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback &subscription)
 {
     auto payload = mercuryParts(0);
-    this->execute(method, uri, callback, subscription, payload);
+    return this->execute(method, uri, callback, subscription, payload);
 }
 
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback)
 {
     auto payload = mercuryParts(0);
-    this->execute(method, uri, callback, payload);
+    return this->execute(method, uri, callback, payload);
 }
