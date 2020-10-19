@@ -31,7 +31,9 @@ ALSAAudioSink::ALSAAudioSink()
     unsigned int rate = 44100;
     if (pcm = snd_pcm_hw_params_set_rate_near(pcm_handle, params, &rate, 0) < 0)
         printf("ERROR: Can't set rate. %s\n", snd_strerror(pcm));
-
+    unsigned int periodTime = 800;
+    int dir = -1;
+    snd_pcm_hw_params_set_period_time_near(pcm_handle, params, &periodTime, &dir);
     /* Write parameters */
     if (pcm = snd_pcm_hw_params(pcm_handle, params) < 0)
         printf("ERROR: Can't set harware parameters. %s\n", snd_strerror(pcm));
@@ -49,7 +51,7 @@ ALSAAudioSink::ALSAAudioSink()
         printf("(stereo)\n");
 
     snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
-
+    printf("period_time = %d\n", tmp);
     snd_pcm_hw_params_get_period_size(params, &frames, 0);
 
     this->buff_size = frames * 2 * 2 /* 2 -> sample size */;
