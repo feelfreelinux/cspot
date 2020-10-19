@@ -66,7 +66,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     printf("Got spirc frame!\n");
     PBWrapper<Frame> receivedFrame(data);
 
-    std::cout << std::string(receivedFrame->ident) << std::endl;
+    // std::cout << std::string(receivedFrame->ident) << std::endl;
 
     switch (receivedFrame->typ)
     {
@@ -93,7 +93,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType_kMessageTypeVolume:
         this->frame.device_state.volume = receivedFrame->volume;
-        player->setVolume((receivedFrame->volume / (double) MAX_VOLUME) * 255);
+        player->setVolume((receivedFrame->volume / (double)MAX_VOLUME) * 255);
         notify();
         break;
     case MessageType_kMessageTypePause:
@@ -125,6 +125,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         notify();
         break;
     case MessageType_kMessageTypeLoad:
+    {
         printf("Load frame!\n");
         this->sendingLoadFrame = true;
         this->frame.device_state.is_active = true;
@@ -132,13 +133,32 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.device_state.has_became_active_at = true;
         this->frame.state.playing_track_index = receivedFrame->state.playing_track_index;
         this->frame.state.status = PlayStatus_kPlayStatusLoading;
-        this->frame.state.context_uri = receivedFrame->state.context_uri;
-        std::copy(std::begin(receivedFrame->state.track), std::end(receivedFrame->state.track), std::begin(this->frame.state.track));
+        // this->frame.state.context_uri = receivedFrame->state.context_uri;
+
+        this->frame.state.context_uri = receivedFrame->state.context_uri == nullptr ? nullptr : strdup(receivedFrame->state.context_uri);
+
+        assert(("receivedFrame->state.track_count cannot overflow track[100]", receivedFrame->state.track_count < 100));
         this->frame.state.track_count = receivedFrame->state.track_count;
+        for (int i = 0; i < receivedFrame->state.track_count; i++)
+        {
+            this->frame.state.track[i] = {
+                .has_uri = receivedFrame->state.track[i].has_uri,
+                .has_queued = receivedFrame->state.track[i].has_queued,
+                .queued = receivedFrame->state.track[i].queued,
+                .context = receivedFrame->state.track[i].context == nullptr ? nullptr : strdup(receivedFrame->state.track[i].context),
+            };
+            memcpy(this->frame.state.track[i].uri, receivedFrame->state.track[i].uri, sizeof(receivedFrame->state.track[i].uri));
+            auto result = static_cast<pb_bytes_array_t *>(
+                malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(receivedFrame->state.track[i].gid->size)));
+            result->size = receivedFrame->state.track[i].gid->size;
+            memcpy(result->bytes, receivedFrame->state.track[i].gid->bytes, receivedFrame->state.track[i].gid->size);
+            this->frame.state.track[i].gid = result;
+        }
         this->frame.state.has_playing_track_index = true;
 
         loadTrack();
         break;
+    }
     default:
         break;
     }

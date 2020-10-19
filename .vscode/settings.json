@@ -96,7 +96,8 @@
         "forward_list": "cpp",
         "__functional_base_03": "cpp",
         "regex": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "*.ipp": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "cmake.sourceDirectory": "${workspaceFolder}/targets/cli"
