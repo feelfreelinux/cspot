@@ -141,7 +141,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->frame.state.track_count = receivedFrame->state.track_count;
         for (int i = 0; i < receivedFrame->state.track_count; i++)
         {
-            this->frame.state.track[i] = {
+            this->frame.state.track[i] = TrackRef {
                 .has_uri = receivedFrame->state.track[i].has_uri,
                 .has_queued = receivedFrame->state.track[i].has_queued,
                 .queued = receivedFrame->state.track[i].queued,
