@@ -12,12 +12,14 @@
 #include "Session.h"
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
+#include <mutex>
 
 class Player {
 private:
     std::shared_ptr<MercuryManager> manager;
     SpotifyTrack* currentTrack = nullptr;
     std::shared_ptr<AudioSink> audioSink;
+    std::mutex loadTrackMutex;
 
 public:
     Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);

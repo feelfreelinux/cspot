@@ -9,9 +9,11 @@
 [![Certification](https://badgen.net/badge/Memory%20leaks/yes)](https://github.com/feelfreelinux/cspot)
 [![Certification](https://badgen.net/badge/Sasin/stole%2070%20mln%20PLN)](https://github.com/feelfreelinux/cspot)
 
+<p align="center">
+<img src=".github/trombka.png" width="32%" />
+</p>
 
-
-# cspot
+# :trumpet: cspot
 
 A Spotify Connect player written in CPP targeting, but not limited to embedded devices (ESP32).
 

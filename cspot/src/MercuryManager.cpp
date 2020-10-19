@@ -21,6 +21,13 @@ MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
     queueSemaphore = std::make_unique<WrappedSemaphore>(200);
 }
 
+void MercuryManager::unregisterMercuryCallback(uint64_t seqId) {
+    auto element = this->callbacks.find(seqId);
+    if (element != this->callbacks.end()) {
+        this->callbacks.erase(element);
+    }
+}
+
 void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback)
 {
     auto buffer = fileId;
@@ -35,6 +42,10 @@ void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<u
     // Bump audio key sequence
     this->audioKeySequence += 1;
     this->conn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_KEY_REQUEST_COMMAND), buffer);
+}
+
+void MercuryManager::freeAudioKeyCallback() {
+    this->keyCallback = nullptr;
 }
 
 std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint16_t index)
@@ -76,10 +87,7 @@ void MercuryManager::runTask()
     // Listen for mercury replies and handle them accordingly
     while (true)
     {
-        //ESP_LOGI("cspot", "Start wait\n");
-
         auto packet = this->conn->recvPacket();
-        //ESP_LOGI("cspot", "End wait\n");
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING)
         {
             printf("Got ping\n");
@@ -87,9 +95,7 @@ void MercuryManager::runTask()
         }
         else if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
         {
-            //ESP_LOGI("cspot", "Start put\n");
             this->audioChunkManager->handleChunkData(packet->data, false);
-            //ESP_LOGI("cspot", "End put\n");
         }
         else
         {
@@ -115,8 +121,11 @@ void MercuryManager::handleQueue()
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {
-                auto success = static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_KEY_SUCCESS_RESPONSE;
-                this->keyCallback(success, packet->data);
+                auto seqId = ntohl(extract<uint32_t>(packet->data, 0));
+                if (seqId == (this->audioKeySequence - 1) && this->keyCallback != nullptr) {
+                    auto success = static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_KEY_SUCCESS_RESPONSE;
+                    this->keyCallback(success, packet->data);
+                }
                 break;
             }
             case MercuryType::AUDIO_CHUNK_FAILURE_RESPONSE:
@@ -130,15 +139,16 @@ void MercuryManager::handleQueue()
             case MercuryType::UNSUB:
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
-                std::cout << " response->parts.size() = " << response->parts.size() << "\n";
+                std::cout << "Before calling cb 0 response->parts.size() = " << response->parts.size() << "\n";
                 if (response->parts.size() > 0)
                 {
                     std::cout << " MercuryType::UNSUB response->parts[0].size() " << response->parts[0].size() << "\n";
                 }
                 if (this->callbacks.count(response->sequenceId) > 0)
-                {
+                {  
+                    auto seqId = response->sequenceId;
                     this->callbacks[response->sequenceId](std::move(response));
-                    //this->callbacks.erase(response->sequenceId);
+                    this->callbacks.erase(this->callbacks.find(seqId));
                 }
                 break;
             }
@@ -160,7 +170,7 @@ void MercuryManager::handleQueue()
     }
 }
 
-void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload)
 {
 
     // Construct mercury header
@@ -215,22 +225,24 @@ void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallbac
     this->sequenceId += 1;
 
     this->conn->sendPacket(static_cast<std::underlying_type<MercuryType>::type>(method), sequenceIdBytes);
+
+    return this->sequenceId - 1;
 }
 
-void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryParts &payload)
 {
     mercuryCallback subscription = nullptr;
-    this->execute(method, uri, callback, subscription, payload);
+    return this->execute(method, uri, callback, subscription, payload);
 }
 
-void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback &subscription)
 {
     auto payload = mercuryParts(0);
-    this->execute(method, uri, callback, subscription, payload);
+    return this->execute(method, uri, callback, subscription, payload);
 }
 
-void MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback)
 {
     auto payload = mercuryParts(0);
-    this->execute(method, uri, callback, payload);
+    return this->execute(method, uri, callback, payload);
 }
