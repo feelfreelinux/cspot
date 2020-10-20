@@ -3,7 +3,7 @@
 #include "MercuryManager.h"
 #include <cassert>
 #include "esp_system.h"
-#include "Assert.h"
+#include "CspotAssert.h"
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<uint8_t> &gid)
 {

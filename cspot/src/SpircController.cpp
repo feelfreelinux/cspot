@@ -1,5 +1,5 @@
 #include "SpircController.h"
-#include "Assert.h"
+#include "CspotAssert.h"
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
