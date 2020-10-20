@@ -1,7 +1,7 @@
 #include "SpotifyTrack.h"
 #include "unistd.h"
 #include "MercuryManager.h"
-#include <cassert>
+#include "Assert.h"
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<uint8_t> &gid)
 {
@@ -26,7 +26,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 {
     if (this->fileId.size() != 0)
         return;
-    assert(("response->parts.size() must be greater than 0", response->parts.size() > 0));
+    CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
     PBWrapper<Track> trackInfo(response->parts[0]);
     std::cout << "--- Track name: " << std::string(trackInfo->name) << std::endl;
     auto trackId = std::vector<uint8_t>(trackInfo->gid->bytes, trackInfo->gid->bytes + trackInfo->gid->size);

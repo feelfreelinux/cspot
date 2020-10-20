@@ -1,5 +1,5 @@
 #include "SpircController.h"
-#include <cassert>
+#include "Assert.h"
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
@@ -137,7 +137,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
         this->frame.state.context_uri = receivedFrame->state.context_uri == nullptr ? nullptr : strdup(receivedFrame->state.context_uri);
 
-        assert(("receivedFrame->state.track_count cannot overflow track[100]", receivedFrame->state.track_count < 100));
+        CSPOT_ASSERT(receivedFrame->state.track_count < 100, "receivedFrame->state.track_count cannot overflow track[100]");
         this->frame.state.track_count = receivedFrame->state.track_count;
         for (int i = 0; i < receivedFrame->state.track_count; i++)
         {
@@ -176,7 +176,7 @@ void SpircController::loadTrack()
     };
     this->notify();
     // TODO: implement something sane
-    assert(("reached end of playlist, aborting", this->frame.state.playing_track_index < this->frame.state.track_count));
+    CSPOT_ASSERT(this->frame.state.playing_track_index < this->frame.state.track_count, "reached end of playlist, aborting");
     player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
 }
 
