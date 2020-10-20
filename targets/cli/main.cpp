@@ -47,21 +47,17 @@ int main(int argc, char **argv)
         blob->loadJson(jsonData);
     }
 
-    auto apResolver = std::make_unique<ApResolve>();
-    auto connection = std::make_shared<PlainConnection>();
 
-    auto apAddr = apResolver->fetchFirstApAddress();
-    connection->connectToAp(apAddr);
 
-    auto session = std::make_unique<Session>();
-    session->connect(connection);
+    auto session = std::make_shared<Session>();
+    session->connectWithRandomAp();
     auto token = session->authenticate(blob);
 
     // Auth successful
     if (token.size() > 0)
     {
         // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
+        auto mercuryManager = std::make_shared<MercuryManager>(session);
         mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK

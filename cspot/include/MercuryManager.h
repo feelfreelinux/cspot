@@ -17,9 +17,13 @@
 #include "AudioChunkManager.h"
 #include "Task.h"
 #include "WrappedSemaphore.h"
+#include "Session.h"
 
 #include <stdint.h>
 #include <memory>
+
+#define AUDIOCHUNK_TIMEOUT_MS 5 * 1000
+#define PING_TIMEOUT_MS 2 * 60 * 1000 + 5000
 
 typedef std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
 typedef std::function<void(bool, std::vector<uint8_t>)> audioKeyCallback;
@@ -51,17 +55,19 @@ class MercuryManager : public Task
 private:
   std::map<uint64_t, mercuryCallback> callbacks;
   std::map<std::string, mercuryCallback> subscriptions;
-  std::shared_ptr<ShannonConnection> conn;
+  std::shared_ptr<Session> session;
   std::unique_ptr<AudioChunkManager> audioChunkManager;
   std::vector<std::unique_ptr<Packet>> queue;
   std::unique_ptr<WrappedSemaphore> queueSemaphore;
+  unsigned long long lastRequestTimestamp = -1;
+  unsigned long long lastPingTimestamp = -1;
   uint64_t sequenceId;
   uint32_t audioKeySequence;
   audioKeyCallback keyCallback;
 
   void runTask();
 public:
-  MercuryManager(std::shared_ptr<ShannonConnection> conn);
+  MercuryManager(std::shared_ptr<Session> session);
   uint16_t audioChunkSequence;
 
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);

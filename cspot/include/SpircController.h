@@ -11,6 +11,7 @@
 #include "Session.h"
 #include "ConstantParameters.h"
 #include "Player.h"
+#include <cassert>
 
 #define MAX_VOLUME 65536
 

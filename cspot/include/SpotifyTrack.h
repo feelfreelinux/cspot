@@ -11,6 +11,7 @@
 #include <fstream>
 #include <functional>
 #include "ChunkedAudioStream.h"
+#include <cassert>
 
 
 class SpotifyTrack

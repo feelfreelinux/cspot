@@ -2,6 +2,7 @@
 #include "unistd.h"
 #include "MercuryManager.h"
 #include <cassert>
+#include "esp_system.h"
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::vector<uint8_t> &gid)
 {
@@ -26,9 +27,10 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 {
     if (this->fileId.size() != 0)
         return;
-    assert(("response->parts.size() must be greater than 0", response->parts.size() > 0));
+    //assert("response->parts.size() must be greater than 0", (response->parts.size() > 0));
     PBWrapper<Track> trackInfo(response->parts[0]);
     std::cout << "--- Track name: " << std::string(trackInfo->name) << std::endl;
+    printf("(_)--- Free memory %d\n", esp_get_free_heap_size());
     auto trackId = std::vector<uint8_t>(trackInfo->gid->bytes, trackInfo->gid->bytes + trackInfo->gid->size);
 
     // TODO: option to set file quality

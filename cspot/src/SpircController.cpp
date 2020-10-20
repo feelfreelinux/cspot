@@ -1,5 +1,4 @@
 #include "SpircController.h"
-#include <cassert>
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
@@ -137,16 +136,15 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
         this->frame.state.context_uri = receivedFrame->state.context_uri == nullptr ? nullptr : strdup(receivedFrame->state.context_uri);
 
-        assert(("receivedFrame->state.track_count cannot overflow track[100]", receivedFrame->state.track_count < 100));
+        //assert("receivedFrame->state.track_count cannot overflow track[100]", (receivedFrame->state.track_count < 100));
         this->frame.state.track_count = receivedFrame->state.track_count;
         for (int i = 0; i < receivedFrame->state.track_count; i++)
         {
-            this->frame.state.track[i] = {
-                .has_uri = receivedFrame->state.track[i].has_uri,
-                .has_queued = receivedFrame->state.track[i].has_queued,
-                .queued = receivedFrame->state.track[i].queued,
-                .context = receivedFrame->state.track[i].context == nullptr ? nullptr : strdup(receivedFrame->state.track[i].context),
-            };
+            this->frame.state.track[i] = {};
+            this->frame.state.track[i].has_uri = receivedFrame->state.track[i].has_uri;
+            this->frame.state.track[i].has_queued = receivedFrame->state.track[i].has_queued;
+            this->frame.state.track[i].queued = receivedFrame->state.track[i].queued;
+            this->frame.state.track[i].context = receivedFrame->state.track[i].context == nullptr ? nullptr : strdup(receivedFrame->state.track[i].context);
             memcpy(this->frame.state.track[i].uri, receivedFrame->state.track[i].uri, sizeof(receivedFrame->state.track[i].uri));
             auto result = static_cast<pb_bytes_array_t *>(
                 malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(receivedFrame->state.track[i].gid->size)));
@@ -177,7 +175,7 @@ void SpircController::loadTrack()
     };
     this->notify();
     // TODO: implement something sane
-    assert(("reached end of playlist, aborting", this->frame.state.playing_track_index < this->frame.state.track_count));
+    //assert("reached end of playlist, aborting", (this->frame.state.playing_track_index < this->frame.state.track_count));
     player->handleLoad(&this->frame.state.track[this->frame.state.playing_track_index], loadedLambda);
 }
 

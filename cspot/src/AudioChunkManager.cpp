@@ -71,7 +71,7 @@ void AudioChunkManager::runTask() {
                 break;
 
             default:
-                printf("ID: %d: Got data chunk!\n", seqId);
+                // printf("ID: %d: Got data chunk!\n", seqId);
                 // 2 first bytes are size so we skip it
                 auto actualData = std::vector<uint8_t>(data.begin() + 2, data.end());
                 chunk->appendData(actualData);
