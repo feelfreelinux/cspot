@@ -1,5 +1,5 @@
-#ifndef ASSERT_H
-#define ASSERT_H
+#ifndef CSPOT_ASSERT_H
+#define CSPOT_ASSERT_H
 #include <stdio.h>
 #include <cassert>
 
