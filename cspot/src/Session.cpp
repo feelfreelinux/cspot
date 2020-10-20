@@ -17,6 +17,16 @@ void Session::connect(std::shared_ptr<PlainConnection> connection)
     this->processAPHelloResponse(helloPacket);
 }
 
+void Session::connectWithRandomAp()
+{
+    auto apResolver = std::make_unique<ApResolve>();
+    auto connection = std::make_shared<PlainConnection>();
+
+    auto apAddr = apResolver->fetchFirstApAddress();
+    connection->connectToAp(apAddr);
+    this->connect(connection);
+}
+
 std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 {
     // prepare authentication request proto

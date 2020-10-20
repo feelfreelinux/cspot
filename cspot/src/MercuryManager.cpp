@@ -8,22 +8,41 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::UNSUB, "UNSUB"},
 });
 
-MercuryManager::MercuryManager(std::shared_ptr<ShannonConnection> conn)
+MercuryManager::MercuryManager(std::shared_ptr<Session> session)
 {
     this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
-    this->conn = conn;
+    this->session = session;
     this->sequenceId = 0x00000001;
     this->audioChunkManager = std::make_unique<AudioChunkManager>();
     this->audioChunkSequence = 0;
     this->audioKeySequence = 0;
     this->queue = std::vector<std::unique_ptr<Packet>>();
     queueSemaphore = std::make_unique<WrappedSemaphore>(200);
+
+    this->session->shanConn->conn->timeoutHandler = [this]() {
+        auto currentTimestamp = getCurrentTimestamp();
+
+        if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
+        {
+            printf("Reconnection required, no mercury response\n");
+            return true;
+        }
+
+        if (currentTimestamp - this->lastPingTimestamp > PING_TIMEOUT_MS)
+        {
+            printf("Reconnection required, no ping received\n");
+            return true;
+        }
+        return false;
+    };
 }
 
-void MercuryManager::unregisterMercuryCallback(uint64_t seqId) {
+void MercuryManager::unregisterMercuryCallback(uint64_t seqId)
+{
     auto element = this->callbacks.find(seqId);
-    if (element != this->callbacks.end()) {
+    if (element != this->callbacks.end())
+    {
         this->callbacks.erase(element);
     }
 }
@@ -41,10 +60,14 @@ void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<u
 
     // Bump audio key sequence
     this->audioKeySequence += 1;
-    this->conn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_KEY_REQUEST_COMMAND), buffer);
+
+    // Used for broken connection detection
+    this->lastRequestTimestamp = getCurrentTimestamp();
+    this->session->shanConn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_KEY_REQUEST_COMMAND), buffer);
 }
 
-void MercuryManager::freeAudioKeyCallback() {
+void MercuryManager::freeAudioKeyCallback()
+{
     this->keyCallback = nullptr;
 }
 
@@ -55,12 +78,6 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
 std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
 {
-
-    // // Register audio callback
-    // printf(
-    //     "Request from %d\n", startPos);
-    // printf(
-    //     "Request to %d\n", endPos);
     auto sampleStartBytes = pack<uint32_t>(htonl(startPos));
     auto sampleEndBytes = pack<uint32_t>(htonl(endPos));
 
@@ -78,7 +95,10 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
     // Bump chunk sequence
     this->audioChunkSequence += 1;
-    this->conn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_CHUNK_REQUEST_COMMAND), buffer);
+    this->session->shanConn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_CHUNK_REQUEST_COMMAND), buffer);
+
+    // Used for broken connection detection
+    this->lastRequestTimestamp = getCurrentTimestamp();
     return audioChunkManager->registerNewChunk(this->audioChunkSequence - 1, audioKey, startPos, endPos);
 }
 
@@ -87,14 +107,16 @@ void MercuryManager::runTask()
     // Listen for mercury replies and handle them accordingly
     while (true)
     {
-        auto packet = this->conn->recvPacket();
+        auto packet = this->session->shanConn->recvPacket();
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING)
         {
             printf("Got ping\n");
-            this->conn->sendPacket(0x49, packet->data);
+            this->lastPingTimestamp = getCurrentTimestamp();
+            this->session->shanConn->sendPacket(0x49, packet->data);
         }
         else if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
         {
+            this->lastRequestTimestamp = -1;
             this->audioChunkManager->handleChunkData(packet->data, false);
         }
         else
@@ -121,8 +143,10 @@ void MercuryManager::handleQueue()
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {
+                this->lastRequestTimestamp = -1;
                 auto seqId = ntohl(extract<uint32_t>(packet->data, 0));
-                if (seqId == (this->audioKeySequence - 1) && this->keyCallback != nullptr) {
+                if (seqId == (this->audioKeySequence - 1) && this->keyCallback != nullptr)
+                {
                     auto success = static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_KEY_SUCCESS_RESPONSE;
                     this->keyCallback(success, packet->data);
                 }
@@ -132,6 +156,7 @@ void MercuryManager::handleQueue()
             {
                 printf("Audio Chunk failure!\n");
                 this->audioChunkManager->handleChunkData(packet->data, true);
+                this->lastRequestTimestamp = -1;
                 break;
             }
             case MercuryType::SEND:
@@ -145,7 +170,7 @@ void MercuryManager::handleQueue()
                     std::cout << " MercuryType::UNSUB response->parts[0].size() " << response->parts[0].size() << "\n";
                 }
                 if (this->callbacks.count(response->sequenceId) > 0)
-                {  
+                {
                     auto seqId = response->sequenceId;
                     this->callbacks[response->sequenceId](std::move(response));
                     this->callbacks.erase(this->callbacks.find(seqId));
@@ -224,24 +249,24 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
     // Bump sequence id
     this->sequenceId += 1;
 
-    this->conn->sendPacket(static_cast<std::underlying_type<MercuryType>::type>(method), sequenceIdBytes);
+    this->session->shanConn->sendPacket(static_cast<std::underlying_type<MercuryType>::type>(method), sequenceIdBytes);
 
     return this->sequenceId - 1;
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryParts &payload)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload)
 {
     mercuryCallback subscription = nullptr;
     return this->execute(method, uri, callback, subscription, payload);
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback &subscription)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription)
 {
     auto payload = mercuryParts(0);
     return this->execute(method, uri, callback, subscription, payload);
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback)
 {
     auto payload = mercuryParts(0);
     return this->execute(method, uri, callback, payload);

@@ -42,21 +42,15 @@ static void cspotTask(void *pvParameters)
     auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
     auto blob = zeroconfAuthenticator->listenForRequests();
 
-    auto apResolver = std::make_shared<ApResolve>();
-    auto connection = std::make_shared<PlainConnection>();
-
-    auto apAddr = apResolver->fetchFirstApAddress();
-    connection->connectToAp(apAddr);
-
-    auto session = std::make_unique<Session>();
-    session->connect(connection);
+    auto session = std::make_shared<Session>();
+    session->connectWithRandomAp();
     auto token = session->authenticate(blob);
 
     // Auth successful
     if (token.size() > 0)
     {
         // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(session->shanConn);
+        auto mercuryManager = std::make_shared<MercuryManager>(session);
         mercuryManager->startTask();
         auto audioSink = std::make_shared<I2SAudioSink>();
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);

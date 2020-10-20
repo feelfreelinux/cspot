@@ -11,7 +11,7 @@ ShannonConnection::~ShannonConnection() {
 }
 
 void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
-    this->apSock = conn->apSock;
+    this->conn = conn;
 
     this->sendCipher = std::make_unique<Shannon>();
     this->recvCipher = std::make_unique<Shannon>();
@@ -35,7 +35,7 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
 
     // Shannon encrypt the packet and write it to sock
     this->sendCipher->encrypt(rawPacket);
-    blockWrite(this->apSock, rawPacket);
+    this->conn->writeBlock(rawPacket);
 
     // Generate mac
     std::vector<uint8_t> mac(MAC_SIZE);
@@ -46,14 +46,14 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
     this->sendCipher->nonce(pack<uint32_t>(htonl(this->sendNonce)));
 
     // Write the mac to sock
-    blockWrite(this->apSock, mac);
+    this->conn->writeBlock(mac);
     pthread_mutex_unlock(&this->writeMutex); 
 }
 
 std::unique_ptr<Packet> ShannonConnection::recvPacket() {
     pthread_mutex_lock(&this->readMutex); 
     // Receive 3 bytes, cmd + int16 size
-    auto data = blockRead(this->apSock, 3);
+    auto data = this->conn->readBlock(3);
     this->recvCipher->decrypt(data);
 
     auto packetData = std::vector<uint8_t>();
@@ -62,12 +62,12 @@ std::unique_ptr<Packet> ShannonConnection::recvPacket() {
 
     // Read and decode if the packet has an actual body
     if (readSize > 0) {
-        packetData = blockRead(this->apSock, readSize);
+        packetData = this->conn->readBlock(readSize);
         this->recvCipher->decrypt(packetData);
     }
 
     // Read mac
-    auto mac = blockRead(this->apSock, MAC_SIZE);
+    auto mac = this->conn->readBlock(MAC_SIZE);
 
     // Generate mac
     std::vector<uint8_t> mac2(MAC_SIZE);

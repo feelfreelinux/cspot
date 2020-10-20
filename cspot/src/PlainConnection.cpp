@@ -35,6 +35,12 @@ void PlainConnection::connectToAp(std::string apAddress)
                     (struct sockaddr *)ai->ai_addr,
                     ai->ai_addrlen) != -1)
         {
+            struct timeval tv;
+            tv.tv_sec = 3;
+            tv.tv_usec = 0;
+            setsockopt(this->apSock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+            setsockopt(this->apSock, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
+
             int flag = 1;
             setsockopt(this->apSock,  /* socket affected */
                        IPPROTO_TCP,   /* set option at TCP level */
@@ -65,7 +71,7 @@ std::vector<uint8_t> PlainConnection::recvPacket()
     return sizeData;
 }
 
-std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> prefix, std::vector<uint8_t> &data)
+std::vector<uint8_t> PlainConnection::sendPrefixPacket(const std::vector<uint8_t> &prefix, const std::vector<uint8_t> &data)
 {
     // Calculate full packet length
     uint32_t actualSize = prefix.size() + data.size() + sizeof(uint32_t);
@@ -79,4 +85,46 @@ std::vector<uint8_t> PlainConnection::sendPrefixPacket(std::vector<uint8_t> pref
     blockWrite(this->apSock, sizeRaw);
 
     return sizeRaw;
+}
+
+std::vector<uint8_t> PlainConnection::readBlock(size_t size)
+{
+    std::vector<uint8_t> buf(size);
+    unsigned int idx = 0;
+    ssize_t n;
+    // printf("START READ\n");
+
+    while (idx < size)
+    {
+        if ((n = recv(this->apSock, &buf[idx], size - idx, 0)) <= 0)
+        {
+            timeoutHandler();
+            printf("Timeout read\n");
+            continue;
+            // return buf;
+        }
+        idx += n;
+    }
+    // printf("FINISH READ\n");
+    return buf;
+}
+
+size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
+{
+    unsigned int idx = 0;
+    ssize_t n;
+    // printf("START WRITE\n");
+
+    while (idx < data.size())
+    {
+        if ((n = send(this->apSock, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
+        {
+            timeoutHandler();
+            printf("Timeout write\n ");
+            continue;
+        }
+        idx += n;
+    }
+
+    return data.size();
 }

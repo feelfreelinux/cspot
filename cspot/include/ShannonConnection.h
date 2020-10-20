@@ -17,6 +17,7 @@
 
 #define MAC_SIZE 4
 
+
 class ShannonConnection
 {
 private:
@@ -27,13 +28,13 @@ private:
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
     pthread_mutex_t writeMutex;
     pthread_mutex_t readMutex;
-
+    
 public:
     ShannonConnection();
     ~ShannonConnection();
     void wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey);
-    int apSock;
     void sendPacket(uint8_t cmd, std::vector<uint8_t> &data);
+    std::shared_ptr<PlainConnection> conn;
     std::unique_ptr<Packet> recvPacket();
 };
 
