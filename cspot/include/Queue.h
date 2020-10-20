@@ -1,3 +1,6 @@
+#ifndef CSPOTQUEUE_H
+#define CSPOTQUEUE_H
+
 #include <queue>
 #include <atomic>
 #include <condition_variable>
@@ -101,3 +104,5 @@ public:
     }
 
 };
+
+#endif

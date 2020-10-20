@@ -64,12 +64,9 @@ void ChunkedAudioStream::seekMs(uint32_t positionMs)
     printf("--- Finished seeking!");
 }
 
-void ChunkedAudioStream::runTask()
+void ChunkedAudioStream::startPlaybackLoop()
 {
-    if (this->startPositionMs == 0)
-    {
-        this->requestChunk(0);
-    }
+
     // while (!loadedMeta);
     isRunning = true;
 
@@ -78,6 +75,8 @@ void ChunkedAudioStream::runTask()
     if (this->startPositionMs != 0)
     {
         ov_time_seek(&vorbisFile, startPositionMs);
+    } else {
+        this->requestChunk(0);
     }
 
     bool eof = false;

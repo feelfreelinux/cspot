@@ -13,13 +13,18 @@
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
 #include <mutex>
+#include "Queue.h"
+#include "Task.h"
 
-class Player {
+class Player : public Task {
 private:
     std::shared_ptr<MercuryManager> manager;
-    SpotifyTrack* currentTrack = nullptr;
+    std::shared_ptr<SpotifyTrack> currentTrack = nullptr;
     std::shared_ptr<AudioSink> audioSink;
     std::mutex loadTrackMutex;
+    // @TODO: Use some actual structure here
+    Queue<std::shared_ptr<SpotifyTrack>> trackQueue;
+    void runTask();
 
 public:
     Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);

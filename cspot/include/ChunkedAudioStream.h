@@ -9,13 +9,8 @@
 #include <pthread.h>
 #include "ivorbisfile.h"
 #include "MercuryManager.h"
-#include "Task.h"
 #include "AudioSink.h"
 #include "AudioChunk.h"
-#ifdef ESP_PLATFORM
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#endif
 
 #define SPOTIFY_HEADER_SIZE 167
 #define BUFFER_SIZE 0x20000 * 1.5
@@ -28,7 +23,7 @@ enum class Whence
     END
 };
 
-class ChunkedAudioStream : public Task
+class ChunkedAudioStream
 {
 private:
     // Vorbis related
@@ -53,7 +48,6 @@ private:
     void requestChunk(size_t chunkIndex);
     void fetchTraillingPacket();
     std::shared_ptr<AudioChunk> findChunkForPosition(size_t position);
-    void runTask();
 
 public:
     ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs);
@@ -68,11 +62,12 @@ public:
     bool finished = false;
     pcmDataCallback pcmCallback;
     std::shared_ptr<AudioSink> audioSink;
-
     pthread_mutex_t seekMutex;
+
     std::vector<uint8_t> read(size_t bytes);
     void seekMs(uint32_t positionMs);
     void seek(size_t pos, Whence whence);
+    void startPlaybackLoop();
 };
 
 #endif
