@@ -28,6 +28,9 @@ Summary:
 - portaudio for playback on MacOS
 - downloaded submodules
 - python libraries for the [nanopb](https://github.com/nanopb/nanopb) generator
+- on Linux you will additionally need:
+    - libasound and libavahi-compat-libdnssd
+
 
 This project utilizes submodules, please make sure you are cloning with the `--recursive` flag or use `git submodule update --init --recursive`.
 
@@ -40,6 +43,13 @@ $ sudo pip3 install protobuf grpcio-tools
 ```
 
 (You probably should use venv, but I am no python developer)
+
+To install avahi and asound dependencies on Linux you can use:
+
+```shell
+$ sudo apt-get install libavahi-compat-libdnssd-dev libasound2-dev
+```
+
 
 ### Building for macOS/Linux
 
