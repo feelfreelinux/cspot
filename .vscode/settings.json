@@ -98,7 +98,8 @@
         "regex": "cpp",
         "*.inc": "cpp",
         "*.ipp": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "queue": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "cmake.sourceDirectory": "${workspaceFolder}/targets/cli"

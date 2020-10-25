@@ -44,22 +44,25 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
                   std::vector<std::string>({"audio/local", "audio/track", "local", "track"}));
     this->frame.device_state.capabilities_count = 8;
 
+    player->endOfFileCallback = [=]() {
+        this->frame.state.playing_track_index++;
+        loadTrack();
+    };
+    subscribe();
+}
+
+void SpircController::subscribe()
+{
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
         sendCmd(MessageType_kMessageTypeHello);
         printf("Sent hello!\n");
     };
-
     mercuryCallback subLambda = [=](std::unique_ptr<MercuryResponse> res) {
         this->handleFrame(res->parts[0]);
     };
 
-    manager->execute(MercuryType::SUB, "hm://remote/user/" + username + "/", responseLambda, subLambda);
-
-    player->endOfFileCallback = [=]() {
-        this->frame.state.playing_track_index++;
-        loadTrack();
-    };
+    manager->execute(MercuryType::SUB, "hm://remote/user/" + this->username + "/", responseLambda, subLambda);
 }
 
 void SpircController::handleFrame(std::vector<uint8_t> &data)
@@ -137,7 +140,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         // this->frame.state.context_uri = receivedFrame->state.context_uri;
 
         this->frame.state.context_uri = receivedFrame->state.context_uri == nullptr ? nullptr : strdup(receivedFrame->state.context_uri);
-
+        printf("---- Track count %d\n", receivedFrame->state.track_count);
         CSPOT_ASSERT(receivedFrame->state.track_count < 100, "receivedFrame->state.track_count cannot overflow track[100]");
         this->frame.state.track_count = receivedFrame->state.track_count;
         for (int i = 0; i < receivedFrame->state.track_count; i++)

@@ -17,8 +17,10 @@ class PlainConnection
 {
 public:
     PlainConnection();
+    ~PlainConnection();
     int apSock;
     void connectToAp(std::string apAddress);
+    void closeSocket();
     timeoutCallback timeoutHandler;
     std::vector<uint8_t> sendPrefixPacket(const std::vector<uint8_t> &prefix, const std::vector<uint8_t> &data);
     std::vector<uint8_t> recvPacket();

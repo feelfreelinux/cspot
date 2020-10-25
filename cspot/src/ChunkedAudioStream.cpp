@@ -75,7 +75,9 @@ void ChunkedAudioStream::startPlaybackLoop()
     if (this->startPositionMs != 0)
     {
         ov_time_seek(&vorbisFile, startPositionMs);
-    } else {
+    }
+    else
+    {
         this->requestChunk(0);
     }
 
@@ -84,9 +86,9 @@ void ChunkedAudioStream::startPlaybackLoop()
     {
         if (!isPaused)
         {
-            std::vector<uint8_t> pcmOut(4096/ 4);
+            std::vector<uint8_t> pcmOut(4096 / 4);
             pthread_mutex_lock(&this->seekMutex);
-            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096/ 4, &currentSection);
+            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096 / 4, &currentSection);
             pthread_mutex_unlock(&this->seekMutex);
             if (ret == 0)
             {
@@ -95,6 +97,7 @@ void ChunkedAudioStream::startPlaybackLoop()
             }
             else if (ret < 0)
             {
+                printf("Got em error in the stream\n");
 
                 // Error in the stream
             }
@@ -143,7 +146,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
     auto toRead = bytes;
     auto res = std::vector<uint8_t>();
     bool onlyKeptMemoryRead = false;
-
+    READ:
     while (res.size() < bytes)
     {
         auto position = pos;
@@ -155,6 +158,11 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
                              if (chunk->keepInMemory)
                              {
                                  return false;
+                             }
+
+                             if (chunk->isFailed)
+                             {
+                                 return true;
                              }
 
                              if (chunk->endPosition < position || chunk->startPosition > position + BUFFER_SIZE)
@@ -202,7 +210,11 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
             else
             {
                 chunk->isLoadedSemaphore->wait();
-                // printf("underflow!\n");
+                if (chunk->isFailed)
+                {
+                    this->requestChunk(chunkIndex)->isLoadedSemaphore->wait();
+                    goto READ;
+                }
             }
         }
         else
@@ -286,9 +298,11 @@ void ChunkedAudioStream::seek(size_t dpos, Whence whence)
     printf("Change in current chunk %d\n", currentChunk);
 }
 
-void ChunkedAudioStream::requestChunk(size_t chunkIndex)
+std::shared_ptr<AudioChunk> ChunkedAudioStream::requestChunk(size_t chunkIndex)
 {
 
     printf("Chunk Req %d\n", chunkIndex);
-    this->chunks.push_back(manager->fetchAudioChunk(fileId, audioKey, chunkIndex));
+    auto chunk = manager->fetchAudioChunk(fileId, audioKey, chunkIndex);
+    this->chunks.push_back(chunk);
+    return chunk;
 }

@@ -1,7 +1,9 @@
 #include "ShannonConnection.h"
 
 ShannonConnection::ShannonConnection() {
-
+    // Create mutexes for thread safety
+    pthread_mutex_init(&this->writeMutex, NULL);
+    pthread_mutex_init(&this->readMutex, NULL);
 }
 
 ShannonConnection::~ShannonConnection() {
@@ -23,10 +25,6 @@ void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, st
     // Set initial nonce
     this->sendCipher->nonce(pack<uint32_t>(htonl(0)));
     this->recvCipher->nonce(pack<uint32_t>(htonl(0)));
-
-    // Create mutexes for thread safety
-    pthread_mutex_init(&this->writeMutex, NULL);
-    pthread_mutex_init(&this->readMutex, NULL);
 }
 
 void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {

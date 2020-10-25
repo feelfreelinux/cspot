@@ -35,6 +35,7 @@ private:
     void loadTrack();
 public:
     SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink);
+    void subscribe();
 };
 
 #endif

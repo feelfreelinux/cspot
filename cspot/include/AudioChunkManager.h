@@ -19,6 +19,7 @@ public:
     Queue<std::pair<std::vector<uint8_t>, bool>> audioChunkDataQueue;
     std::shared_ptr<AudioChunk> registerNewChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos);
     void handleChunkData(std::vector<uint8_t>& data, bool failed = false);
+    void failAllChunks();
 };
 
 #endif

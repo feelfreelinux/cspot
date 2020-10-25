@@ -11,6 +11,7 @@ std::string ApResolve::getApList()
     if ((host == NULL) || (host->h_addr == NULL))
     {
         printf("apresolve: DNS lookup error\n");
+        throw std::runtime_error("Resolve failed");
     }
     
     // Prepare socket
@@ -26,6 +27,7 @@ std::string ApResolve::getApList()
     {
         close(sockFd);
         printf("Could not connect to apresolve\n");
+        throw std::runtime_error("Resolve failed");
     }
 
     // Prepare HTTP get header
@@ -42,6 +44,7 @@ std::string ApResolve::getApList()
     if (send(sockFd, request.c_str(), request.length(), 0) != (int)request.length())
     {
         printf("apresolve: can't send request\n");
+        throw std::runtime_error("Resolve failed");
     }
 
     char cur;

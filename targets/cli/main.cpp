@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
 
 
-    auto session = std::make_shared<Session>();
+    auto session = std::make_unique<Session>();
     session->connectWithRandomAp();
     auto token = session->authenticate(blob);
 
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     if (token.size() > 0)
     {
         // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(session);
+        auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
@@ -68,6 +68,9 @@ int main(int argc, char **argv)
         auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+        mercuryManager->reconnectedCallback = [spircController]() {
+            return spircController->subscribe();
+        };
 
         mercuryManager->handleQueue();
     }

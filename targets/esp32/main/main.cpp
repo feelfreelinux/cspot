@@ -42,7 +42,7 @@ static void cspotTask(void *pvParameters)
     auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
     auto blob = zeroconfAuthenticator->listenForRequests();
 
-    auto session = std::make_shared<Session>();
+    auto session = std::make_unique<Session>();
     session->connectWithRandomAp();
     auto token = session->authenticate(blob);
 
@@ -50,10 +50,13 @@ static void cspotTask(void *pvParameters)
     if (token.size() > 0)
     {
         // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(session);
+        auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
         auto audioSink = std::make_shared<I2SAudioSink>();
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+        mercuryManager->reconnectedCallback = [spircController]() {
+            return spircController->subscribe();
+        };
         mercuryManager->handleQueue();
     }
 }

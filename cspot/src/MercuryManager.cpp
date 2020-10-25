@@ -8,11 +8,11 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::UNSUB, "UNSUB"},
 });
 
-MercuryManager::MercuryManager(std::shared_ptr<Session> session)
+MercuryManager::MercuryManager(std::unique_ptr<Session> session)
 {
     this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
-    this->session = session;
+    this->session = std::move(session);
     this->sequenceId = 0x00000001;
     this->audioChunkManager = std::make_unique<AudioChunkManager>();
     this->audioChunkSequence = 0;
@@ -21,21 +21,26 @@ MercuryManager::MercuryManager(std::shared_ptr<Session> session)
     queueSemaphore = std::make_unique<WrappedSemaphore>(200);
 
     this->session->shanConn->conn->timeoutHandler = [this]() {
-        auto currentTimestamp = getCurrentTimestamp();
-
-        if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
-        {
-            printf("Reconnection required, no mercury response\n");
-            return true;
-        }
-
-        if (currentTimestamp - this->lastPingTimestamp > PING_TIMEOUT_MS)
-        {
-            printf("Reconnection required, no ping received\n");
-            return true;
-        }
-        return false;
+        return this->timeoutHandler();
     };
+}
+
+bool MercuryManager::timeoutHandler()
+{
+    auto currentTimestamp = getCurrentTimestamp();
+
+    if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
+    {
+        printf("Reconnection required, no mercury response\n");
+        return true;
+    }
+
+    if (currentTimestamp - this->lastPingTimestamp > PING_TIMEOUT_MS)
+    {
+        printf("Reconnection required, no ping received\n");
+        return true;
+    }
+    return false;
 }
 
 void MercuryManager::unregisterMercuryCallback(uint64_t seqId)
@@ -49,6 +54,7 @@ void MercuryManager::unregisterMercuryCallback(uint64_t seqId)
 
 void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback)
 {
+    std::lock_guard<std::mutex> guard(reconnectionMutex);
     auto buffer = fileId;
     this->keyCallback = audioCallback;
     // Structure: [FILEID] [TRACKID] [4 BYTES SEQUENCE ID] [0x00, 0x00]
@@ -78,6 +84,7 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
 std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
 {
+    std::lock_guard<std::mutex> guard(reconnectionMutex);
     auto sampleStartBytes = pack<uint32_t>(htonl(startPos));
     auto sampleEndBytes = pack<uint32_t>(htonl(endPos));
 
@@ -102,13 +109,59 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
     return audioChunkManager->registerNewChunk(this->audioChunkSequence - 1, audioKey, startPos, endPos);
 }
 
+void MercuryManager::reconnect()
+{
+    std::lock_guard<std::mutex> guard(reconnectionMutex);
+    this->lastPingTimestamp = -1;
+    this->lastRequestTimestamp = -1;
+RECONNECT:
+    printf("Trying to reconnect...\n");
+    try
+    {
+        if (this->session->shanConn->conn != nullptr)
+        {
+            this->session->shanConn->conn->timeoutHandler = nullptr;
+        }
+        this->audioChunkManager->failAllChunks();
+        if (this->session->authBlob != nullptr)
+        {
+            lastAuthBlob = this->session->authBlob;
+        }
+        this->session = std::make_unique<Session>();
+        this->session->connectWithRandomAp();
+        this->session->authenticate(lastAuthBlob);
+        this->session->shanConn->conn->timeoutHandler = [this]() {
+            return this->timeoutHandler();
+        };
+        printf("Reconnected successfuly :)\n");
+    }
+    catch (...)
+    {
+        printf("Reconnection failed, willl retry in %d secs\n", RECONNECTION_RETRY_MS / 1000);
+        usleep(RECONNECTION_RETRY_MS * 1000);
+        goto RECONNECT;
+        //reconnect();
+    }
+}
+
 void MercuryManager::runTask()
 {
     // Listen for mercury replies and handle them accordingly
     while (true)
     {
-        auto packet = this->session->shanConn->recvPacket();
-        if (static_cast<MercuryType>(packet->command) == MercuryType::PING)
+        std::unique_ptr<Packet> packet;
+        try
+        {
+            packet = this->session->shanConn->recvPacket();
+        }
+        catch (const std::runtime_error &e)
+        {
+            // Reconnection required
+            reconnect();
+            reconnectedCallback();
+            continue;
+        }
+        if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
         {
             printf("Got ping\n");
             this->lastPingTimestamp = getCurrentTimestamp();
@@ -144,6 +197,8 @@ void MercuryManager::handleQueue()
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {
                 this->lastRequestTimestamp = -1;
+
+                // First four bytes mark the sequence id
                 auto seqId = ntohl(extract<uint32_t>(packet->data, 0));
                 if (seqId == (this->audioKeySequence - 1) && this->keyCallback != nullptr)
                 {
@@ -164,7 +219,6 @@ void MercuryManager::handleQueue()
             case MercuryType::UNSUB:
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
-                std::cout << "Before calling cb 0 response->parts.size() = " << response->parts.size() << "\n";
                 if (response->parts.size() > 0)
                 {
                     std::cout << " MercuryType::UNSUB response->parts[0].size() " << response->parts[0].size() << "\n";
@@ -197,7 +251,7 @@ void MercuryManager::handleQueue()
 
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload)
 {
-
+    std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
     std::cout << MercuryTypeMap[method] << std::endl;
     Header mercuryHeader = {};

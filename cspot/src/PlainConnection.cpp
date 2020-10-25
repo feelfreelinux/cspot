@@ -2,7 +2,13 @@
 #include "PlainConnection.h"
 #include <cstring>
 #include <netinet/tcp.h>
+#include <errno.h>
+
 PlainConnection::PlainConnection(){};
+
+PlainConnection::~PlainConnection(){
+    closeSocket();
+};
 
 void PlainConnection::connectToAp(std::string apAddress)
 {
@@ -52,6 +58,7 @@ void PlainConnection::connectToAp(std::string apAddress)
 
         close(this->apSock);
         apSock = -1;
+        throw std::runtime_error("Can't connect to spotify servers");
     }
 
     freeaddrinfo(airoot);
@@ -96,12 +103,24 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
 
     while (idx < size)
     {
+    READ:
         if ((n = recv(this->apSock, &buf[idx], size - idx, 0)) <= 0)
         {
-            timeoutHandler();
-            printf("Timeout read\n");
-            continue;
-            // return buf;
+            switch (errno)
+            {
+            case EAGAIN:
+            case ETIMEDOUT:
+                if (timeoutHandler())
+                {
+                    printf("Throwing cuz reconnection\n");
+                    throw std::runtime_error("Reconnection required");
+                }
+                goto READ;
+            case EINTR:
+                break;
+            default:
+                throw std::runtime_error("Corn");
+            }
         }
         idx += n;
     }
@@ -117,14 +136,33 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
 
     while (idx < data.size())
     {
+    WRITE:
         if ((n = send(this->apSock, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
         {
-            timeoutHandler();
-            printf("Timeout write\n ");
-            continue;
+            switch (errno)
+            {
+            case EAGAIN:
+            case ETIMEDOUT:
+                if (timeoutHandler())
+                {
+                    throw std::runtime_error("Reconnection required");
+                }
+                goto WRITE;
+            case EINTR:
+                break;
+            default:
+                throw std::runtime_error("Corn");
+            }
         }
         idx += n;
     }
 
     return data.size();
+}
+
+void PlainConnection::closeSocket()
+{
+    printf("Closing socket...\n");
+    shutdown(this->apSock, SHUT_RDWR);
+    close(this->apSock);
 }

@@ -24,10 +24,9 @@ public:
 
     size_t headerFileSize = -1;
     bool isLoaded = false;
+    bool isFailed = false;
     std::unique_ptr<WrappedSemaphore> isLoadedSemaphore;
     std::unique_ptr<WrappedSemaphore> isHeaderFileSizeLoadedSemaphore;
-
-
 
     AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPosition, uint32_t predictedEndPosition);
     ~AudioChunk();

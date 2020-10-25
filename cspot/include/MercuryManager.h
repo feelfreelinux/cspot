@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <mutex>
 #include "ShannonConnection.h"
 #include "MercuryResponse.h"
 #include "Packet.h"
@@ -23,10 +24,12 @@
 #include <memory>
 
 #define AUDIOCHUNK_TIMEOUT_MS 5 * 1000
+#define RECONNECTION_RETRY_MS 5 * 1000
 #define PING_TIMEOUT_MS 2 * 60 * 1000 + 5000
 
 typedef std::function<void(std::unique_ptr<MercuryResponse>)> mercuryCallback;
 typedef std::function<void(bool, std::vector<uint8_t>)> audioKeyCallback;
+typedef std::function<void()> voidCallback;
 
 #define AUDIO_CHUNK_SIZE 0x20000
 
@@ -54,8 +57,10 @@ class MercuryManager : public Task
 {
 private:
   std::map<uint64_t, mercuryCallback> callbacks;
+  std::mutex reconnectionMutex;
   std::map<std::string, mercuryCallback> subscriptions;
-  std::shared_ptr<Session> session;
+  std::unique_ptr<Session> session;
+  std::shared_ptr<LoginBlob> lastAuthBlob; 
   std::unique_ptr<AudioChunkManager> audioChunkManager;
   std::vector<std::unique_ptr<Packet>> queue;
   std::unique_ptr<WrappedSemaphore> queueSemaphore;
@@ -67,9 +72,10 @@ private:
 
   void runTask();
 public:
-  MercuryManager(std::shared_ptr<Session> session);
+  MercuryManager(std::unique_ptr<Session> session);
+  voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
-
+  bool timeoutHandler();
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
@@ -81,6 +87,7 @@ public:
   void unregisterAudioCallback(uint16_t seqId);
   void unregisterMercuryCallback(uint64_t seqId);
   void freeAudioKeyCallback();
+  void reconnect();
 };
 
 #endif

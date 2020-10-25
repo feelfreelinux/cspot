@@ -45,7 +45,7 @@ private:
     std::vector<uint8_t> fileId;
     uint32_t startPositionMs;
 
-    void requestChunk(size_t chunkIndex);
+    std::shared_ptr<AudioChunk> requestChunk(size_t chunkIndex);
     void fetchTraillingPacket();
     std::shared_ptr<AudioChunk> findChunkForPosition(size_t position);
 

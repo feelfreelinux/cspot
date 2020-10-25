@@ -15,27 +15,45 @@ std::shared_ptr<AudioChunk> AudioChunkManager::registerNewChunk(uint16_t seqId, 
 
     return chunk;
 }
-void AudioChunkManager::handleChunkData(std::vector<uint8_t>& data, bool failed)
+void AudioChunkManager::handleChunkData(std::vector<uint8_t> &data, bool failed)
 {
     auto audioPair = std::pair(data, failed);
     audioChunkDataQueue.push(audioPair);
 }
 
-void AudioChunkManager::runTask() {
-    while(true) {
+void AudioChunkManager::failAllChunks()
+{
+    // Enumerate all the chunks and mark em all failed
+    for (auto const &chunk : this->chunks)
+    {
+        if (!chunk->isLoaded)
+        {
+            chunk->isLoaded = true;
+            chunk->isFailed = true;
+            chunk->isHeaderFileSizeLoadedSemaphore->give();
+            chunk->isLoadedSemaphore->give();
+        }
+    }
+}
+
+void AudioChunkManager::runTask()
+{
+    while (true)
+    {
         std::pair<std::vector<uint8_t>, bool> audioPair;
-        if (this->audioChunkDataQueue.wpop(audioPair)) {
+        if (this->audioChunkDataQueue.wpop(audioPair))
+        {
             auto data = audioPair.first;
             auto failed = audioPair.second;
             uint16_t seqId = ntohs(extract<uint16_t>(data, 0));
 
             // Erase all chunks that are not referenced elsewhere anymore
             chunks.erase(std::remove_if(
-                     chunks.begin(), chunks.end(),
-                     [](const std::shared_ptr<AudioChunk> &chunk) {
-                         return chunk.use_count() == 1;
-                     }),
-                 chunks.end());
+                             chunks.begin(), chunks.end(),
+                             [](const std::shared_ptr<AudioChunk> &chunk) {
+                                 return chunk.use_count() == 1;
+                             }),
+                         chunks.end());
 
             for (auto const &chunk : this->chunks)
             {
@@ -44,6 +62,7 @@ void AudioChunkManager::runTask() {
                 {
                     if (failed)
                     {
+                        //chunk->isFailed = true;
                         chunk->isHeaderFileSizeLoadedSemaphore->give();
                         chunk->isLoadedSemaphore->give();
                         break;
@@ -66,20 +85,19 @@ void AudioChunkManager::runTask() {
                             chunk->endPosition = chunk->headerFileSize;
                         }
                         printf("ID: %d: Starting decrypt!\n", seqId);
-                chunk->decrypt();
-                chunk->isLoadedSemaphore->give();
-                break;
+                        chunk->decrypt();
+                        chunk->isLoadedSemaphore->give();
+                        break;
 
-            default:
-                // printf("ID: %d: Got data chunk!\n", seqId);
-                // 2 first bytes are size so we skip it
-                auto actualData = std::vector<uint8_t>(data.begin() + 2, data.end());
-                chunk->appendData(actualData);
-                break;
+                    default:
+                        // printf("ID: %d: Got data chunk!\n", seqId);
+                        // 2 first bytes are size so we skip it
+                        auto actualData = std::vector<uint8_t>(data.begin() + 2, data.end());
+                        chunk->appendData(actualData);
+                        break;
+                    }
+                }
             }
         }
     }
-    }
 }
-}
-

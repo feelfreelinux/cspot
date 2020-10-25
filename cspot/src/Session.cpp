@@ -10,9 +10,9 @@ Session::Session()
     this->shanConn = std::make_shared<ShannonConnection>();
 }
 
-void Session::connect(std::shared_ptr<PlainConnection> connection)
+void Session::connect(std::unique_ptr<PlainConnection> connection)
 {
-    this->conn = connection;
+    this->conn = std::move(connection);
     auto helloPacket = this->sendClientHelloRequest();
     this->processAPHelloResponse(helloPacket);
 }
@@ -20,15 +20,20 @@ void Session::connect(std::shared_ptr<PlainConnection> connection)
 void Session::connectWithRandomAp()
 {
     auto apResolver = std::make_unique<ApResolve>();
-    auto connection = std::make_shared<PlainConnection>();
+    this->conn = std::make_unique<PlainConnection>();
 
     auto apAddr = apResolver->fetchFirstApAddress();
-    connection->connectToAp(apAddr);
-    this->connect(connection);
+    this->conn->connectToAp(apAddr);
+
+    auto helloPacket = this->sendClientHelloRequest();
+    this->processAPHelloResponse(helloPacket);
 }
 
 std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 {
+    // save auth blob for reconnection purposes
+    authBlob = blob;
+
     // prepare authentication request proto
     ClientResponseEncrypted authRequest = {};
     authRequest.login_credentials.username = (char *)(blob->username.c_str());
