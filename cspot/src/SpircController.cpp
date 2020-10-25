@@ -149,6 +149,10 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
             this->frame.state.track[i].queued = receivedFrame->state.track[i].queued;
             this->frame.state.track[i].context = receivedFrame->state.track[i].context;
 
+            if (this->frame.state.track[i].gid == nullptr) {
+                free(this->frame.state.track[i].gid);
+            }
+
             memcpy(this->frame.state.track[i].uri, receivedFrame->state.track[i].uri, sizeof(receivedFrame->state.track[i].uri));
             auto result = static_cast<pb_bytes_array_t *>(
                 malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(receivedFrame->state.track[i].gid->size)));
