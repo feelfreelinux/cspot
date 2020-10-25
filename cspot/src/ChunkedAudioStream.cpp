@@ -146,7 +146,7 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
     auto toRead = bytes;
     auto res = std::vector<uint8_t>();
     bool onlyKeptMemoryRead = false;
-    READ:
+READ:
     while (res.size() < bytes)
     {
         auto position = pos;
@@ -236,11 +236,13 @@ std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
             if (chunk != nullptr)
             {
                 requestedOffset = chunk->endPosition - pos;
-            }
 
-            // if (pos + requestedOffset >= fileSize) {
-            //     break;
-            // }
+                // Don not buffer over EOL - unnecessary "failed chunks"
+                if ((pos + requestedOffset) >= fileSize)
+                {
+                    break;
+                }
+            }
 
             else
             {

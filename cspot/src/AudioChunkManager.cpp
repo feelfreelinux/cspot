@@ -63,6 +63,8 @@ void AudioChunkManager::runTask()
                     if (failed)
                     {
                         //chunk->isFailed = true;
+                        chunk->startPosition = 0;
+                        chunk->endPosition = 0;
                         chunk->isHeaderFileSizeLoadedSemaphore->give();
                         chunk->isLoadedSemaphore->give();
                         break;
