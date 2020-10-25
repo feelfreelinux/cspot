@@ -1,4 +1,5 @@
 #include "AudioChunkManager.h"
+// #include "esp_system.h"
 
 AudioChunkManager::AudioChunkManager()
 {
@@ -94,6 +95,7 @@ void AudioChunkManager::runTask()
                     default:
                         // printf("ID: %d: Got data chunk!\n", seqId);
                         // 2 first bytes are size so we skip it
+                        // printf("(_)--- Free memory %d\n", esp_get_free_heap_size());
                         auto actualData = std::vector<uint8_t>(data.begin() + 2, data.end());
                         chunk->appendData(actualData);
                         break;

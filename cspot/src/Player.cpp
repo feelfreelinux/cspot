@@ -66,6 +66,10 @@ void Player::runTask()
     {
         this->trackQueue.wpop(currentTrack);
         currentTrack->audioStream->startPlaybackLoop();
+        currentTrack->loadedTrackCallback = nullptr;
+        currentTrack->audioStream->streamFinishedCallback = nullptr;
+        currentTrack->audioStream->audioSink = nullptr;
+        currentTrack->audioStream->pcmCallback = nullptr;
     }
 }
 

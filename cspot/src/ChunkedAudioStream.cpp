@@ -6,6 +6,10 @@ static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStr
     std::copy(data.begin(), data.end(), (char *)ptr);
     return data.size();
 }
+static int vorbisCloseCb(ChunkedAudioStream *self)
+{
+    return 0;
+}
 
 static int vorbisSeekCb(ChunkedAudioStream *self, int64_t offset, int whence)
 {
@@ -24,6 +28,9 @@ static int vorbisSeekCb(ChunkedAudioStream *self, int64_t offset, int whence)
 static long vorbisTellCb(ChunkedAudioStream *self)
 {
     return static_cast<long>(self->pos);
+}
+
+ChunkedAudioStream::~ChunkedAudioStream() {
 }
 
 ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs)
@@ -50,7 +57,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
         {
             (decltype(ov_callbacks::read_func)) & vorbisReadCb,
             (decltype(ov_callbacks::seek_func)) & vorbisSeekCb,
-            nullptr, // Close
+            (decltype(ov_callbacks::close_func)) & vorbisCloseCb,
             (decltype(ov_callbacks::tell_func)) & vorbisTellCb,
         };
 }
@@ -115,8 +122,9 @@ void ChunkedAudioStream::startPlaybackLoop()
         }
     }
 
+    ov_clear(&vorbisFile);
+    vorbisCallbacks = {};
     printf("Track finished \n");
-
     finished = true;
 
     if (eof)

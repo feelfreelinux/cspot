@@ -51,6 +51,7 @@ private:
 
 public:
     ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs);
+    ~ChunkedAudioStream();
     int requestedChunkIndex = 0;
     std::function<void()> streamFinishedCallback;
     size_t pos = SPOTIFY_HEADER_SIZE; // size of some spotify header
