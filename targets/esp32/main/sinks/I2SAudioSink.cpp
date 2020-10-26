@@ -1,8 +1,7 @@
 #include "I2SAudioSink.h"
 #define typeof(x) __typeof__(x)
 #include "driver/i2s.h"
-#include "ac101.h"
-#include "adac.h"
+
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 
@@ -29,6 +28,8 @@ static void i2sFeed(void *pvParameters)
 
 I2SAudioSink::I2SAudioSink()
 {
+    // Disable software volume control, all handled by ::volumeChanged
+    softwareVolumeControl = false;
     dataBuffer = xRingbufferCreate(4096 * 8, RINGBUF_TYPE_BYTEBUF);
 
     i2s_config_t i2s_config = {
@@ -52,7 +53,7 @@ I2SAudioSink::I2SAudioSink()
         .data_in_num = -1 //Not used
     };
 
-    const adac_s *dac = &dac_a1s;
+    dac = &dac_a1s;
 
     dac->init(0, 0, &i2s_config);
     dac->speaker(false);
@@ -62,17 +63,13 @@ I2SAudioSink::I2SAudioSink()
 
 I2SAudioSink::~I2SAudioSink()
 {
-    // this->namedPipeFile.close();
 }
 
-// size_t written = 0;
-// while (written < data.size()) {
-//     i2s_write((i2s_port_t)0, (const char *)&data[0], data.size(), &written, portMAX_DELAY);
-// }
+void I2SAudioSink::volumeChanged(uint16_t volume) {
+    dac->volume(volume, volume);
+}
+
 void I2SAudioSink::feedPCMFrames(std::vector<uint8_t> &data)
 {
-    // Write the actual data
-    // size_t written = 0;
-    //             i2s_write((i2s_port_t)0, data.data(), data.size(), &written, portMAX_DELAY);
     xRingbufferSend(dataBuffer, &data[0], data.size(), portMAX_DELAY);
 }
