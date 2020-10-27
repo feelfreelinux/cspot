@@ -73,9 +73,8 @@ void Player::runTask()
     }
 }
 
-void Player::handleLoad(TrackRef *trackRef, std::function<void()> &trackLoadedCallback)
+void Player::cancelCurrentTrack()
 {
-    std::lock_guard<std::mutex> guard(loadTrackMutex);
     if (currentTrack != nullptr)
     {
         if (currentTrack->audioStream != nullptr && currentTrack->audioStream->isRunning)
@@ -83,14 +82,20 @@ void Player::handleLoad(TrackRef *trackRef, std::function<void()> &trackLoadedCa
             currentTrack->audioStream->isRunning = false;
         }
     }
-    auto gid = std::vector<uint8_t>(trackRef->gid->bytes, trackRef->gid->bytes + 16);
+}
+
+void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()> &trackLoadedCallback)
+{
+    std::lock_guard<std::mutex> guard(loadTrackMutex);
+    cancelCurrentTrack();
+
     pcmDataCallback framesCallback = [=](std::vector<uint8_t> &frames) {
         this->feedPCM(frames);
     };
 
     auto loadedLambda = trackLoadedCallback;
 
-    auto track = std::make_shared<SpotifyTrack>(this->manager, gid);
+    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference->gid);
     track->loadedTrackCallback = [this, track, framesCallback, loadedLambda]() {
         loadedLambda();
         track->audioStream->streamFinishedCallback = this->endOfFileCallback;

@@ -7,6 +7,7 @@
 
 #include "Utils.h"
 #include "MercuryManager.h"
+#include "TrackReference.h"
 #include "spirc.pb.h"
 #include "PBUtils.h"
 #include "Session.h"
@@ -32,8 +33,9 @@ public:
     int volume = 255;
 
     void setVolume(uint16_t volume);
-    void handleLoad(TrackRef* track, std::function<void()> &trackLoadedCallback);
+    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback);
     void pause();
+    void cancelCurrentTrack();
     void seekMs(size_t positionMs);
     void feedPCM(std::vector<uint8_t> &data);
     void play();

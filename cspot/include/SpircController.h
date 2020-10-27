@@ -9,26 +9,20 @@
 #include "spirc.pb.h"
 #include "PBUtils.h"
 #include "Session.h"
+#include "PlayerState.h"
 #include "ConstantParameters.h"
 #include "Player.h"
 #include <cassert>
 
-#define MAX_VOLUME 65536
-
 class SpircController {
 private:
-    uint32_t seqNum = 0;
     std::shared_ptr<MercuryManager> manager;
-    State state;
-    DeviceState deviceState;
-    Frame frame;
+
     std::string username;
-    bool sendingLoadFrame = false;
-    uint8_t capabilitiyIndex = 0;
     std::unique_ptr<Player> player;
+    std::unique_ptr<PlayerState> state;
     std::shared_ptr<AudioSink> audioSink;
 
-    void addCapability(CapabilityType typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
     void sendCmd(MessageType typ);
     void notify();
     void handleFrame(std::vector<uint8_t> &data);

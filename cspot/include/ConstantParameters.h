@@ -1,6 +1,8 @@
 #ifndef CONSTANTPARAMETERS_H
 #define CONSTANTPARAMETERS_H
 
+#define MAX_VOLUME 65536
+
 // Hardcoded information sent to spotify servers
 const char * const deviceId = "162137fd329622137a14901634264e6f332e2422";
 const char * const informationString = "cspot";
