@@ -8,6 +8,3 @@
 [submodule "cspot/cJSON"]
 	path = cspot/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
-[submodule "targets/esp32/components/wifimanager"]
-	path = targets/esp32/components/wifimanager
-	url = https://github.com/tonyp7/esp32-wifi-manager

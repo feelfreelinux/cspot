@@ -4,5 +4,5 @@ set(COMPONENT_SRCS
     "sinks/ac101.c"
 )
 set(COMPONENT_ADD_INCLUDEDIRS "." "sinks")
-register_component(REQUIRES "cspot" "wifimanager")
+register_component(REQUIRES "cspot")
 component_compile_options(-std=gnu++17)
