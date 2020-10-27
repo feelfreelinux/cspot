@@ -4,26 +4,30 @@ PlayerState::PlayerState()
 {
     // Prepare default state
     innerFrame = {};
-    innerFrame.state.has_repeat = true;
-    innerFrame.state.repeat = false;
-    innerFrame.state.has_shuffle = true;
-    innerFrame.state.shuffle = false;
-    innerFrame.state.has_status = true;
-    innerFrame.state.status = PlayStatus_kPlayStatusStop;
-    innerFrame.state.has_position_measured_at = true;
-    innerFrame.state.position_measured_at = 0;
-    innerFrame.state.has_position_ms = true;
-    innerFrame.state.position_ms = 0;
+    innerFrame.state = {
+        has_repeat : true,
+        repeat : false,
+        has_shuffle : true,
+        shuffle : false,
+        has_status : true,
+        status : PlayStatus_kPlayStatusStop,
+        has_position_measured_at : true,
+        position_measured_at : 0,
+        has_position_ms : true,
+        position_ms : 0,
+    };
 
-    innerFrame.device_state.sw_version = (char *)swVersion;
-    innerFrame.device_state.name = (char *)defaultDeviceName;
-    innerFrame.device_state.volume = MAX_VOLUME;
-
-    innerFrame.device_state.can_play = true;
-    innerFrame.device_state.is_active = false;
-    innerFrame.device_state.has_volume = true;
-    innerFrame.device_state.has_can_play = true;
-    innerFrame.device_state.has_is_active = true;
+    innerFrame.device_state = {
+        sw_version : (char *)swVersion,
+        name : (char *)defaultDeviceName,
+        volume : MAX_VOLUME,
+        can_play : true,
+        is_active : false,
+        has_volume : true,
+        has_can_play : true,
+        has_is_active : true,
+        capabilities_count : 8,
+    };
 
     // Prepare player's capabilities
     addCapability(CapabilityType_kCanBePlayer, 1);
@@ -37,7 +41,6 @@ PlayerState::PlayerState()
                                             "toplist", "starred", "publishedstarred", "track"}));
     addCapability(CapabilityType_kSupportedTypes, -1,
                   std::vector<std::string>({"audio/local", "audio/track", "local", "track"}));
-    innerFrame.device_state.capabilities_count = 8;
 }
 
 void PlayerState::setPlaybackState(const PlaybackState state)
