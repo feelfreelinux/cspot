@@ -4,28 +4,28 @@ PlayerState::PlayerState()
 {
     // Prepare default state
     innerFrame = {};
-    innerFrame.state = {
-        has_repeat : true,
-        repeat : false,
+    innerFrame.state = State{
+        has_position_ms: true,
+        position_ms: 0,
+        has_status : true,
+        status: PlayStatus_kPlayStatusStop,
+        has_position_measured_at: true,
+        position_measured_at: 0,
         has_shuffle : true,
         shuffle : false,
-        has_status : true,
-        status : PlayStatus_kPlayStatusStop,
-        has_position_measured_at : true,
-        position_measured_at : 0,
-        has_position_ms : true,
-        position_ms : 0,
+        has_repeat : true,
+        repeat : false,
     };
 
-    innerFrame.device_state = {
+    innerFrame.device_state = DeviceState{
         sw_version : (char *)swVersion,
-        name : (char *)defaultDeviceName,
-        volume : MAX_VOLUME,
-        can_play : true,
-        is_active : false,
-        has_volume : true,
-        has_can_play : true,
         has_is_active : true,
+        is_active : false,
+        has_can_play : true,
+        can_play : true,
+        has_volume : true,
+        volume : MAX_VOLUME,
+        name : (char *)defaultDeviceName,
         capabilities_count : 8,
     };
 
