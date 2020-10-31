@@ -1,6 +1,7 @@
 set(COMPONENT_SRCS
     "main.cpp"
-    "sinks/I2SAudioSink.cpp"
+    "sinks/AC101AudioSink.cpp"
+    "sinks/ES9018AudioSink.cpp"
     "sinks/ac101.c"
 )
 set(COMPONENT_ADD_INCLUDEDIRS "." "sinks")

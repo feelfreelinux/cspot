@@ -32,7 +32,7 @@ public:
     std::function<void()> endOfFileCallback;
     int volume = 255;
 
-    void setVolume(uint16_t volume);
+    void setVolume(uint32_t volume);
     void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback);
     void pause();
     void cancelCurrentTrack();

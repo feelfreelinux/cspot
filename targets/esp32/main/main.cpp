@@ -27,7 +27,7 @@
 
 #include <ApResolve.h>
 #include <inttypes.h>
-#include <I2SAudioSink.h>
+#include <AC101AudioSink.h>
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 
@@ -52,7 +52,7 @@ static void cspotTask(void *pvParameters)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
-        auto audioSink = std::make_shared<I2SAudioSink>();
+        auto audioSink = std::make_shared<AC101AudioSink>();
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->reconnectedCallback = [spircController]() {
             return spircController->subscribe();
@@ -90,7 +90,6 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
     initialize_sntp();
-        // auto audioSink = std::make_shared<I2SAudioSink>();
 
     // wait for time to be set
     time_t now = 0;

@@ -14,6 +14,8 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
             loadTrack();
         }
     };
+
+    player->setVolume(MAX_VOLUME);
     subscribe();
 }
 
@@ -60,7 +62,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType_kMessageTypeVolume:
         state->setVolume(receivedFrame->volume);
-        player->setVolume((receivedFrame->volume / (double)MAX_VOLUME) * 255);
+        player->setVolume(receivedFrame->volume);
         notify();
         break;
     case MessageType_kMessageTypePause:
@@ -94,6 +96,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     case MessageType_kMessageTypeLoad:
     {
         printf("Load frame!\n");
+
         state->setActive(true);
         state->setPlaybackState(PlaybackState::Loading);
         state->updateTracks(std::move(receivedFrame));

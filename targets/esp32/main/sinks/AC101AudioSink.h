@@ -1,5 +1,5 @@
-#ifndef I2SAUDIOSINK_H
-#define I2SAUDIOSINK_H
+#ifndef AC101AUDIOSINK_H
+#define AC101AUDIOSINK_H
 
 #include <vector>
 #include <iostream>
@@ -13,11 +13,11 @@
 #include "ac101.h"
 #include "adac.h"
 
-class I2SAudioSink : public AudioSink
+class AC101AudioSink : public AudioSink
 {
 public:
-    I2SAudioSink();
-    ~I2SAudioSink();
+    AC101AudioSink();
+    ~AC101AudioSink();
     void feedPCMFrames(std::vector<uint8_t> &data);
     void volumeChanged(uint16_t volume);
 private:

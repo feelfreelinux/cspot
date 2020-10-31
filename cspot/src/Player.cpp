@@ -19,9 +19,9 @@ void Player::play()
     this->currentTrack->audioStream->isPaused = false;
 }
 
-void Player::setVolume(uint16_t volume)
+void Player::setVolume(uint32_t volume)
 {
-    this->volume = volume;
+    this->volume = (volume / (double)MAX_VOLUME) * 255;
 
     // Pass volume event to the sink if volume is sink-handled
     if (!this->audioSink->softwareVolumeControl)

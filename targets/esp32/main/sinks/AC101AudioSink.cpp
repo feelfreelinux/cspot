@@ -1,4 +1,4 @@
-#include "I2SAudioSink.h"
+#include "AC101AudioSink.h"
 #define typeof(x) __typeof__(x)
 #include "driver/i2s.h"
 
@@ -26,7 +26,7 @@ static void i2sFeed(void *pvParameters)
     }
 }
 
-I2SAudioSink::I2SAudioSink()
+AC101AudioSink::AC101AudioSink()
 {
     // Disable software volume control, all handled by ::volumeChanged
     softwareVolumeControl = false;
@@ -61,15 +61,15 @@ I2SAudioSink::I2SAudioSink()
     xTaskCreatePinnedToCore(&i2sFeed, "i2sFeed", 4096, NULL, 10, NULL, 1);
 }
 
-I2SAudioSink::~I2SAudioSink()
+AC101AudioSink::~AC101AudioSink()
 {
 }
 
-void I2SAudioSink::volumeChanged(uint16_t volume) {
+void AC101AudioSink::volumeChanged(uint16_t volume) {
     dac->volume(volume, volume);
 }
 
-void I2SAudioSink::feedPCMFrames(std::vector<uint8_t> &data)
+void AC101AudioSink::feedPCMFrames(std::vector<uint8_t> &data)
 {
     xRingbufferSend(dataBuffer, &data[0], data.size(), portMAX_DELAY);
 }
