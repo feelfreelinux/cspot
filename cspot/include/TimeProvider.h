@@ -2,6 +2,7 @@
 #define TIMEPROVIDER_H
 
 #include <vector>
+#include <stdint.h>
 
 class TimeProvider
 {
