@@ -1,29 +1,16 @@
 #include "Utils.h"
 #include "pb_encode.h"
+#include <cstring>
+#include <memory>
+#include <chrono>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
-std::vector<uint8_t> blockRead(int fd, size_t readSize)
-{
-	std::vector<uint8_t> buf(readSize);
-	unsigned int idx = 0;
-	ssize_t n;
-    // printf("START READ\n");
-
-	while (idx < readSize)
-	{
-		if ((n = recv(fd, &buf[idx], readSize - idx, 0)) <= 0)
-		{
-            printf("READ: 0 or something else %d\n ", n);
-			return buf;
-		}
-		idx += n;
-	}
-    // printf("FINISH READ\n");
-	return buf;
-}
 unsigned long long getCurrentTimestamp()
 {
-	unsigned long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	return now;
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 uint64_t hton64(uint64_t value) {
@@ -49,25 +36,6 @@ std::string bytesToHexString(std::vector<uint8_t>& v) {
     return ss.str();
 }
 
-ssize_t blockWrite(int fd, std::vector<uint8_t> data)
-{
-	unsigned int idx = 0;
-	ssize_t n;
-    // printf("START WRITE\n");
-
-	while (idx < data.size())
-	{
-		if ((n = send(fd, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
-		{
-            printf("WRITE: 0 or something else %d\n ", n);
-			return data.size();
-		}
-		idx += n;
-	}
-    // printf("FINISH WRITE\n");
-
-	return data.size();
-}
 
 unsigned char h2int(char c)
 {

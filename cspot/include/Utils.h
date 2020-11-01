@@ -16,18 +16,44 @@
 
 #define HMAC_SHA1_BLOCKSIZE 64
 
-std::vector<uint8_t> blockRead(int fd, size_t readSize);
+/**
+ * @brief Returns current timestamp
+ * 
+ * @return unsigned long long resulting timestamp in milliseconds from unix time zero
+ */
 unsigned long long getCurrentTimestamp();
-ssize_t blockWrite (int fd, std::vector<uint8_t> data);
 
+/**
+ * @brief portable 64bit equivalent of htons / htonl. aka endianess swap
+ * 
+ * @param value input value to swap
+ * @return uint64_t swapped result
+ */
 uint64_t hton64(uint64_t value);
+
+
 unsigned char h2int(char c);
+
+
 std::string urlDecode(std::string str);
 
 
+/**
+ * @brief Converts provided bytes into a human readable hex string
+ * 
+ * @param bytes vector containing binary data
+ * @return std::string string containing hex representation of inputted data
+ */
 std::string bytesToHexString(std::vector<uint8_t> &bytes);
 
-// Reads a type from vector of binary data
+/**
+ * @brief Extracts given type from binary data
+ * 
+ * @tparam T type to extract
+ * @param v vector containing binary data to extract from
+ * @param pos position offset
+ * @return T extracted type
+ */
 template <typename T>
 T extract(const std::vector<unsigned char> &v, int pos)
 {
@@ -36,7 +62,13 @@ T extract(const std::vector<unsigned char> &v, int pos)
   return value;
 }
 
-// Writes a type to vector of binary data
+/**
+ * @brief Packs given type into binary data
+ * 
+ * @tparam T type of data to pack
+ * @param data data to pack
+ * @return std::vector<uint8_t> resulting vector containing binary data
+ */
 template <typename T>
 std::vector<uint8_t> pack(T data)
 {

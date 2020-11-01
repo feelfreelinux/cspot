@@ -1,4 +1,19 @@
 #include "ApResolve.h"
+#include <memory>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <ctype.h>
+#include <cstring>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <sstream>
+#include <cJSON.h>
+#include <fstream>
 
 ApResolve::ApResolve() {}
 

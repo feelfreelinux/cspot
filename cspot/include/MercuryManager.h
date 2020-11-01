@@ -18,6 +18,7 @@
 #include "AudioChunkManager.h"
 #include "Task.h"
 #include "WrappedSemaphore.h"
+#include "TimeProvider.h"
 #include "Session.h"
 
 #include <stdint.h>
@@ -75,6 +76,8 @@ public:
   MercuryManager(std::unique_ptr<Session> session);
   voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
+  std::shared_ptr<TimeProvider> timeProvider;
+
   bool timeoutHandler();
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);

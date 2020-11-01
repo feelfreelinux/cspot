@@ -68,11 +68,11 @@ void PlainConnection::connectToAp(std::string apAddress)
 std::vector<uint8_t> PlainConnection::recvPacket()
 {
     // Read packet size
-    auto sizeData = blockRead(this->apSock, 4);
+    auto sizeData = readBlock(4);
     uint32_t packetSize = ntohl(extract<uint32_t>(sizeData, 0));
 
     // Read actual data
-    auto data = blockRead(this->apSock, packetSize - 4);
+    auto data = readBlock(packetSize - 4);
     sizeData.insert(sizeData.end(), data.begin(), data.end());
 
     return sizeData;
@@ -89,7 +89,7 @@ std::vector<uint8_t> PlainConnection::sendPrefixPacket(const std::vector<uint8_t
     sizeRaw.insert(sizeRaw.end(), data.begin(), data.end());
 
     // Actually write it to the server
-    blockWrite(this->apSock, sizeRaw);
+    writeBlock(sizeRaw);
 
     return sizeRaw;
 }

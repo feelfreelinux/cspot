@@ -1,7 +1,8 @@
 #include "PlayerState.h"
 
-PlayerState::PlayerState()
+PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
 {
+    this->timeProvider = timeProvider;
     // Prepare default state
     innerFrame = {};
     innerFrame.state.has_position_ms = true;
@@ -47,18 +48,18 @@ void PlayerState::setPlaybackState(const PlaybackState state)
         // Prepare the playback at position 0
         innerFrame.state.status = PlayStatus_kPlayStatusLoading;
         innerFrame.state.position_ms = 0;
-        innerFrame.state.position_measured_at = getCurrentTimestamp();
+        innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
         break;
     case PlaybackState::Playing:
         innerFrame.state.status = PlayStatus_kPlayStatusPlay;
-        innerFrame.state.position_measured_at = getCurrentTimestamp();
+        innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
         break;
     case PlaybackState::Stopped:
         break;
     case PlaybackState::Paused:
         // Update state and recalculate current song position
         innerFrame.state.status = PlayStatus_kPlayStatusPause;
-        uint32_t diff = getCurrentTimestamp() - innerFrame.state.position_measured_at;
+        uint32_t diff = timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
         this->updatePositionMs(innerFrame.state.position_ms + diff);
         break;
     }
@@ -100,7 +101,7 @@ void PlayerState::setActive(bool isActive)
     innerFrame.device_state.is_active = isActive;
     if (isActive)
     {
-        innerFrame.device_state.became_active_at = getCurrentTimestamp();
+        innerFrame.device_state.became_active_at = timeProvider->getSyncedTimestamp();
         innerFrame.device_state.has_became_active_at = true;
     }
 }
@@ -108,7 +109,7 @@ void PlayerState::setActive(bool isActive)
 void PlayerState::updatePositionMs(uint32_t position)
 {
     innerFrame.state.position_ms = position;
-    innerFrame.state.position_measured_at = getCurrentTimestamp();
+    innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
 }
 void PlayerState::updateTracks(PBWrapper<Frame>& otherFrame)
 {
@@ -192,7 +193,7 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
     innerFrame.seq_nr = this->seqNum;
     innerFrame.protocol_version = (char *)protocolVersion;
     innerFrame.typ = typ;
-    innerFrame.state_update_id = getCurrentTimestamp();
+    innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
     innerFrame.has_version = true;
     innerFrame.has_seq_nr = true;
     innerFrame.recipient_count = 0;

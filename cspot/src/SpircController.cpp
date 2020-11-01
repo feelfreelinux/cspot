@@ -5,7 +5,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 
     this->manager = manager;
     this->player = std::make_unique<Player>(manager, audioSink);
-    this->state = std::make_unique<PlayerState>();
+    this->state = std::make_unique<PlayerState>(manager->timeProvider);
     this->username = username;
 
     player->endOfFileCallback = [=]() {

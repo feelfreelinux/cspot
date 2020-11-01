@@ -10,6 +10,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
 
 MercuryManager::MercuryManager(std::unique_ptr<Session> session)
 {
+    this->timeProvider = std::make_shared<TimeProvider>();
     this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
     this->session = std::move(session);
@@ -27,7 +28,7 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session)
 
 bool MercuryManager::timeoutHandler()
 {
-    auto currentTimestamp = getCurrentTimestamp();
+    auto currentTimestamp = timeProvider->getSyncedTimestamp();
 
     if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
     {
@@ -68,7 +69,7 @@ void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<u
     this->audioKeySequence += 1;
 
     // Used for broken connection detection
-    this->lastRequestTimestamp = getCurrentTimestamp();
+    this->lastRequestTimestamp = timeProvider->getSyncedTimestamp();
     this->session->shanConn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_KEY_REQUEST_COMMAND), buffer);
 }
 
@@ -105,13 +106,13 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
     this->session->shanConn->sendPacket(static_cast<uint8_t>(MercuryType::AUDIO_CHUNK_REQUEST_COMMAND), buffer);
 
     // Used for broken connection detection
-    this->lastRequestTimestamp = getCurrentTimestamp();
-    return audioChunkManager->registerNewChunk(this->audioChunkSequence - 1, audioKey, startPos, endPos);
+    this->lastRequestTimestamp = this->timeProvider->getSyncedTimestamp();
+    return this->audioChunkManager->registerNewChunk(this->audioChunkSequence - 1, audioKey, startPos, endPos);
 }
 
 void MercuryManager::reconnect()
 {
-    std::lock_guard<std::mutex> guard(reconnectionMutex);
+    std::lock_guard<std::mutex> guard(this->reconnectionMutex);
     this->lastPingTimestamp = -1;
     this->lastRequestTimestamp = -1;
 RECONNECT:
@@ -125,11 +126,11 @@ RECONNECT:
         this->audioChunkManager->failAllChunks();
         if (this->session->authBlob != nullptr)
         {
-            lastAuthBlob = this->session->authBlob;
+            this->lastAuthBlob = this->session->authBlob;
         }
         this->session = std::make_unique<Session>();
         this->session->connectWithRandomAp();
-        this->session->authenticate(lastAuthBlob);
+        this->session->authenticate(this->lastAuthBlob);
         this->session->shanConn->conn->timeoutHandler = [this]() {
             return this->timeoutHandler();
         };
@@ -157,14 +158,16 @@ void MercuryManager::runTask()
         catch (const std::runtime_error &e)
         {
             // Reconnection required
-            reconnect();
-            reconnectedCallback();
+            this->reconnect();
+            this->reconnectedCallback();
             continue;
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
         {
-            printf("Got ping\n");
-            this->lastPingTimestamp = getCurrentTimestamp();
+            printf("Got ping, syncing timestamp\n");
+            this->timeProvider->syncWithPingPacket(packet->data);
+
+            this->lastPingTimestamp = this->timeProvider->getSyncedTimestamp();
             this->session->shanConn->sendPacket(0x49, packet->data);
         }
         else if (static_cast<MercuryType>(packet->command) == MercuryType::AUDIO_CHUNK_SUCCESS_RESPONSE)
@@ -175,7 +178,7 @@ void MercuryManager::runTask()
         else
         {
             this->queue.push_back(std::move(packet));
-            queueSemaphore->give();
+            this->queueSemaphore->give();
         }
     }
 }
