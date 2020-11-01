@@ -76,8 +76,10 @@ bool PlayerState::nextTrack()
     if (innerFrame.state.playing_track_index >= innerFrame.state.track_count)
     {
         innerFrame.state.playing_track_index = 0;
-        setPlaybackState(PlaybackState::Paused);
-        return false;
+        if (!innerFrame.state.repeat) {
+            setPlaybackState(PlaybackState::Paused);
+            return false;
+        }
     }
 
     return true;
@@ -88,6 +90,8 @@ void PlayerState::prevTrack()
     if (innerFrame.state.playing_track_index > 0)
     {
         innerFrame.state.playing_track_index--;
+    } else if (innerFrame.state.repeat) {
+        innerFrame.state.playing_track_index = innerFrame.state.track_count;
     }
 }
 
@@ -109,6 +113,8 @@ void PlayerState::updatePositionMs(uint32_t position)
 void PlayerState::updateTracks(PBWrapper<Frame> otherFrame)
 {
     innerFrame.state.context_uri = otherFrame->state.context_uri == nullptr ? nullptr : strdup(otherFrame->state.context_uri);
+    std::cout << innerFrame.state.context_uri << std::endl;
+
     printf("---- Track count %d\n", otherFrame->state.track_count);
     CSPOT_ASSERT(otherFrame->state.track_count < 100, "otherFrame->state.track_count cannot overflow track[100]");
     innerFrame.state.track_count = otherFrame->state.track_count;
@@ -133,11 +139,43 @@ void PlayerState::updateTracks(PBWrapper<Frame> otherFrame)
     }
     innerFrame.state.has_playing_track_index = true;
     innerFrame.state.playing_track_index = otherFrame->state.playing_track_index;
+
+    if (otherFrame->state.repeat) {
+        setRepeat(true);
+    }
+
+    if (otherFrame->state.shuffle) {
+        setShuffle(true);
+    }
 }
 
 void PlayerState::setVolume(uint32_t volume)
 {
     innerFrame.device_state.volume = volume;
+}
+
+void PlayerState::setShuffle(bool shuffle) {
+    innerFrame.state.shuffle = shuffle;
+    if (shuffle) {
+        // Put current song at the begining
+        auto tmp = innerFrame.state.track[0];
+        innerFrame.state.track[0] = innerFrame.state.track[innerFrame.state.playing_track_index];
+        innerFrame.state.track[innerFrame.state.playing_track_index] = tmp;
+
+        // Shuffle current tracks
+        for (int x = 1; x < innerFrame.state.track_count; x ++) {
+            auto j = x + (std::rand() % (innerFrame.state.track_count - x + 1));
+            tmp = innerFrame.state.track[j];
+            innerFrame.state.track[j] = innerFrame.state.track[x];
+            innerFrame.state.track[x] = tmp;
+        }
+        innerFrame.state.playing_track_index = 0;
+    }
+}
+
+
+void PlayerState::setRepeat(bool repeat) {
+    innerFrame.state.repeat = repeat;
 }
 
 std::shared_ptr<TrackReference> PlayerState::getCurrentTrack()

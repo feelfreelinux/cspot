@@ -104,6 +104,25 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         this->notify();
         break;
     }
+    case MessageType_kMessageTypeReplace:
+    {
+        printf("Got replace frame\n");
+        break;
+    }
+    case MessageType_kMessageTypeShuffle:
+    {
+        printf("Got shuffle frame\n");
+        state->setShuffle(receivedFrame->state.shuffle);
+        this->notify();
+        break;
+    }
+    case MessageType_kMessageTypeRepeat:
+    {
+        printf("Got repeat frame\n");
+        state->setRepeat(receivedFrame->state.repeat);
+        this->notify();
+        break;
+    }
     default:
         break;
     }

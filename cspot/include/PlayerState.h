@@ -33,6 +33,8 @@ public:
     bool isActive();
     void updatePositionMs(uint32_t position);
     void setVolume(uint32_t volume);
+    void setShuffle(bool shuffle);
+    void setRepeat(bool repeat);
     void updateTracks(PBWrapper<Frame> otherFrame);
     bool nextTrack();
     void prevTrack();
