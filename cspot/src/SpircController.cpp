@@ -99,7 +99,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
         state->setActive(true);
         state->setPlaybackState(PlaybackState::Loading);
-        state->updateTracks(std::move(receivedFrame));
+
+        // Every sane person on the planet would expect std::move to work here.
+        // And it does... on every single platform EXCEPT for ESP32 for some reason.
+        // For which it corrupts memory and makes printf fail. so yeah. its cursed.
+        state->updateTracks(receivedFrame);
         loadTrack();
         this->notify();
         break;

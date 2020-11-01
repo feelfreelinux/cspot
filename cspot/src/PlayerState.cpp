@@ -110,12 +110,12 @@ void PlayerState::updatePositionMs(uint32_t position)
     innerFrame.state.position_ms = position;
     innerFrame.state.position_measured_at = getCurrentTimestamp();
 }
-void PlayerState::updateTracks(PBWrapper<Frame> otherFrame)
+void PlayerState::updateTracks(PBWrapper<Frame>& otherFrame)
 {
-    innerFrame.state.context_uri = otherFrame->state.context_uri == nullptr ? nullptr : strdup(otherFrame->state.context_uri);
-    std::cout << innerFrame.state.context_uri << std::endl;
-
     printf("---- Track count %d\n", otherFrame->state.track_count);
+    innerFrame.state.context_uri = otherFrame->state.context_uri == nullptr ? nullptr : strdup(otherFrame->state.context_uri);
+
+    // printf("---- Track count %d\n", otherFrame->state.track_count);
     CSPOT_ASSERT(otherFrame->state.track_count < 100, "otherFrame->state.track_count cannot overflow track[100]");
     innerFrame.state.track_count = otherFrame->state.track_count;
     for (int i = 0; i < otherFrame->state.track_count; i++)

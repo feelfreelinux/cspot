@@ -35,7 +35,7 @@ public:
     void setVolume(uint32_t volume);
     void setShuffle(bool shuffle);
     void setRepeat(bool repeat);
-    void updateTracks(PBWrapper<Frame> otherFrame);
+    void updateTracks(PBWrapper<Frame>& otherFrame);
     bool nextTrack();
     void prevTrack();
     std::shared_ptr<TrackReference> getCurrentTrack();
