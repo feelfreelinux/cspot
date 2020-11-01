@@ -91,7 +91,7 @@ void PlayerState::prevTrack()
     {
         innerFrame.state.playing_track_index--;
     } else if (innerFrame.state.repeat) {
-        innerFrame.state.playing_track_index = innerFrame.state.track_count;
+        innerFrame.state.playing_track_index = innerFrame.state.track_count - 1;
     }
 }
 
@@ -163,8 +163,8 @@ void PlayerState::setShuffle(bool shuffle) {
         innerFrame.state.track[innerFrame.state.playing_track_index] = tmp;
 
         // Shuffle current tracks
-        for (int x = 1; x < innerFrame.state.track_count; x ++) {
-            auto j = x + (std::rand() % (innerFrame.state.track_count - x + 1));
+        for (int x = 1; x < innerFrame.state.track_count - 1; x ++) {
+            auto j = x + (std::rand() % (innerFrame.state.track_count - x));
             tmp = innerFrame.state.track[j];
             innerFrame.state.track[j] = innerFrame.state.track[x];
             innerFrame.state.track[x] = tmp;

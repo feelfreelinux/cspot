@@ -130,6 +130,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
 void SpircController::loadTrack()
 {
+    state->setPlaybackState(PlaybackState::Loading);
     std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
         state->setPlaybackState(PlaybackState::Playing);
