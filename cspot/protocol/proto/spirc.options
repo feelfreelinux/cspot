@@ -9,5 +9,4 @@ DeviceState.capabilities max_count:17, fixed_count:false
 State.context_uri type:FT_POINTER
 State.track max_count:101, fixed_count:false
 TrackRef.gid type:FT_POINTER
-TrackRef.uri max_size:38, fixed_length:true
-TrackRef.context type:FT_POINTER
+TrackRef.uri type:FT_POINTER

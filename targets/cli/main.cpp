@@ -5,6 +5,7 @@
 #include <PlainConnection.h>
 #include <MercuryManager.h>
 #include <memory>
+#include <vector>
 #include <iostream>
 #include <inttypes.h>
 #include <fstream>
@@ -19,7 +20,6 @@
 int main(int argc, char **argv)
 {
     std::string credentialsFileName = "authBlob.json";
-
     std::ifstream blobFile(credentialsFileName);
 
     std::shared_ptr<LoginBlob> blob;
@@ -46,8 +46,6 @@ int main(int argc, char **argv)
         // Assemble blob from json
         blob->loadJson(jsonData);
     }
-
-
 
     auto session = std::make_unique<Session>();
     session->connectWithRandomAp();

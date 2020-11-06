@@ -123,6 +123,7 @@ private:
         // Type registrations
         PB_WRAPPER_REGISTER_TYPE(Header);
         PB_WRAPPER_REGISTER_TYPE(APResponseMessage);
+        PB_WRAPPER_REGISTER_TYPE(Episode);
         PB_WRAPPER_REGISTER_TYPE(APWelcome);
         PB_WRAPPER_REGISTER_TYPE(Frame);
         PB_WRAPPER_REGISTER_TYPE(Track);

@@ -36,6 +36,63 @@ std::string bytesToHexString(std::vector<uint8_t>& v) {
     return ss.str();
 }
 
+std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n)
+{
+    auto carry = n;
+    for (int x = num.size() - 1; x >= 0; x--)
+    {
+        int res = num[x] + carry;
+        if (res < 256)
+        {
+            carry = 0;
+            num[x] = res;
+        }
+        else
+        {
+            // Carry the rest of the division
+            carry = res / 256;
+            num[x] = res % 256;
+
+            // extend the vector at the last index
+            if (x == 0)
+            {
+                num.insert(num.begin(), carry);
+                return num;
+            }
+        }
+    }
+
+    return num;
+}
+
+std::vector<uint8_t> bigNumMultiply(std::vector<uint8_t> num, int n)
+{
+    auto carry = 0;
+    for (int x = num.size() - 1; x >= 0; x--)
+    {
+        int res = num[x] * n + carry;
+        if (res < 256)
+        {
+            carry = 0;
+            num[x] = res;
+        }
+        else
+        {
+            // Carry the rest of the division
+            carry = res / 256;
+            num[x] = res % 256;
+
+            // extend the vector at the last index
+            if (x == 0)
+            {
+                num.insert(num.begin(), carry);
+                return num;
+            }
+        }
+    }
+
+    return num;
+}
 
 unsigned char h2int(char c)
 {

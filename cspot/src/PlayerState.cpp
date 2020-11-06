@@ -37,7 +37,7 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
                   std::vector<std::string>({"album", "playlist", "search", "inbox",
                                             "toplist", "starred", "publishedstarred", "track"}));
     addCapability(CapabilityType_kSupportedTypes, -1,
-                  std::vector<std::string>({"audio/local", "audio/track", "local", "track"}));
+                  std::vector<std::string>({"audio/local", "audio/track", "audio/episode", "local", "track"}));
 }
 
 void PlayerState::setPlaybackState(const PlaybackState state)
@@ -77,7 +77,8 @@ bool PlayerState::nextTrack()
     if (innerFrame.state.playing_track_index >= innerFrame.state.track_count)
     {
         innerFrame.state.playing_track_index = 0;
-        if (!innerFrame.state.repeat) {
+        if (!innerFrame.state.repeat)
+        {
             setPlaybackState(PlaybackState::Paused);
             return false;
         }
@@ -91,7 +92,9 @@ void PlayerState::prevTrack()
     if (innerFrame.state.playing_track_index > 0)
     {
         innerFrame.state.playing_track_index--;
-    } else if (innerFrame.state.repeat) {
+    }
+    else if (innerFrame.state.repeat)
+    {
         innerFrame.state.playing_track_index = innerFrame.state.track_count - 1;
     }
 }
@@ -111,41 +114,50 @@ void PlayerState::updatePositionMs(uint32_t position)
     innerFrame.state.position_ms = position;
     innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
 }
-void PlayerState::updateTracks(PBWrapper<Frame>& otherFrame)
+void PlayerState::updateTracks(PBWrapper<Frame> &otherFrame)
 {
     printf("---- Track count %d\n", otherFrame->state.track_count);
     innerFrame.state.context_uri = otherFrame->state.context_uri == nullptr ? nullptr : strdup(otherFrame->state.context_uri);
 
-    // printf("---- Track count %d\n", otherFrame->state.track_count);
     CSPOT_ASSERT(otherFrame->state.track_count < 100, "otherFrame->state.track_count cannot overflow track[100]");
     innerFrame.state.track_count = otherFrame->state.track_count;
     for (int i = 0; i < otherFrame->state.track_count; i++)
     {
-        innerFrame.state.track[i].has_uri = otherFrame->state.track[i].has_uri;
         innerFrame.state.track[i].has_queued = otherFrame->state.track[i].has_queued;
         innerFrame.state.track[i].queued = otherFrame->state.track[i].queued;
         innerFrame.state.track[i].context = otherFrame->state.track[i].context;
 
-        if (innerFrame.state.track[i].gid == nullptr)
+        if (innerFrame.state.track[i].gid != nullptr)
         {
             free(innerFrame.state.track[i].gid);
         }
 
-        memcpy(innerFrame.state.track[i].uri, otherFrame->state.track[i].uri, sizeof(otherFrame->state.track[i].uri));
-        auto result = static_cast<pb_bytes_array_t *>(
-            malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(otherFrame->state.track[i].gid->size)));
-        result->size = otherFrame->state.track[i].gid->size;
-        memcpy(result->bytes, otherFrame->state.track[i].gid->bytes, otherFrame->state.track[i].gid->size);
-        innerFrame.state.track[i].gid = result;
+        if (innerFrame.state.track[i].uri != nullptr)
+        {
+            free(innerFrame.state.track[i].uri);
+        }
+
+        innerFrame.state.track[i].uri = otherFrame->state.track[i].uri == nullptr ? nullptr : strdup(otherFrame->state.track[i].uri);
+        if (otherFrame->state.track[i].gid != nullptr)
+        {
+            auto result = static_cast<pb_bytes_array_t *>(
+                malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(otherFrame->state.track[i].gid->size)));
+            result->size = otherFrame->state.track[i].gid->size;
+            memcpy(result->bytes, otherFrame->state.track[i].gid->bytes, otherFrame->state.track[i].gid->size);
+            innerFrame.state.track[i].gid = result;
+
+        }
     }
     innerFrame.state.has_playing_track_index = true;
     innerFrame.state.playing_track_index = otherFrame->state.playing_track_index;
 
-    if (otherFrame->state.repeat) {
+    if (otherFrame->state.repeat)
+    {
         setRepeat(true);
     }
 
-    if (otherFrame->state.shuffle) {
+    if (otherFrame->state.shuffle)
+    {
         setShuffle(true);
     }
 }
@@ -155,16 +167,19 @@ void PlayerState::setVolume(uint32_t volume)
     innerFrame.device_state.volume = volume;
 }
 
-void PlayerState::setShuffle(bool shuffle) {
+void PlayerState::setShuffle(bool shuffle)
+{
     innerFrame.state.shuffle = shuffle;
-    if (shuffle) {
+    if (shuffle)
+    {
         // Put current song at the begining
         auto tmp = innerFrame.state.track[0];
         innerFrame.state.track[0] = innerFrame.state.track[innerFrame.state.playing_track_index];
         innerFrame.state.track[innerFrame.state.playing_track_index] = tmp;
 
         // Shuffle current tracks
-        for (int x = 1; x < innerFrame.state.track_count - 1; x ++) {
+        for (int x = 1; x < innerFrame.state.track_count - 1; x++)
+        {
             auto j = x + (std::rand() % (innerFrame.state.track_count - x));
             tmp = innerFrame.state.track[j];
             innerFrame.state.track[j] = innerFrame.state.track[x];
@@ -174,8 +189,8 @@ void PlayerState::setShuffle(bool shuffle) {
     }
 }
 
-
-void PlayerState::setRepeat(bool repeat) {
+void PlayerState::setRepeat(bool repeat)
+{
     innerFrame.state.repeat = repeat;
 }
 

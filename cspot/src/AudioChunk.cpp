@@ -16,7 +16,6 @@ AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t 
 
 AudioChunk::~AudioChunk()
 {
-
 }
 
 void AudioChunk::appendData(std::vector<uint8_t> &data)
@@ -36,37 +35,7 @@ void AudioChunk::decrypt()
 }
 
 // Basically just big num addition
-std::vector<uint8_t> AudioChunk::getIVSum(uint32_t num)
+std::vector<uint8_t> AudioChunk::getIVSum(uint32_t n)
 {
-    auto digits = audioAESIV;
-    std::reverse(digits.begin(), digits.end());
-    auto otherNum = std::vector<uint8_t>();
-    while (num)
-    {
-        otherNum.push_back(num % 256);
-        num /= 256;
-    }
-    int sum = 0;
-    auto i = digits.begin();
-    auto j = otherNum.begin();
-    bool in = true;
-    bool jn = true;
-    while ((in &= i != digits.end()) | (jn &= j != otherNum.end()) || sum)
-    {
-        if (jn)
-            sum += *j++;
-        if (in)
-        {
-            sum += *i;
-            *i++ = sum % 256;
-        }
-        else
-        {
-            digits.push_back(sum % 256);
-        }
-        sum /= 256; // carry to next digit
-    };
-    std::reverse(digits.begin(), digits.end());
-
-    return digits;
+    return bigNumAdd(audioAESIV, n);
 }

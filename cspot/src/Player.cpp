@@ -23,6 +23,12 @@ void Player::setVolume(uint32_t volume)
 {
     this->volume = (volume / (double)MAX_VOLUME) * 255;
 
+    // Calculate and cache log volume value
+    auto vol = 255 - this->volume;
+    uint32_t value = (log10(255 / ((float)vol + 1)) * 105.54571334);
+    if (value >= 254) value = 256;
+    logVolume = value << 8; // *256
+
     // Pass volume event to the sink if volume is sink-handled
     if (!this->audioSink->softwareVolumeControl)
     {
@@ -42,17 +48,12 @@ void Player::feedPCM(std::vector<uint8_t> &data)
     // @TODO actually extract it somewhere
     if (this->audioSink->softwareVolumeControl)
     {
-        auto vol = 255 - volume;
-        uint32_t value = (log10(255 / ((float)vol + 1)) * 105.54571334);
-        if (value >= 254)
-            value = 256;
-        auto mult = value << 8; // *256
         int16_t *psample;
         uint32_t pmax;
         psample = (int16_t *)(data.data());
         for (int32_t i = 0; i < (data.size() / 2); i++)
         {
-            int32_t temp = (int32_t)psample[i] * mult;
+            int32_t temp = (int32_t)psample[i] * logVolume;
             psample[i] = (temp >> 16) & 0xFFFF;
         }
     }
@@ -95,7 +96,7 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
 
     auto loadedLambda = trackLoadedCallback;
 
-    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference->gid);
+    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference);
     track->loadedTrackCallback = [this, track, framesCallback, loadedLambda]() {
         loadedLambda();
         track->audioStream->streamFinishedCallback = this->endOfFileCallback;

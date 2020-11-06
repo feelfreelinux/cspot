@@ -1,4 +1,7 @@
 Track.name type:FT_POINTER
 Track.gid type:FT_POINTER
 Track.file type:FT_POINTER
+Episode.name type:FT_POINTER
+Episode.gid type:FT_POINTER
+Episode.audio max_count:10, fixed_count:false
 AudioFile.file_id type:FT_POINTER

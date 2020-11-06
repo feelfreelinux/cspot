@@ -31,6 +31,7 @@ public:
     Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);
     std::function<void()> endOfFileCallback;
     int volume = 255;
+    uint32_t logVolume;
 
     void setVolume(uint32_t volume);
     void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback);

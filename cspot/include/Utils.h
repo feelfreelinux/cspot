@@ -31,6 +31,23 @@ unsigned long long getCurrentTimestamp();
  */
 uint64_t hton64(uint64_t value);
 
+/**
+ * @brief Performs big number multiplication on two numbers
+ * 
+ * @param num big num in vector format
+ * @param n secondary number
+ * @return std::vector<uint8_t> resulting number
+ */
+std::vector<uint8_t> bigNumMultiply(std::vector<uint8_t> num, int n);
+
+/**
+ * @brief Performs big number addition on two numbers
+ * 
+ * @param num big num in vector format
+ * @param n secondary number
+ * @return std::vector<uint8_t> resulting number
+ */
+std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n);
 
 unsigned char h2int(char c);
 

@@ -7,6 +7,7 @@
 #include "pthread.h"
 #include "WrappedSemaphore.h"
 #include "Crypto.h"
+#include "Utils.h"
 
 class AudioChunk {
 private:
