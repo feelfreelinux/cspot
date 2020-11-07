@@ -41,9 +41,17 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     PBWrapper<Track> trackInfo(response->parts[0]);
     std::cout << "--- Track name: " << std::string(trackInfo->name) << std::endl;
     auto trackId = std::vector<uint8_t>(trackInfo->gid->bytes, trackInfo->gid->bytes + trackInfo->gid->size);
+    std::cout << "--- tracksNumber: " << trackInfo->file_count << std::endl;
+    this->fileId = std::vector<uint8_t>();
 
     // TODO: option to set file quality
-    this->fileId = std::vector<uint8_t>(trackInfo->file[0].file_id->bytes, trackInfo->file[0].file_id->bytes + trackInfo->file[0].file_id->size);
+    for (int x = 0; x < trackInfo->file_count; x++)
+    {
+        if (trackInfo->file[x].format == AudioFile_Format_OGG_VORBIS_320)
+        {
+            this->fileId = std::vector<uint8_t>(trackInfo->file[x].file_id->bytes, trackInfo->file[x].file_id->bytes + trackInfo->file[x].file_id->size);
+        }
+    }
 
     this->requestAudioKey(this->fileId, trackId, trackInfo->duration);
 }
@@ -57,7 +65,6 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
     PBWrapper<Episode> episodeInfo(response->parts[0]);
     std::cout << "--- Episode name: " << std::string(episodeInfo->name) << std::endl;
     auto trackId = std::vector<uint8_t>(episodeInfo->gid->bytes, episodeInfo->gid->bytes + episodeInfo->gid->size);
-    auto n = 0;
 
     this->fileId = std::vector<uint8_t>();
 
@@ -69,7 +76,7 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         }
     }
 
-    this->requestAudioKey(this->fileId, trackId, episodeInfo->duration);
+    this->requestAudioKey(trackId, this->fileId, episodeInfo->duration);
 }
 
 void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration)
@@ -81,7 +88,7 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
             auto audioKey = std::vector<uint8_t>(res.begin() + 4, res.end());
             if (this->fileId.size() > 0)
             {
-                this->audioStream = std::make_unique<ChunkedAudioStream>(fileId, audioKey, trackDuration, this->manager, 0);
+                this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackDuration, this->manager, 0);
                 loadedTrackCallback();
             }
             else
@@ -95,5 +102,5 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
         }
     };
 
-    this->manager->requestAudioKey(fileId, trackId, audioKeyLambda);
+    this->manager->requestAudioKey(trackId, fileId, audioKeyLambda);
 }

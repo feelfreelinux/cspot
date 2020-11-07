@@ -12,7 +12,7 @@ TrackReference::TrackReference(TrackRef *ref)
     }
     else
     {
-        gid = std::vector<uint8_t>(ref->gid->bytes, ref->gid->bytes + 16);
+        gid = std::vector<uint8_t>(ref->gid->bytes, ref->gid->bytes + ref->gid->size);
     }
 }
 
