@@ -2,6 +2,7 @@
 
 TrackReference::TrackReference(TrackRef *ref)
 {
+    this->ref = ref;
     if (ref->uri != nullptr)
     {
         auto uri = std::string(ref->uri);
@@ -14,6 +15,11 @@ TrackReference::TrackReference(TrackRef *ref)
     {
         gid = std::vector<uint8_t>(ref->gid->bytes, ref->gid->bytes + ref->gid->size);
     }
+}
+
+TrackReference::~TrackReference()
+{
+
 }
 
 std::vector<uint8_t> TrackReference::base62Decode(std::string uri)

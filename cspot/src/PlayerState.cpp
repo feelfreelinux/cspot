@@ -127,15 +127,10 @@ void PlayerState::updateTracks(PBWrapper<Frame> &otherFrame)
         innerFrame.state.track[i].queued = otherFrame->state.track[i].queued;
         innerFrame.state.track[i].context = otherFrame->state.track[i].context;
 
-        if (innerFrame.state.track[i].gid != nullptr)
-        {
-            free(innerFrame.state.track[i].gid);
-        }
-
-        if (innerFrame.state.track[i].uri != nullptr)
-        {
-            free(innerFrame.state.track[i].uri);
-        }
+        // if (innerFrame.state.track[i].gid != nullptr)
+        // {
+        //     free(innerFrame.state.track[i].gid);
+        // }
 
         innerFrame.state.track[i].uri = otherFrame->state.track[i].uri == nullptr ? nullptr : strdup(otherFrame->state.track[i].uri);
         if (otherFrame->state.track[i].gid != nullptr)
