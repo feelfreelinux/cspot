@@ -4,11 +4,10 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "spirc.pb.h"
+#include "Spirc.h"
 #include "Utils.h"
 #include "TimeProvider.h"
 #include "ConstantParameters.h"
-#include "PBUtils.h"
 #include "CspotAssert.h"
 #include "TrackReference.h"
 
@@ -22,13 +21,16 @@ enum class PlaybackState {
 class PlayerState
 {
 private:
-    Frame innerFrame;
     uint32_t seqNum = 0;
     uint8_t capabilityIndex = 0;
+    std::vector<uint8_t> frameData;
     std::shared_ptr<TimeProvider> timeProvider;
     
     void addCapability(CapabilityType typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
 public:
+    Frame innerFrame = Frame();
+    Frame remoteFrame = Frame();
+
     /**
      * @brief Player state represents the current state of player.
      * 
@@ -93,10 +95,8 @@ public:
     
     /**
      * @brief Updates local track queue from remote data.
-     * 
-     * @param otherFrame Remote frame containing track data.
      */
-    void updateTracks(PBWrapper<Frame>& otherFrame);
+    void updateTracks();
 
     /**
      * @brief Changes playback to next queued track.

@@ -5,8 +5,7 @@
 #include <vector>
 #include <iostream>
 #include "MercuryManager.h"
-#include "PBUtils.h"
-#include "metadata.pb.h"
+#include "Metadata.h"
 #include "Utils.h"
 #include "MercuryResponse.h"
 #include <fstream>
@@ -23,6 +22,7 @@ private:
     void trackInformationCallback(std::unique_ptr<MercuryResponse> response);
     void episodeInformationCallback(std::unique_ptr<MercuryResponse> response);
     void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration);
+    Track trackInfo;
 
     std::vector<uint8_t> fileId;
     std::vector<uint8_t> currentChunkData;

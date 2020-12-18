@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <random>
-#include <pb_encode.h>
 #include <memory>
 #include <functional>
 #include <climits>
@@ -14,12 +13,11 @@
 #include "LoginBlob.h"
 #include "ApResolve.h"
 #include "PlainConnection.h"
-#include "PBUtils.h"
 #include "Packet.h"
-#include "keyexchange.pb.h"
+#include "Keyexchange.h"
 #include "ConstantParameters.h"
 #include "Crypto.h"
-#include "authentication.pb.h"
+#include "Authentication.h"
 
 #define SPOTIFY_VERSION 0x10800000000
 #define LOGIN_REQUEST_COMMAND 0xAB
@@ -29,6 +27,11 @@
 class Session
 {
 private:
+    ClientResponseEncrypted authRequest;
+    ClientResponsePlaintext clientResPlaintext;
+    ClientHello clientHello;
+    APResponseMessage apResponse;
+
     std::shared_ptr<PlainConnection> conn;
     std::unique_ptr<Crypto> crypto;
     std::vector<uint8_t> sendClientHelloRequest();

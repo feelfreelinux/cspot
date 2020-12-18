@@ -21,9 +21,11 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 
 void SpircController::subscribe()
 {
+            printf("dlon!\n");
+
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
-        sendCmd(MessageType_kMessageTypeHello);
+        sendCmd(MessageType::kMessageTypeHello);
         printf("Sent hello!\n");
     };
     mercuryCallback subLambda = [=](std::unique_ptr<MercuryResponse> res) {
@@ -35,16 +37,16 @@ void SpircController::subscribe()
 
 void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
-    printf("Got spirc frame!\n");
-    PBWrapper<Frame> receivedFrame(data);
 
-    switch (receivedFrame->typ)
+    state->remoteFrame.parseFromVector(data);
+
+    switch (state->remoteFrame.typ.value())
     {
-    case MessageType_kMessageTypeNotify:
+    case MessageType::kMessageTypeNotify:
     {
         printf("Notify frame\n");
         // Pause the playback if another player took control
-        if (state->isActive() && receivedFrame->device_state.is_active)
+        if (state->isActive() && state->remoteFrame.device_state->is_active.value())
         {
             state->setActive(false);
             notify();
@@ -52,20 +54,20 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         }
         break;
     }
-    case MessageType_kMessageTypeSeek:
+    case MessageType::kMessageTypeSeek:
     {
         printf("Seek command\n");
-        state->updatePositionMs(receivedFrame->position);
-        this->player->seekMs(receivedFrame->position);
+        state->updatePositionMs(state->remoteFrame.position.value());
+        this->player->seekMs(state->remoteFrame.position.value());
         notify();
         break;
     }
-    case MessageType_kMessageTypeVolume:
-        state->setVolume(receivedFrame->volume);
-        player->setVolume(receivedFrame->volume);
+    case MessageType::kMessageTypeVolume:
+        state->setVolume(state->remoteFrame.volume.value());
+        player->setVolume(state->remoteFrame.volume.value());
         notify();
         break;
-    case MessageType_kMessageTypePause:
+    case MessageType::kMessageTypePause:
     {
         printf("Pause command\n");
         player->pause();
@@ -74,12 +76,12 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
 
         break;
     }
-    case MessageType_kMessageTypePlay:
+    case MessageType::kMessageTypePlay:
         player->play();
         state->setPlaybackState(PlaybackState::Playing);
         notify();
         break;
-    case MessageType_kMessageTypeNext:
+    case MessageType::kMessageTypeNext:
         if (state->nextTrack())
         {
             loadTrack();
@@ -88,14 +90,17 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         }
         notify();
         break;
-    case MessageType_kMessageTypePrev:
+    case MessageType::kMessageTypePrev:
         state->prevTrack();
         loadTrack();
         notify();
         break;
-    case MessageType_kMessageTypeLoad:
+    case MessageType::kMessageTypeLoad:
     {
-        printf("Load frame!\n");
+        for (int x = 0; x < data.size(); x++) {
+            printf("%d, ", data[x]);
+        }
+        printf("\nLoad frame!\n");
 
         state->setActive(true);
         state->setPlaybackState(PlaybackState::Loading);
@@ -103,27 +108,27 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         // Every sane person on the planet would expect std::move to work here.
         // And it does... on every single platform EXCEPT for ESP32 for some reason.
         // For which it corrupts memory and makes printf fail. so yeah. its cursed.
-        state->updateTracks(receivedFrame);
+        state->updateTracks();
         loadTrack();
         this->notify();
         break;
     }
-    case MessageType_kMessageTypeReplace:
+    case MessageType::kMessageTypeReplace:
     {
         printf("Got replace frame\n");
         break;
     }
-    case MessageType_kMessageTypeShuffle:
+    case MessageType::kMessageTypeShuffle:
     {
         printf("Got shuffle frame\n");
-        state->setShuffle(receivedFrame->state.shuffle);
+        state->setShuffle(state->remoteFrame.state->shuffle.value());
         this->notify();
         break;
     }
-    case MessageType_kMessageTypeRepeat:
+    case MessageType::kMessageTypeRepeat:
     {
         printf("Got repeat frame\n");
-        state->setRepeat(receivedFrame->state.repeat);
+        state->setRepeat(state->remoteFrame.state->repeat.value());
         this->notify();
         break;
     }
@@ -146,7 +151,7 @@ void SpircController::loadTrack()
 
 void SpircController::notify()
 {
-    this->sendCmd(MessageType_kMessageTypeNotify);
+    this->sendCmd(MessageType::kMessageTypeNotify);
 }
 
 void SpircController::sendCmd(MessageType typ)

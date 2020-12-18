@@ -59,9 +59,9 @@ int main(int argc, char **argv)
         mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
-        auto audioSink = std::make_shared<ALSAAudioSink>();
+        auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-        auto audioSink = std::make_shared<PortAudioSink>();
+        auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #else
         auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif

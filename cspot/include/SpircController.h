@@ -6,8 +6,7 @@
 #include <functional>
 #include "Utils.h"
 #include "MercuryManager.h"
-#include "spirc.pb.h"
-#include "PBUtils.h"
+#include "Spirc.h"
 #include "Session.h"
 #include "PlayerState.h"
 #include "ConstantParameters.h"

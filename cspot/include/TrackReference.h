@@ -2,8 +2,8 @@
 #define TRACKREFERENCE_H
 
 #include <vector>
-#include "spirc.pb.h"
 #include "Utils.h"
+#include "Spirc.h"
 #include <iostream>
 #include <string>
 

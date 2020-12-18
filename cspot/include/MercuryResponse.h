@@ -6,8 +6,7 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "mercury.pb.h"
-#include "PBUtils.h"
+#include "Mercury.h"
 #include "Utils.h"
 
 typedef std::vector<std::vector<uint8_t>> mercuryParts;
@@ -20,7 +19,7 @@ private:
 public:
     MercuryResponse(std::vector<uint8_t> &data);
     void decodeHeader();
-    PBWrapper<Header> mercuryHeader;
+    Header mercuryHeader;
     uint8_t flags;
     mercuryParts parts;
     uint64_t sequenceId;

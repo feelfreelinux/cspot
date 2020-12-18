@@ -8,8 +8,6 @@
 #include "Utils.h"
 #include "MercuryManager.h"
 #include "TrackReference.h"
-#include "spirc.pb.h"
-#include "PBUtils.h"
 #include "Session.h"
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
