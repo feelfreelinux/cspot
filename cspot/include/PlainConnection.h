@@ -1,15 +1,25 @@
 #ifndef PLAINCONNECTION_H
 #define PLAINCONNECTION_H
 
-#include "sys/socket.h"
 #include <functional>
 #include <vector>
 #include <string>
 #include <cstdint>
-#include <netdb.h>
-#include <unistd.h>
 #include "Packet.h"
 #include "Utils.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#define socket_t SOCKET
+#else
+#define socket_t int
+#include <netinet/in.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+
 
 typedef std::function<bool()> timeoutCallback;
 
@@ -18,7 +28,7 @@ class PlainConnection
 public:
     PlainConnection();
     ~PlainConnection();
-    int apSock;
+    socket_t apSock;
     void connectToAp(std::string apAddress);
     void closeSocket();
     timeoutCallback timeoutHandler;

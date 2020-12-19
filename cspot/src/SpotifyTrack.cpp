@@ -1,5 +1,4 @@
 #include "SpotifyTrack.h"
-#include "unistd.h"
 #include "MercuryManager.h"
 #include <cassert>
 #include "CspotAssert.h"

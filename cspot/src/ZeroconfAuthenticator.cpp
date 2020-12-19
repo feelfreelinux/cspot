@@ -1,9 +1,17 @@
+#ifdef _WIN32
+#include <Winsock2.h>
+#include <Ws2Tcpip.h>
+#endif
+
 #include "ZeroconfAuthenticator.h"
 #include "JSONObject.h"
 #include <sstream>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+
+#ifdef _WIN32
+#define addrinfo_t ADDRINFOA
+#else
+#define addrinfo_t struct addrinfo
+#endif
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -21,11 +29,11 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
 
     printf("Starting zeroconf auth server at port %d\n", this->serverPort);
 
-    struct addrinfo hints, *server;
+    addrinfo_t hints, *server;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE || SOCK_NONBLOCK;
+    hints.ai_flags = AI_PASSIVE;
     getaddrinfo(NULL, std::to_string(serverPort).c_str(), &hints, &server);
 
     int sockfd = socket(server->ai_family,
@@ -42,11 +50,22 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
     for (;;)
     {
         int clientFd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_size);
+#ifdef _WIN32
+        int iResult;
+        u_long iMode = 1;
+        iResult = ioctlsocket(clientFd, FIONBIO, &iMode);
+        if (iResult != NO_ERROR)
+        {
+            perror("failed to  ioctlsocket(clientFd, FIONBIO, &iMode);");
+            continue;
+        };
+#else
         if (fcntl(clientFd, F_SETFL, O_NONBLOCK) == -1)
         {
             perror("failed to fcntl(clientFd, F_SETFL, O_NONBLOCK);");
             continue;
         };
+#endif
         int readBytes = 0;
         std::vector<uint8_t> bufferVec(128);
 
@@ -75,7 +94,7 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             }
             else
             {
-                readBytes = read(clientFd, bufferVec.data(), 128);
+                readBytes = recv(clientFd, reinterpret_cast<char *>(bufferVec.data()), 128, 0);
             }
 
             // Read entire response so lets yeeeet
@@ -119,8 +138,12 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             stream << jsonString;
 
             auto response = stream.str();
-            write(clientFd, response.c_str(), response.size());
+            send(clientFd, response.c_str(), response.size(), 0);
+#ifdef _WIN32
+            closesocket(clientFd);
+#else
             close(clientFd);
+#endif
 
             return handleAddUser(currentString);
             // break;
@@ -141,8 +164,12 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             stream << jsonInfo;
             // Respond with player info
             auto response = stream.str();
-            write(clientFd, response.c_str(), response.size());
+            send(clientFd, response.c_str(), response.size(), 0);
+#ifdef _WIN32
+            closesocket(clientFd);
+#else
             close(clientFd);
+#endif
         }
     }
 }
@@ -153,11 +180,9 @@ std::string ZeroconfAuthenticator::getParameterFromUrlEncoded(std::string data, 
     return urlDecode(startStr.substr(0, startStr.find("&")));
 }
 
+#ifdef ESP_PLATFORM
 void ZeroconfAuthenticator::registerZeroconf()
 {
-    const char *service = "_spotify-connect._tcp";
-
-#ifdef ESP_PLATFORM
     mdns_init();
     mdns_hostname_set("cspot");
     mdns_txt_item_t serviceTxtData[3] = {
@@ -165,18 +190,92 @@ void ZeroconfAuthenticator::registerZeroconf()
         {"CPath", "/"},
         {"Stack", "SP"}};
     mdns_service_add("cspot", "_spotify-connect", "_tcp", serverPort, serviceTxtData, 3);
+}
+#elif _WIN32
 
+static std::wstring s2ws(const std::string &s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+}
+
+void ZeroconfAuthenticator::registerZeroconf()
+{
+    DWORD size = 0;
+    GetComputerNameEx(ComputerNameDnsHostname, nullptr, &size);
+    std::vector<wchar_t> hostname(size);
+    if (!GetComputerNameEx(ComputerNameDnsHostname, reinterpret_cast<LPSTR>(&hostname[0]), &size))
+    {
+        printf("Zeroconf: GetComputerNameEx() failed with error %u!", GetLastError());
+        return;
+    }
+
+    // const auto domain            = record.replyDomain.isEmpty() ? L".local" : L"." + record.replyDomain.toStdWString();
+    const auto qualifiedHostname = std::string(hostname.begin(), hostname.end()) + ".local";
+
+    // auto service = record.serviceName.isEmpty() ? &hostname[0] : record.serviceName.toStdWString();
+    // service += L".";
+    // service += record.registeredType.toStdWString();
+    // service += domain;
+
+    constexpr int textPropertiesCount = 3;
+
+    PCWSTR keys[textPropertiesCount] = {
+        L"VERSION",
+        L"CPath",
+        L"Stack"};
+
+    PCWSTR values[textPropertiesCount] = {
+        L"1.0",
+        L"/",
+        L"SP"};
+
+    auto instance = DnsServiceConstructInstance(
+        L"_spotify-connect._tcp.local",
+        s2ws(qualifiedHostname).c_str(), // A string that represents the name of the host of the service.
+        nullptr,                         // A pointer to an IP4_ADDRESS structure that represents the service-associated IPv4 address.
+        nullptr,                         // A pointer to an IP6_ADDRESS structure that represents the service-associated IPv6 address.
+        serverPort,                      // A value that represents the port on which the service is running.
+        0,                               // A value that represents the service priority.
+        0,                               // A value that represents the service weight.
+        textPropertiesCount,
+        keys,
+        values);
+    // TODO: add
+    DNS_SERVICE_REGISTER_REQUEST rq;
+    rq.Version = DNS_QUERY_REQUEST_VERSION1;
+    rq.InterfaceIndex = 0; // all interfaces
+    rq.unicastEnabled = false;
+    rq.pServiceInstance = instance;
+    const auto ret = DnsServiceRegister(&rq, nullptr);
+    DnsServiceFreeInstance(instance);
+
+    if (ret == DNS_REQUEST_PENDING)
+    {
+        return;
+    }
+
+    printf("Zeroconf: DnsServiceRegister() failed with error %u!", ret);
+}
 #else
+void ZeroconfAuthenticator::registerZeroconf()
+{
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, NULL);
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
     TXTRecordSetValue(&txtRecord, "CPath", 1, "/");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char *)informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
+    DNSServiceRegister(&ref, 0, 0, (char *)informationString, "_spotify-connect._tcp", NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
-#endif
 }
+#endif
 
 std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::string userData)
 {

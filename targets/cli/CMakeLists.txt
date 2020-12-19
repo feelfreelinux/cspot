@@ -9,6 +9,7 @@ file(GLOB SOURCES "*.cpp")
 include_directories(".")
 
 if(WIN32)
+    set(THINGS_TO_LINK ${THINGS_TO_LINK} wsock32 ws2_32 dnsapi)
  # eek
 elseif(UNIX AND NOT APPLE)
     add_definitions(-DCSPOT_ENABLE_ALSA_SINK)

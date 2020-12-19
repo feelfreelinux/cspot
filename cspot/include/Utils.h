@@ -1,11 +1,16 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#ifdef _WIN32
+#include "Windows.h"
+#else
 #include <unistd.h>
-#include <vector>
-#include "sys/socket.h"
-#include <cstdint>
+#include <sys/socket.h>
 #include <netdb.h>
+#endif
+
+#include <vector>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <chrono>
@@ -51,9 +56,7 @@ std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n);
 
 unsigned char h2int(char c);
 
-
 std::string urlDecode(std::string str);
-
 
 /**
  * @brief Converts provided bytes into a human readable hex string
@@ -89,10 +92,9 @@ T extract(const std::vector<unsigned char> &v, int pos)
 template <typename T>
 std::vector<uint8_t> pack(T data)
 {
-     std::vector<std::uint8_t> rawData( (std::uint8_t*)&data, (std::uint8_t*)&(data) + sizeof(T));
+  std::vector<std::uint8_t> rawData((std::uint8_t *)&data, (std::uint8_t *)&(data) + sizeof(T));
 
-     return rawData;
+  return rawData;
 }
-
 
 #endif

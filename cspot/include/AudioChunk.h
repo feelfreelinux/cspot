@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "pthread.h"
+#include "WrappedMutex.h"
 #include "WrappedSemaphore.h"
 #include "Crypto.h"
 #include "Utils.h"
@@ -24,7 +24,7 @@ public:
     std::vector<uint8_t> decryptedData;
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;
-    pthread_mutex_t loadingMutex;
+    WrappedMutex loadingMutex;
     uint32_t startPosition;
     uint32_t endPosition;
     uint16_t seqId;

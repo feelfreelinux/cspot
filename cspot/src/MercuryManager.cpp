@@ -139,7 +139,12 @@ RECONNECT:
     catch (...)
     {
         printf("Reconnection failed, willl retry in %d secs\n", RECONNECTION_RETRY_MS / 1000);
+
+#ifdef _WIN32
+        Sleep(RECONNECTION_RETRY_MS);
+#else
         usleep(RECONNECTION_RETRY_MS * 1000);
+#endif
         goto RECONNECT;
         //reconnect();
     }

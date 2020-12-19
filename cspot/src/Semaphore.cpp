@@ -46,7 +46,7 @@ WrappedSemaphore::WrappedSemaphore(int count)
 {
     semaphoreHandle = CreateSemaphore(
         NULL,           // default security attributes
-        MAX_SEM_COUNT,  // initial count
+        0,  // initial count
         count,  // maximum count
         NULL);          // unnamed semaphore
 

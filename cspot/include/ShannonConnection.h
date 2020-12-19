@@ -2,18 +2,23 @@
 #define SHANNONCONNECTION_H
 
 #include <vector>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <string>
-#include <netdb.h>
 #include <memory>
 #include <cstdint>
-#include <pthread.h>
+#include "WrappedMutex.h"
 #include "Utils.h"
 #include "Shannon.h"
 #include "PlainConnection.h"
 #include "Packet.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
 
 #define MAC_SIZE 4
 
@@ -26,8 +31,8 @@ private:
     uint32_t sendNonce = 0;
     uint32_t recvNonce = 0;
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
-    pthread_mutex_t writeMutex;
-    pthread_mutex_t readMutex;
+    WrappedMutex writeMutex;
+    WrappedMutex readMutex;
     
 public:
     ShannonConnection();

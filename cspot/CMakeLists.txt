@@ -25,6 +25,13 @@ if(UNIX AND NOT APPLE)
     set(EXTRA_REQ_LIBS ${EXTRA_REQ_LIBS} dns_sd)
 endif()
 
+
+if(WIN32)
+add_compile_definitions(BYTE_ORDER=1)
+add_compile_definitions(LITTLE_ENDIAN=1)
+add_compile_definitions(BIG_ENDIAN=0)
+endif()
+
 include_directories("cJSON")
 
 include_directories("include")

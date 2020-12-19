@@ -18,9 +18,14 @@
 #include "WrappedSemaphore.h"
 #include "TimeProvider.h"
 #include "Session.h"
-
 #include <stdint.h>
 #include <memory>
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 
 #define AUDIOCHUNK_TIMEOUT_MS 5 * 1000
 #define RECONNECTION_RETRY_MS 5 * 1000
@@ -59,7 +64,7 @@ private:
   std::mutex reconnectionMutex;
   std::map<std::string, mercuryCallback> subscriptions;
   std::unique_ptr<Session> session;
-  std::shared_ptr<LoginBlob> lastAuthBlob; 
+  std::shared_ptr<LoginBlob> lastAuthBlob;
   std::unique_ptr<AudioChunkManager> audioChunkManager;
   std::vector<std::unique_ptr<Packet>> queue;
   std::unique_ptr<WrappedSemaphore> queueSemaphore;
@@ -70,6 +75,7 @@ private:
   audioKeyCallback keyCallback;
 
   void runTask();
+
 public:
   MercuryManager(std::unique_ptr<Session> session);
   voidCallback reconnectedCallback;

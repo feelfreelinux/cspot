@@ -16,9 +16,24 @@
 #include "LoginBlob.h"
 #include "PortAudioSink.h"
 #include "ALSAAudioSink.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 int main(int argc, char **argv)
 {
+#ifdef _WIN32
+    WSADATA wsaData;
+    int iResult;
+    u_long iMode = 0;
+
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != NO_ERROR)
+    {
+        std::cout << "Error at WSAStartup()";
+        return 1;
+    }
+#endif
     std::string credentialsFileName = "authBlob.json";
     std::ifstream blobFile(credentialsFileName);
 

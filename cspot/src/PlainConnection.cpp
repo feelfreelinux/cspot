@@ -1,18 +1,32 @@
 
+#ifdef _WIN32
+#include <Winsock2.h>
+#include <Ws2Tcpip.h>
+#endif
+
 #include "PlainConnection.h"
 #include <cstring>
-#include <netinet/tcp.h>
 #include <errno.h>
+
+#ifdef _WIN32
+#define addrinfo_t ADDRINFOA
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#define addrinfo_t struct addrinfo
+#include <netinet/tcp.h>
+#endif
 
 PlainConnection::PlainConnection(){};
 
-PlainConnection::~PlainConnection(){
+PlainConnection::~PlainConnection()
+{
     closeSocket();
 };
 
 void PlainConnection::connectToAp(std::string apAddress)
 {
-    struct addrinfo h, *airoot, *ai;
+    addrinfo_t h, *airoot, *ai;
     std::string hostname = apAddress.substr(0, apAddress.find(":"));
     std::string portStr = apAddress.substr(apAddress.find(":") + 1, apAddress.size());
     memset(&h, 0, sizeof(h));
@@ -56,7 +70,7 @@ void PlainConnection::connectToAp(std::string apAddress)
             break;
         }
 
-        close(this->apSock);
+        this->closeSocket();
         apSock = -1;
         throw std::runtime_error("Can't connect to spotify servers");
     }
@@ -104,7 +118,7 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
     while (idx < size)
     {
     READ:
-        if ((n = recv(this->apSock, &buf[idx], size - idx, 0)) <= 0)
+        if ((n = recv(this->apSock, reinterpret_cast<char *>(&buf[idx]), size - idx, 0)) <= 0)
         {
             switch (errno)
             {
@@ -137,7 +151,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
     while (idx < data.size())
     {
     WRITE:
-        if ((n = send(this->apSock, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
+        if ((n = send(this->apSock, reinterpret_cast<const char *>(&data[idx]), data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
         {
             switch (errno)
             {
@@ -160,9 +174,18 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
     return data.size();
 }
 
+#ifdef _WIN32
+void PlainConnection::closeSocket()
+{
+    printf("Closing winsock...\n");
+    shutdown(this->apSock, SD_BOTH);
+    closesocket(this->apSock);
+}
+#else
 void PlainConnection::closeSocket()
 {
     printf("Closing socket...\n");
     shutdown(this->apSock, SHUT_RDWR);
     close(this->apSock);
 }
+#endif
