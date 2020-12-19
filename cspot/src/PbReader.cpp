@@ -10,42 +10,47 @@ T PbReader::decodeVarInt()
 {
     uint8_t byte;
     uint_fast8_t bitpos = 0;
-    skipVarIntDump = 0;
+    this->skipVarIntDump = 0;
     do
     {
-        byte = rawData[pos];
+        byte = this->rawData[pos];
         pos++;
 
-        skipVarIntDump |= (uint64_t)(byte & 0x7F) << bitpos;
+        this->skipVarIntDump |= (uint64_t)(byte & 0x7F) << bitpos;
         bitpos = (uint_fast8_t)(bitpos + 7);
     } while (byte & 0x80);
-    
-    return static_cast<T>(skipVarIntDump);
+
+    return static_cast<T>(this->skipVarIntDump);
 }
 
 template int64_t PbReader::decodeVarInt();
 template bool PbReader::decodeVarInt();
 
-void PbReader::resetMaxPosition() {
+void PbReader::resetMaxPosition()
+{
     maxPosition = rawData.size();
 }
 
-void PbReader::decodeString(std::string & target) {
+void PbReader::decodeString(std::string &target)
+{
     nextFieldLength = decodeVarInt<uint32_t>();
     target.resize(nextFieldLength);
-    std::copy( rawData.begin() + pos, rawData.begin() + pos + nextFieldLength , target.begin());
+    std::copy(rawData.begin() + pos, rawData.begin() + pos + nextFieldLength, target.begin());
     pos += nextFieldLength;
 }
 
-void PbReader::decodeVector(std::vector<uint8_t> & target) {
+void PbReader::decodeVector(std::vector<uint8_t> &target)
+{
     nextFieldLength = decodeVarInt<uint32_t>();
     target.resize(nextFieldLength);
-    std::copy( rawData.begin() + pos, rawData.begin() + pos + nextFieldLength , target.begin());
+    std::copy(rawData.begin() + pos, rawData.begin() + pos + nextFieldLength, target.begin());
     pos += nextFieldLength;
 }
 
-bool PbReader::next() {
-    if (pos >= maxPosition) return false;
+bool PbReader::next()
+{
+    if (pos >= maxPosition)
+        return false;
 
     currentWireValue = decodeVarInt<uint32_t>();
     currentTag = currentWireValue >> 3U;
@@ -53,7 +58,8 @@ bool PbReader::next() {
     return true;
 }
 
-int64_t PbReader::decodeZigzag(uint64_t value) {
+int64_t PbReader::decodeZigzag(uint64_t value)
+{
     return static_cast<int64_t>((value >> 1U) ^ static_cast<uint64_t>(-static_cast<int64_t>(value & 1U)));
 }
 
@@ -66,7 +72,6 @@ T PbReader::decodeSVarInt()
 
 template int32_t PbReader::decodeSVarInt();
 template int64_t PbReader::decodeSVarInt();
-
 
 void PbReader::skip()
 {
