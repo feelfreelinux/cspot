@@ -41,6 +41,31 @@ void WrappedSemaphore::give()
 {
     dispatch_semaphore_signal(semaphoreHandle);
 }
+#elif _WIN32
+WrappedSemaphore::WrappedSemaphore(int count)
+{
+    semaphoreHandle = CreateSemaphore(
+        NULL,           // default security attributes
+        MAX_SEM_COUNT,  // initial count
+        count,  // maximum count
+        NULL);          // unnamed semaphore
+
+}
+
+WrappedSemaphore::~WrappedSemaphore()
+{
+    CloseHandle(semaphoreHandle);
+}
+
+void WrappedSemaphore::wait()
+{
+    WaitForSingleObject(semaphoreHandle, INFINITE);
+}
+
+void WrappedSemaphore::give()
+{
+    ReleaseSemaphore(semaphoreHandle, 1, NULL);
+}
 #else
 
 WrappedSemaphore::WrappedSemaphore(int count)

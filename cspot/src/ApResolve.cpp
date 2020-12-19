@@ -6,91 +6,97 @@
 #include <ctype.h>
 #include <cstring>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <unistd.h>
 #include <sstream>
 #include <cJSON.h>
 #include <fstream>
+
+#ifdef _WIN32
+#include <Windows.h>
+#include <Winsock2.h>
+#else
+#include <netinet/in.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
 
 ApResolve::ApResolve() {}
 
 std::string ApResolve::getApList()
 {
-    // hostname lookup
-    struct hostent *host = gethostbyname("apresolve.spotify.com");
-    struct sockaddr_in client;
+	// hostname lookup
+	struct hostent* host = gethostbyname("apresolve.spotify.com");
+	struct sockaddr_in client;
 
-    if ((host == NULL) || (host->h_addr == NULL))
-    {
-        printf("apresolve: DNS lookup error\n");
-        throw std::runtime_error("Resolve failed");
-    }
-    
-    // Prepare socket
-    bzero(&client, sizeof(client));
-    client.sin_family = AF_INET;
-    client.sin_port = htons(80);
-    memcpy(&client.sin_addr, host->h_addr, host->h_length);
+	if ((host == NULL) || (host->h_addr == NULL))
+	{
+		printf("apresolve: DNS lookup error\n");
+		throw std::runtime_error("Resolve failed");
+	}
 
-    int sockFd = socket(AF_INET, SOCK_STREAM, 0);
+	// Prepare socket
+	bzero(&client, sizeof(client));
+	client.sin_family = AF_INET;
+	client.sin_port = htons(80);
+	memcpy(&client.sin_addr, host->h_addr, host->h_length);
 
-    // Connect to spotify's server
-    if (connect(sockFd, (struct sockaddr *)&client, sizeof(client)) < 0)
-    {
-        close(sockFd);
-        printf("Could not connect to apresolve\n");
-        throw std::runtime_error("Resolve failed");
-    }
+	int sockFd = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Prepare HTTP get header
-    std::stringstream ss;
-    ss << "GET / HTTP/1.1\r\n"
-       << "Host: apresolve.spotify.com\r\n"
-       << "Accept: application/json\r\n"
-       << "Connection: close\r\n"
-       << "\r\n\r\n";
+	// Connect to spotify's server
+	if (connect(sockFd, (struct sockaddr*)&client, sizeof(client)) < 0)
+	{
+		close(sockFd);
+		printf("Could not connect to apresolve\n");
+		throw std::runtime_error("Resolve failed");
+	}
 
-    std::string request = ss.str();
+	// Prepare HTTP get header
+	std::stringstream ss;
+	ss << "GET / HTTP/1.1\r\n"
+		<< "Host: apresolve.spotify.com\r\n"
+		<< "Accept: application/json\r\n"
+		<< "Connection: close\r\n"
+		<< "\r\n\r\n";
 
-    // Send the request
-    if (send(sockFd, request.c_str(), request.length(), 0) != (int)request.length())
-    {
-        printf("apresolve: can't send request\n");
-        throw std::runtime_error("Resolve failed");
-    }
+	std::string request = ss.str();
 
-    char cur;
+	// Send the request
+	if (send(sockFd, request.c_str(), request.length(), 0) != (int)request.length())
+	{
+		printf("apresolve: can't send request\n");
+		throw std::runtime_error("Resolve failed");
+	}
 
-    // skip read till json data
-    while (read(sockFd, &cur, 1) > 0 && cur != '{');
+	char cur;
 
-    auto jsonData = std::string("{");
+	// skip read till json data
+	while (recv(sockFd, &cur, 1, 0) > 0 && cur != '{');
 
-    // Read json structure
-    while (read(sockFd, &cur, 1) > 0)
-    {
-        jsonData += cur;
-    }
+	auto jsonData = std::string("{");
 
-    return jsonData;
+	// Read json structure
+	while (recv(sockFd, &cur, 1, 0) > 0)
+	{
+		jsonData += cur;
+	}
+
+	return jsonData;
 }
 
 std::string ApResolve::fetchFirstApAddress()
 {
-    // Fetch json body
-    auto jsonData = getApList();
+	// Fetch json body
+	auto jsonData = getApList();
 
-    // Use cJSON to get first ap address
-    auto root = cJSON_Parse(jsonData.c_str());
-    auto apList = cJSON_GetObjectItemCaseSensitive(root, "ap_list");
-    auto firstAp = cJSON_GetArrayItem(apList, 0);
-    auto data = std::string(firstAp->valuestring);
+	// Use cJSON to get first ap address
+	auto root = cJSON_Parse(jsonData.c_str());
+	auto apList = cJSON_GetObjectItemCaseSensitive(root, "ap_list");
+	auto firstAp = cJSON_GetArrayItem(apList, 0);
+	auto data = std::string(firstAp->valuestring);
 
-    // release cjson memory
-    cJSON_Delete(root);
+	// release cjson memory
+	cJSON_Delete(root);
 
-    return data;
+	return data;
 }

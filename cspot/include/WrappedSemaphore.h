@@ -6,6 +6,8 @@
 #include "freertos/semphr.h"
 #elif __APPLE__
 #include <dispatch/dispatch.h>
+#elif _WIN32
+#include <windows.h>
 #else
 #include <semaphore.h>
 #endif
@@ -17,6 +19,8 @@ private:
     xSemaphoreHandle semaphoreHandle;
 #elif __APPLE__
     dispatch_semaphore_t semaphoreHandle;
+#elif _WIN32
+    HANDLE semaphoreHandle;
 #else
     sem_t semaphoreHandle;
 #endif

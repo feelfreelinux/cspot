@@ -8,7 +8,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../cspot ${CMAKE_CURRENT_BINARY_
 file(GLOB SOURCES "*.cpp")
 include_directories(".")
 
-if(UNIX AND NOT APPLE)
+if(WIN32)
+ # eek
+elseif(UNIX AND NOT APPLE)
     add_definitions(-DCSPOT_ENABLE_ALSA_SINK)
     set(THINGS_TO_LINK ${THINGS_TO_LINK} asound)
 else()
