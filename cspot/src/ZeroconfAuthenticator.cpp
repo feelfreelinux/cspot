@@ -205,6 +205,39 @@ static std::wstring s2ws(const std::string &s)
     return r;
 }
 
+std::string GetLastErrorAsString()
+{
+    //Get the error message, if any.
+    DWORD errorMessageID = ::GetLastError();
+    if (errorMessageID == 0)
+        return std::string(); //No error message has been recorded
+
+    LPSTR messageBuffer = nullptr;
+    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+    std::string message(messageBuffer, size);
+
+    //Free the buffer.
+    LocalFree(messageBuffer);
+
+    return message;
+}
+
+void WINAPI callbackRegisterComplete(const DWORD status, void* context, DNS_SERVICE_INSTANCE* instance){
+    printf("sram status = %d\n", status);
+    if (status == ERROR_CANCELLED) {
+        printf("ERROR_CANCELLED!!!!11");
+    }
+    if (status == ERROR_SUCCESS) {
+        printf("ERROR_SUCCESS!!!!11");
+    }
+    printf("ddd:%u\n", GetLastError());
+    wchar_t buf[512];
+    std::cout << GetLastErrorAsString();
+
+}
+
 void ZeroconfAuthenticator::registerZeroconf()
 {
     DWORD size = 0;
@@ -217,12 +250,12 @@ void ZeroconfAuthenticator::registerZeroconf()
     }
 
     // const auto domain            = record.replyDomain.isEmpty() ? L".local" : L"." + record.replyDomain.toStdWString();
-    const auto qualifiedHostname = std::string(hostname.begin(), hostname.end()) + ".local";
-
-    // auto service = record.serviceName.isEmpty() ? &hostname[0] : record.serviceName.toStdWString();
-    // service += L".";
-    // service += record.registeredType.toStdWString();
-    // service += domain;
+    const auto qualifiedHostname = std::string(reinterpret_cast<char*>(hostname.data())) + ".local";
+    std::cout << "qualifiedHostname = " << qualifiedHostname << "\n";
+    //// auto service = record.serviceName.isEmpty() ? &hostname[0] : record.serviceName.toStdWString();
+    //// service += L".";
+    //// service += record.registeredType.toStdWString();
+    //// service += domain;
 
     constexpr int textPropertiesCount = 3;
 
@@ -237,7 +270,7 @@ void ZeroconfAuthenticator::registerZeroconf()
         L"SP"};
 
     auto instance = DnsServiceConstructInstance(
-        L"_spotify-connect._tcp.local",
+        L"cspot._spotify-connect._tcp.local",
         s2ws(qualifiedHostname).c_str(), // A string that represents the name of the host of the service.
         nullptr,                         // A pointer to an IP4_ADDRESS structure that represents the service-associated IPv4 address.
         nullptr,                         // A pointer to an IP6_ADDRESS structure that represents the service-associated IPv6 address.
@@ -247,12 +280,15 @@ void ZeroconfAuthenticator::registerZeroconf()
         textPropertiesCount,
         keys,
         values);
-    // TODO: add
+    //// TODO: add
     DNS_SERVICE_REGISTER_REQUEST rq;
+    DNS_SERVICE_CANCEL can;
     rq.Version = DNS_QUERY_REQUEST_VERSION1;
     rq.InterfaceIndex = 0; // all interfaces
     rq.unicastEnabled = false;
     rq.pServiceInstance = instance;
+    rq.pRegisterCompletionCallback = callbackRegisterComplete;
+    rq.pQueryContext = this;
     const auto ret = DnsServiceRegister(&rq, nullptr);
     DnsServiceFreeInstance(instance);
 
