@@ -58,9 +58,12 @@ void PlainConnection::connectToAp(std::string apAddress)
             struct timeval tv;
             tv.tv_sec = 3;
             tv.tv_usec = 0;
+#ifdef _WIN32
+// TODO: add timeouts on windows
+#else
             setsockopt(this->apSock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
             setsockopt(this->apSock, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
-
+#endif
             int flag = 1;
             setsockopt(this->apSock,  /* socket affected */
                        IPPROTO_TCP,   /* set option at TCP level */
@@ -120,9 +123,20 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
     READ:
         if ((n = recv(this->apSock, reinterpret_cast<char *>(&buf[idx]), size - idx, 0)) <= 0)
         {
-            switch (errno)
+            printf("n = %d\n", n);
+#ifdef _WIN32
+            auto theError = WSAGetLastError();
+#else
+            auto theError = errno;
+
+#endif
+
+            switch (theError)
             {
             case EAGAIN:
+#ifdef _WIN32
+            case WSAETIMEDOUT:
+#endif
             case ETIMEDOUT:
                 if (timeoutHandler())
                 {
@@ -133,6 +147,7 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
             case EINTR:
                 break;
             default:
+                printf("corn will be thrown %d", theError);
                 throw std::runtime_error("Corn");
             }
         }
@@ -153,7 +168,13 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
     WRITE:
         if ((n = send(this->apSock, reinterpret_cast<const char *>(&data[idx]), data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
         {
-            switch (errno)
+#ifdef _WIN32
+            auto theError = WSAGetLastError();
+#else
+            auto theError = errno;
+
+#endif
+            switch (theError)
             {
             case EAGAIN:
             case ETIMEDOUT:
