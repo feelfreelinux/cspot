@@ -1,4 +1,5 @@
 #include "PbReader.h"
+#include <iostream>
 
 PbReader::PbReader(std::vector<uint8_t> const &rawData) : rawData(rawData)
 {
@@ -35,6 +36,11 @@ void PbReader::decodeString(std::string &target)
 {
     nextFieldLength = decodeVarInt<uint32_t>();
     target.resize(nextFieldLength);
+    std::cout << "rawData.size() = " << rawData.size() << " pos = " << pos << " nextFieldLength =" << nextFieldLength ;
+    if( pos + nextFieldLength >= rawData.size()  ) {
+        std::cout << "  BAD --  pos + nextFieldLength >= rawData.size()  MSVC IS LITERLALLY SHAKING AND CRYING RN ";
+    }
+    std::cout<< "\n";
     std::copy(rawData.begin() + pos, rawData.begin() + pos + nextFieldLength, target.begin());
     pos += nextFieldLength;
 }
