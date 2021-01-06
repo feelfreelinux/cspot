@@ -16,65 +16,97 @@
 #include "LoginBlob.h"
 #include "PortAudioSink.h"
 #include "ALSAAudioSink.h"
+#include "CommandLineArguments.h"
 
 int main(int argc, char **argv)
 {
-    std::string credentialsFileName = "authBlob.json";
-    std::ifstream blobFile(credentialsFileName);
-
-    std::shared_ptr<LoginBlob> blob;
-
-    // Check if credential file exists
-    if (!blobFile.good())
+    try
     {
-        // Start zeroauth if not authenticated yet
-        auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-        blob = authenticator->listenForRequests();
 
-        // Store blob to file
-        std::ofstream blobJsonFile(credentialsFileName);
-        blobJsonFile << blob->toJson();
-        blobJsonFile.close();
-    }
-    else
-    {
-        // Load blob from json and reuse it
-        std::string jsonData((std::istreambuf_iterator<char>(blobFile)),
-                             std::istreambuf_iterator<char>());
+        auto args = CommandLineArguments::parse(argc, argv);
+        if (args->shouldShowHelp)
+        {
+            std::cout << "Usage: cspotcli [OPTION]...\n";
+            std::cout << "Emulate a Spotify connect speaker.\n";
+            std::cout << "\n";
+            std::cout << "Run without any arguments to authenticate by using mDNS on the local network (open the spotify app and CSpot should appear as a device on the local network). \n";
+            std::cout << "Alternatively you can specify a username and password to login with.";
+            std::cout << "\n";
+            std::cout << "-u, --username            your spotify username\n";
+            std::cout << "-p, --password            your spotify password, note that if you use facebook login you can set a password in your account settings\n";
+            std::cout << "\n";
+            std::cout << "ddd 2021\n";
+            return 0;
+        }
 
-        blob = std::make_shared<LoginBlob>();
-        // Assemble blob from json
-        blob->loadJson(jsonData);
-    }
+        std::string credentialsFileName = "authBlob.json";
+        std::ifstream blobFile(credentialsFileName);
 
-    auto session = std::make_unique<Session>();
-    session->connectWithRandomAp();
-    auto token = session->authenticate(blob);
+        std::shared_ptr<LoginBlob> blob;
+        // this means username/password login instead of mdns
+        if (!args->username.empty())
+        {
+            blob = std::make_shared<LoginBlob>();
+            blob->loadUserPass(args->username, args->password);
+        }
+        // Check if credential file exists
+        else if (!blobFile.good())
+        {
+            // Start zeroauth if not authenticated yet
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+            blob = authenticator->listenForRequests();
 
-    // Auth successful
-    if (token.size() > 0)
-    {
-        // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
-        mercuryManager->startTask();
+            // Store blob to file
+            std::ofstream blobJsonFile(credentialsFileName);
+            blobJsonFile << blob->toJson();
+            blobJsonFile.close();
+        }
+        else
+        {
+            // Load blob from json and reuse it
+            std::string jsonData((std::istreambuf_iterator<char>(blobFile)),
+                                 std::istreambuf_iterator<char>());
+
+            blob = std::make_shared<LoginBlob>();
+            // Assemble blob from json
+            blob->loadJson(jsonData);
+        }
+
+        auto session = std::make_unique<Session>();
+        session->connectWithRandomAp();
+        auto token = session->authenticate(blob);
+
+        // Auth successful
+        if (token.size() > 0)
+        {
+            // @TODO Actually store this token somewhere
+            auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
+            mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
-        auto audioSink = std::make_shared<ALSAAudioSink>();
+            auto audioSink = std::make_shared<ALSAAudioSink>();
 #elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-        auto audioSink = std::make_shared<PortAudioSink>();
+            auto audioSink = std::make_shared<PortAudioSink>();
 #else
-        auto audioSink = std::make_shared<NamedPipeAudioSink>();
+            auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif
-        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
-        mercuryManager->reconnectedCallback = [spircController]() {
-            return spircController->subscribe();
-        };
+            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+            mercuryManager->reconnectedCallback = [spircController]() {
+                return spircController->subscribe();
+            };
 
-        mercuryManager->handleQueue();
+            mercuryManager->handleQueue();
+        }
+
+        while (true)
+            ;
     }
-
-    while (true)
-        ;
+    catch (std::invalid_argument e)
+    {
+        std::cout << "Invalid options passed: " << e.what() << "\n";
+        std::cout << "Pass --help for more informaton. \n";
+        return 1; // we exit with an non-zero exit code
+    }
 
     return 0;
 }
