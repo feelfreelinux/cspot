@@ -175,8 +175,13 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
     innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
 
     this->seqNum += 1;
-
-    return encodePb(innerFrame);
+    auto fram = encodePb(innerFrame);
+    printf("\n");
+    for (int x = 0; x < fram.size(); x ++) {
+        printf("%d, ", fram[x]);
+    }
+    printf("\n");
+    return fram;
 }
 
 // Wraps messy nanopb setters. @TODO: find a better way to handle this
@@ -190,10 +195,6 @@ void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<st
         capability.intValue = std::vector<int64_t>({intValue});
     }
 
-    for (int x = 0; x < stringValue.size(); x++)
-    {
-        capability.stringValue = std::vector<std::string>({stringValue[x]});
-    }
-
+    capability.stringValue = stringValue;
     innerFrame.device_state->capabilities.push_back(capability);
 }

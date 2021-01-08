@@ -2,20 +2,17 @@
 
 TrackReference::TrackReference(TrackRef *ref)
 {
-    gid = ref->gid.value();
-    // this->ref = ref;
-    // if (ref->uri != nullptr)
-    // {
-    //     auto uri = ref->uri;
-    //     auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
-    //     std::cout << idString << std::endl;
-    //     gid = base62Decode(idString);
-    //     isEpisode = true;
-    // }
-    // else
-    // {
-    //     gid = std::vector<uint8_t>(ref->gid->bytes, ref->gid->bytes + ref->gid->size);
-    // }
+    if (ref->gid.has_value()) {
+        gid = ref->gid.value();
+    }
+    else if (ref->uri.has_value())
+    {
+        auto uri = ref->uri.value();
+        auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
+        std::cout << idString << std::endl;
+        gid = base62Decode(idString);
+        isEpisode = true;
+    }
 }
 
 TrackReference::~TrackReference()

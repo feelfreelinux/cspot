@@ -42,14 +42,17 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
     std::cout << "--- Track name: " << trackInfo.name.value() << std::endl;
     auto trackId = trackInfo.gid.value();
+    printf("UDO %d\n", trackId.size());
     this->fileId = std::vector<uint8_t>();
 
     // TODO: option to set file quality
     for (int x = 0; x < trackInfo.file.size(); x++)
     {
+        printf("ruchanie %d\n", trackInfo.file[x].format);
         if (trackInfo.file[x].format == AudioFormat::OGG_VORBIS_320)
         {
             this->fileId = trackInfo.file[x].file_id.value();
+            printf("so got it %d?", this->fileId.size());
         }
     }
 
@@ -60,6 +63,7 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
 {
         if (this->fileId.size() != 0)
         return;
+    printf("Got to episode\n");
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
     episodeInfo = decodePb<Episode>(response->parts[0]);
 
@@ -98,7 +102,8 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
         }
         else
         {
-            printf("Error while fetching audiokey...\n");
+            auto code = ntohs(extract<uint16_t>(res, 4));
+            printf("Error while fetching audiokey... %d\n", code);
         }
     };
 
