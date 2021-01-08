@@ -14,10 +14,9 @@
 #include "ApResolve.h"
 #include "PlainConnection.h"
 #include "Packet.h"
-#include "Keyexchange.h"
 #include "ConstantParameters.h"
 #include "Crypto.h"
-#include "Authentication.h"
+#include "Protobuf.h"
 
 #define SPOTIFY_VERSION 0x10800000000
 #define LOGIN_REQUEST_COMMAND 0xAB

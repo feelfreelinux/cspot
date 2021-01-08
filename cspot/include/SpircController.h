@@ -6,7 +6,7 @@
 #include <functional>
 #include "Utils.h"
 #include "MercuryManager.h"
-#include "Spirc.h"
+#include "Protobuf.h"
 #include "Session.h"
 #include "PlayerState.h"
 #include "ConstantParameters.h"

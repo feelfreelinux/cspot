@@ -10,7 +10,7 @@
 #include "MercuryResponse.h"
 #include "Packet.h"
 #include "Utils.h"
-#include "Mercury.h"
+#include "Protobuf.h"
 #include "MercuryManager.h"
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"

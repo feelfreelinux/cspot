@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "Spirc.h"
+#include "Protobuf.h"
 #include "Utils.h"
 #include "TimeProvider.h"
 #include "ConstantParameters.h"

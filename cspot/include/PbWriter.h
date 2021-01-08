@@ -20,6 +20,8 @@ public:
 
     template <typename T>
     void encodeVarInt(T, int32_t atIndex = 0);
+    template <typename T>
+    void encodeFixed(T);
     void addSVarInt32(uint32_t tag, int32_t);
     void addSVarInt64(uint32_t tag, int64_t);
     void addString(uint32_t tag, std::string &target);

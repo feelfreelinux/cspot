@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 #include "MercuryManager.h"
-#include "Metadata.h"
+#include "Protobuf.h"
 #include "Utils.h"
 #include "MercuryResponse.h"
 #include <fstream>

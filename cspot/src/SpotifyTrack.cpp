@@ -43,9 +43,9 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         printf("%d, ", response->parts[0][x]);
     }
     printf("]\n");
-    trackInfo.parseFromVector(response->parts[0]);
-    std::cout << "--- Track name: " << trackInfo.name << std::endl;
-    auto trackId = trackInfo.gid;
+    trackInfo = decodePb<Track>(response->parts[0]);
+    std::cout << "--- Track name: " << trackInfo.name.value() << std::endl;
+    auto trackId = trackInfo.gid.value();
     std::cout << "--- tracksNumber: " << trackInfo.file.size() << std::endl;
     this->fileId = std::vector<uint8_t>();
 
@@ -54,11 +54,11 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     {
         if (trackInfo.file[x].format == AudioFormat::OGG_VORBIS_320)
         {
-            this->fileId = trackInfo.file[x].file_id;
+            this->fileId = trackInfo.file[x].file_id.value();
         }
     }
 
-    this->requestAudioKey(this->fileId, trackId, trackInfo.duration);
+    this->requestAudioKey(this->fileId, trackId, trackInfo.duration.value());
 }
 
 void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> response)

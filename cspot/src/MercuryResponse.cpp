@@ -29,5 +29,5 @@ void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
         pos += 2 + partSize;
     }
 
-    this->mercuryHeader.parseFromVector(headerBytes);
+    this->mercuryHeader = decodePb<Header>(headerBytes);
 }

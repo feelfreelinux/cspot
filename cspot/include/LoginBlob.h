@@ -5,7 +5,7 @@
 #include <memory>
 #include <iostream>
 #include "Crypto.h"
-#include "Authentication.h"
+#include "Protobuf.h"
 
 class LoginBlob
 {

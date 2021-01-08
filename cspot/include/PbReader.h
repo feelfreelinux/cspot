@@ -27,6 +27,9 @@ public:
     T decodeVarInt();
 
     template <typename T>
+    T decodeFixed();
+
+    template <typename T>
     T decodeSVarInt();
     void decodeString(std::string &target);
     void decodeVector(std::vector<uint8_t> &target);

@@ -238,9 +238,9 @@ void MercuryManager::handleQueue()
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
 
-                if (this->subscriptions.count(std::string(response->mercuryHeader.uri)) > 0)
+                if (this->subscriptions.count(response->mercuryHeader.uri.value()) > 0)
                 {
-                    this->subscriptions[std::string(response->mercuryHeader.uri)](std::move(response));
+                    this->subscriptions[response->mercuryHeader.uri.value()](std::move(response));
                     //this->subscriptions.erase(std::string(response->mercuryHeader.uri));
                 }
                 break;
@@ -268,8 +268,7 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
         method = MercuryType::SEND;
     }
 
-    auto headerBytes = std::vector<uint8_t>();
-    mercuryHeader.encodeToVector(headerBytes);
+    auto headerBytes = encodePb(mercuryHeader);
 
     // Register a subscription when given method is called
     if (method == MercuryType::SUB)

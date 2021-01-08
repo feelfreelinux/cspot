@@ -1,0 +1,9 @@
+// THIS CORNFILE IS GENERATED. DO NOT EDIT! 🌽
+#ifndef __CRYPTOSUITEH
+#define __CRYPTOSUITEH
+enum class Cryptosuite {
+CRYPTO_SUITE_SHANNON = 0,
+CRYPTO_SUITE_RC4_SHA1_HMAC = 1,
+};
+
+#endif

@@ -69,6 +69,15 @@ void PbWriter::addSVarInt32(uint32_t tag, int32_t data) {
     addVarInt(tag, val);
 }
 
+template <typename T>
+void PbWriter::encodeFixed(T data) {
+    auto val = reinterpret_cast<const char*>(&data);
+    rawData.insert(rawData.end(), val, val + sizeof(T));
+}
+
+template void PbWriter::encodeFixed(int64_t);
+template void PbWriter::encodeFixed(int32_t);
+
 void PbWriter::addSVarInt64(uint32_t tag, int64_t data) {
     auto val = encodeZigzag64(data);
     addVarInt(tag, val);

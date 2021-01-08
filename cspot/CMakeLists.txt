@@ -26,7 +26,6 @@ if(UNIX AND NOT APPLE)
 endif()
 
 include_directories("cJSON")
-
 include_directories("include")
 include_directories("tremor")
 

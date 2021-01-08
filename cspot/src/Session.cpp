@@ -14,16 +14,20 @@ void Session::connect(std::unique_ptr<PlainConnection> connection)
 {
     this->conn = std::move(connection);
     auto helloPacket = this->sendClientHelloRequest();
+    printf("Post koczy :/\n");
+    exit(0);
     this->processAPHelloResponse(helloPacket);
 }
 
 void Session::connectWithRandomAp()
 {
+    printf("Mocz\n");
     auto apResolver = std::make_unique<ApResolve>();
     this->conn = std::make_unique<PlainConnection>();
 
     auto apAddr = apResolver->fetchFirstApAddress();
     this->conn->connectToAp(apAddr);
+        printf("MoczMocz\n");
 
     auto helloPacket = this->sendClientHelloRequest();
     this->processAPHelloResponse(helloPacket);
@@ -44,8 +48,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     authRequest.system_info.device_id = std::string(deviceId);
     authRequest.version_string = std::string(versionString);
 
-    auto data = std::vector<uint8_t>();
-    authRequest.encodeToVector(data);
+    auto data = encodePb(authRequest);
 
     // Send login request
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);
@@ -80,9 +83,9 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
 
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
-    apResponse.parseFromVector(skipSize);
+    apResponse = decodePb<APResponseMessage>(skipSize);
 
-    auto kkEy = apResponse.challenge.login_crypto_challenge.diffie_hellman.gs;
+    auto kkEy = apResponse.challenge->login_crypto_challenge.diffie_hellman->gs;
     // Compute the diffie hellman shared key based on the response
     auto sharedKey = this->crypto->dhCalculateShared(kkEy);
 
@@ -104,10 +107,11 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto lastVec = std::vector<uint8_t>(resultData.begin(), resultData.begin() + 0x14);
 
     // Digest generated!
-    clientResPlaintext.login_crypto_response.diffie_hellman.hmac = crypto->sha1HMAC(lastVec, data);
+    clientResPlaintext.login_crypto_response = {};
+    clientResPlaintext.login_crypto_response.diffie_hellman.emplace();
+    clientResPlaintext.login_crypto_response.diffie_hellman->hmac = crypto->sha1HMAC(lastVec, data);
 
-    auto resultPacket = std::vector<uint8_t>();
-    clientResPlaintext.encodeToVector(resultPacket);
+    auto resultPacket = encodePb(clientResPlaintext);
 
     auto emptyPrefix = std::vector<uint8_t>(0);
 
@@ -125,22 +129,33 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message
     this->crypto->dhInit();
-
+    clientHello = {};
     // Copy the public key into diffiehellman hello packet
-    clientHello.login_crypto_hello.diffie_hellman.gc = this->crypto->publicKey;
-    clientHello.login_crypto_hello.diffie_hellman.server_keys_known = 1;
+    printf("MoczMoczMoczMocz\n");
+    clientHello.login_crypto_hello = {};
+    clientHello.login_crypto_hello.diffie_hellman.emplace();
+    clientHello.build_info = {};
+    clientHello.feature_set = {};
+    clientHello.login_crypto_hello.diffie_hellman->gc = this->crypto->publicKey;
+    clientHello.login_crypto_hello.diffie_hellman->server_keys_known = 1;
+    printf("kocz kocz\n");
     clientHello.build_info.product = Product::PRODUCT_PARTNER;
     clientHello.build_info.platform = Platform::PLATFORM_LINUX_X86;
     clientHello.build_info.version = 112800721;
-    clientHello.feature_set.autoupdate2 = true;
+    clientHello.feature_set->autoupdate2 = true;
+    clientHello.cryptosuites_supported = std::vector<Cryptosuite>();
     clientHello.cryptosuites_supported.push_back(Cryptosuite::CRYPTO_SUITE_SHANNON);
-    clientHello.padding.push_back(0x1E);
+    clientHello.padding = std::vector<uint8_t>({0x1E});
 
     // Generate the random nonce
     clientHello.client_nonce = crypto->generateVectorWithRandomData(16);
-
-    auto vecData = std::vector<uint8_t>();
-    clientHello.encodeToVector(vecData);
+    printf("Zanim dupsko moje\n");
+    auto vecData = encodePb(clientHello);
+    printf("Po dupsku moim :(\n");
+    for (int x = 0; x < vecData.size(); x ++) {
+        printf("%d, ", vecData[x]);
+    }
+    printf("\n");
     auto prefix = std::vector<uint8_t>({0x00, 0x04});
     return this->conn->sendPrefixPacket(prefix, vecData);
 }

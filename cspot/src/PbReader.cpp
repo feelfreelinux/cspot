@@ -1,4 +1,5 @@
 #include "PbReader.h"
+#include <iostream>
 
 PbReader::PbReader(std::vector<uint8_t> const &rawData) : rawData(rawData)
 {
@@ -10,18 +11,28 @@ T PbReader::decodeVarInt()
 {
     uint8_t byte;
     uint_fast8_t bitpos = 0;
-    this->skipVarIntDump = 0;
+    uint64_t storago = 0;
     do
     {
         byte = this->rawData[pos];
         pos++;
 
-        this->skipVarIntDump |= (uint64_t)(byte & 0x7F) << bitpos;
+        storago |= (uint64_t)(byte & 0x7F) << bitpos;
         bitpos = (uint_fast8_t)(bitpos + 7);
     } while (byte & 0x80);
-
-    return static_cast<T>(this->skipVarIntDump);
+    return static_cast<T>(storago);
 }
+
+template <typename T>
+T PbReader::decodeFixed()
+{
+    pos += sizeof(T);
+    return *(T*)(&this->rawData[pos - sizeof(T)]);
+}
+
+
+template int32_t PbReader::decodeFixed();
+template int64_t PbReader::decodeFixed();
 
 template int64_t PbReader::decodeVarInt();
 template bool PbReader::decodeVarInt();
@@ -35,6 +46,13 @@ void PbReader::decodeString(std::string &target)
 {
     nextFieldLength = decodeVarInt<uint32_t>();
     target.resize(nextFieldLength);
+    // std::cout << "rawData.size() = " << rawData.size() << " pos = " << pos << " nextFieldLength =" << nextFieldLength;
+    // printf("\n%d, \n", currentTag);
+    // if (pos + nextFieldLength >= rawData.size())
+    // {
+    //     std::cout << " \nBAD --  pos + nextFieldLength >= rawData.size()  MSVC IS LITERLALLY SHAKING AND CRYING RN";
+    // }
+    // std::cout << std::endl;
     std::copy(rawData.begin() + pos, rawData.begin() + pos + nextFieldLength, target.begin());
     pos += nextFieldLength;
 }

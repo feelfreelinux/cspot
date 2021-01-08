@@ -1,0 +1,17 @@
+// THIS CORNFILE IS GENERATED. DO NOT EDIT! 🌽
+#ifndef __CPU_FAMILYH
+#define __CPU_FAMILYH
+enum class CpuFamily {
+CPU_UNKNOWN = 0,
+CPU_X86 = 1,
+CPU_X86_64 = 2,
+CPU_PPC = 3,
+CPU_PPC_64 = 4,
+CPU_ARM = 5,
+CPU_IA64 = 6,
+CPU_SH = 7,
+CPU_MIPS = 8,
+CPU_BLACKFIN = 9,
+};
+
+#endif

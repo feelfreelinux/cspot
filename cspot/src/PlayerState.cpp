@@ -68,7 +68,7 @@ bool PlayerState::nextTrack()
 {
     innerFrame.state->playing_track_index.value()++;
 
-    if (innerFrame.state->playing_track_index >= innerFrame.state->track->size())
+    if (innerFrame.state->playing_track_index >= innerFrame.state->track.size())
     {
         innerFrame.state->playing_track_index = 0;
         if (!innerFrame.state->repeat)
@@ -89,7 +89,7 @@ void PlayerState::prevTrack()
     }
     else if (innerFrame.state->repeat)
     {
-        innerFrame.state->playing_track_index = innerFrame.state->track->size() - 1;
+        innerFrame.state->playing_track_index = innerFrame.state->track.size() - 1;
     }
 }
 
@@ -109,7 +109,7 @@ void PlayerState::updatePositionMs(uint32_t position)
 }
 void PlayerState::updateTracks()
 {
-    printf("---- Track count %d\n", remoteFrame.state->track->size());
+    printf("---- Track count %d\n", remoteFrame.state->track.size());
     // innerFrame.state->context_uri = remoteFrame.state->context_uri == nullptr ? nullptr : strdup(otherFrame->state->context_uri);
 
     innerFrame.state->track = remoteFrame.state->track;
@@ -137,17 +137,17 @@ void PlayerState::setShuffle(bool shuffle)
     if (shuffle)
     {
         // Put current song at the begining
-        auto tmp = innerFrame.state->track->at(0);
-        innerFrame.state->track->at(0) = innerFrame.state->track->at(innerFrame.state->playing_track_index.value());
-        innerFrame.state->track->at(innerFrame.state->playing_track_index.value()) = tmp;
+        auto tmp = innerFrame.state->track.at(0);
+        innerFrame.state->track.at(0) = innerFrame.state->track.at(innerFrame.state->playing_track_index.value());
+        innerFrame.state->track.at(innerFrame.state->playing_track_index.value()) = tmp;
 
         // Shuffle current tracks
-        for (int x = 1; x < innerFrame.state->track->size() - 1; x++)
+        for (int x = 1; x < innerFrame.state->track.size() - 1; x++)
         {
-            auto j = x + (std::rand() % (innerFrame.state->track->size() - x));
-            tmp = innerFrame.state->track->at(j);
-            innerFrame.state->track->at(j) = innerFrame.state->track->at(x);
-            innerFrame.state->track->at(x) = tmp;
+            auto j = x + (std::rand() % (innerFrame.state->track.size() - x));
+            tmp = innerFrame.state->track.at(j);
+            innerFrame.state->track.at(j) = innerFrame.state->track.at(x);
+            innerFrame.state->track.at(x) = tmp;
         }
         innerFrame.state->playing_track_index = 0;
     }
@@ -161,7 +161,7 @@ void PlayerState::setRepeat(bool repeat)
 std::shared_ptr<TrackReference> PlayerState::getCurrentTrack()
 {
     // Wrap current track in a class
-    return std::make_shared<TrackReference>(&innerFrame.state->track->at(innerFrame.state->playing_track_index.value()));
+    return std::make_shared<TrackReference>(&innerFrame.state->track.at(innerFrame.state->playing_track_index.value()));
 }
 
 std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
@@ -175,26 +175,25 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
     innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
 
     this->seqNum += 1;
-    innerFrame.encodeToVector(frameData);
-    return frameData;
+    return encodePb(innerFrame);
 }
 
 // Wraps messy nanopb setters. @TODO: find a better way to handle this
 void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<std::string> stringValue)
 {
-    innerFrame.device_state->capabilities->push_back(Capability());
-    auto capability = innerFrame.device_state->capabilities->at(innerFrame.device_state->capabilities->size() - 1);
+    innerFrame.device_state->capabilities.push_back(Capability());
+    auto capability = innerFrame.device_state->capabilities.at(innerFrame.device_state->capabilities.size() - 1);
     capability.typ = typ;
 
     if (intValue != -1)
     {
         capability.intValue = std::vector<int64_t>();
-        capability.intValue->push_back(intValue);
+        capability.intValue.push_back(intValue);
     }
 
     for (int x = 0; x < stringValue.size(); x++)
     {
         capability.stringValue = std::vector<std::string>();
-        capability.stringValue->push_back(stringValue[x]);
+        capability.stringValue.push_back(stringValue[x]);
     }
 }

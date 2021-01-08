@@ -37,8 +37,16 @@ void SpircController::subscribe()
 
 void SpircController::handleFrame(std::vector<uint8_t> &data)
 {
+    printf(
+        "got Frame\n"
+    );
 
-    state->remoteFrame.parseFromVector(data);
+    for (int x = 0; x < data.size(); x ++) {
+        printf("%d, ", data[x]);
+    }
+
+    printf("\n");
+    state->remoteFrame = decodePb<Frame>(data);
 
     switch (state->remoteFrame.typ.value())
     {
