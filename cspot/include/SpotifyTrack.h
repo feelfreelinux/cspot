@@ -23,6 +23,7 @@ private:
     void episodeInformationCallback(std::unique_ptr<MercuryResponse> response);
     void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration);
     Track trackInfo;
+    Episode episodeInfo;
 
     std::vector<uint8_t> fileId;
     std::vector<uint8_t> currentChunkData;

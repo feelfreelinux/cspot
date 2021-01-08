@@ -127,14 +127,11 @@ void encodeProtobuf(std::shared_ptr<PbWriter> writer, AnyRef any, uint32_t proto
         }
         else
         {
-            std::cout << "WCHODZONKO W OPTIONALA " << info->name << std::endl;
             return encodeProtobuf(writer, optionalRef.get(), protobufTag);
         }
     }
     if (info->kind == ReflectTypeKind::Class)
     {
-        std::cout << "Koczing class " << info->name << std::endl;
-        std::cout << info->fields.size() << std::endl;
         uint32_t startMsgPosition;
         // 0 - default value, indicating top level message
         if (protobufTag > 0)
@@ -145,7 +142,6 @@ void encodeProtobuf(std::shared_ptr<PbWriter> writer, AnyRef any, uint32_t proto
         for (int i = 0; i < info->fields.size(); i++)
         {
             auto field = any.getField(i);
-            std::cout << "OMG WCHODZE" << info->fields[i].name << std::endl;
             encodeProtobuf(writer, field, info->fields[i].protobufTag);
         }
 

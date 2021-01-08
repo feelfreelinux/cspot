@@ -5,14 +5,14 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     this->timeProvider = timeProvider;
 
     // Prepare default state
-    innerFrame.state = State();
+    innerFrame.state.emplace();
     innerFrame.state->position_ms = 0;
     innerFrame.state->status = PlayStatus::kPlayStatusStop;
     innerFrame.state->position_measured_at = 0;
     innerFrame.state->shuffle = false;
     innerFrame.state->repeat = false;
 
-    innerFrame.device_state = DeviceState();
+    innerFrame.device_state.emplace();
     innerFrame.device_state->sw_version = swVersion;
     innerFrame.device_state->is_active = false;
     innerFrame.device_state->can_play = true;
@@ -115,12 +115,12 @@ void PlayerState::updateTracks()
     innerFrame.state->track = remoteFrame.state->track;
     innerFrame.state->playing_track_index = remoteFrame.state->playing_track_index;
 
-    if (remoteFrame.state->repeat)
+    if (remoteFrame.state->repeat.value())
     {
         setRepeat(true);
     }
 
-    if (remoteFrame.state->shuffle)
+    if (remoteFrame.state->shuffle.value())
     {
         setShuffle(true);
     }
@@ -175,25 +175,25 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
     innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
 
     this->seqNum += 1;
+
     return encodePb(innerFrame);
 }
 
 // Wraps messy nanopb setters. @TODO: find a better way to handle this
 void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<std::string> stringValue)
 {
-    innerFrame.device_state->capabilities.push_back(Capability());
-    auto capability = innerFrame.device_state->capabilities.at(innerFrame.device_state->capabilities.size() - 1);
+    auto capability = Capability();
     capability.typ = typ;
 
     if (intValue != -1)
     {
-        capability.intValue = std::vector<int64_t>();
-        capability.intValue.push_back(intValue);
+        capability.intValue = std::vector<int64_t>({intValue});
     }
 
     for (int x = 0; x < stringValue.size(); x++)
     {
-        capability.stringValue = std::vector<std::string>();
-        capability.stringValue.push_back(stringValue[x]);
+        capability.stringValue = std::vector<std::string>({stringValue[x]});
     }
+
+    innerFrame.device_state->capabilities.push_back(capability);
 }

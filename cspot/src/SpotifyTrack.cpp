@@ -38,15 +38,10 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     if (this->fileId.size() != 0)
         return;
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
-    printf("[");
-    for (int x = 0; x < response->parts[0].size(); x ++) {
-        printf("%d, ", response->parts[0][x]);
-    }
-    printf("]\n");
     trackInfo = decodePb<Track>(response->parts[0]);
+
     std::cout << "--- Track name: " << trackInfo.name.value() << std::endl;
     auto trackId = trackInfo.gid.value();
-    std::cout << "--- tracksNumber: " << trackInfo.file.size() << std::endl;
     this->fileId = std::vector<uint8_t>();
 
     // TODO: option to set file quality
@@ -63,25 +58,25 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
 void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> response)
 {
-    // if (this->fileId.size() != 0)
-    //     return;
-    // CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
+        if (this->fileId.size() != 0)
+        return;
+    CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
+    episodeInfo = decodePb<Episode>(response->parts[0]);
 
-    // PBWrapper<Episode> episodeInfo(response->parts[0]);
-    // std::cout << "--- Episode name: " << std::string(episodeInfo->name) << std::endl;
-    // auto trackId = std::vector<uint8_t>(episodeInfo->gid->bytes, episodeInfo->gid->bytes + episodeInfo->gid->size);
+    std::cout << "--- Episode name: " << episodeInfo.name.value() << std::endl;
 
-    // this->fileId = std::vector<uint8_t>();
+    this->fileId = std::vector<uint8_t>();
 
-    // for (int x = 0; x < episodeInfo->audio_count; x++)
-    // {
-    //     if (episodeInfo->audio[x].format == AudioFile_Format_OGG_VORBIS_96)
-    //     {
-    //         this->fileId = std::vector<uint8_t>(episodeInfo->audio[x].file_id->bytes, episodeInfo->audio[x].file_id->bytes + episodeInfo->audio[x].file_id->size);
-    //     }
-    // }
+    // TODO: option to set file quality
+    for (int x = 0; x < episodeInfo.audio.size(); x++)
+    {
+        if (episodeInfo.audio[x].format == AudioFormat::OGG_VORBIS_96)
+        {
+            this->fileId = episodeInfo.audio[x].file_id.value();
+        }
+    }
 
-    // this->requestAudioKey(trackId, this->fileId, episodeInfo->duration);
+    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value());
 }
 
 void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration)
