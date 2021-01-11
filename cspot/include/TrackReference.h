@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "Utils.h"
-#include "Protobuf.h"
+#include "ProtoHelper.h"
 #include <iostream>
 #include <string>
 

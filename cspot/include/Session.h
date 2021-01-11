@@ -16,7 +16,7 @@
 #include "Packet.h"
 #include "ConstantParameters.h"
 #include "Crypto.h"
-#include "Protobuf.h"
+#include "ProtoHelper.h"
 
 #define SPOTIFY_VERSION 0x10800000000
 #define LOGIN_REQUEST_COMMAND 0xAB

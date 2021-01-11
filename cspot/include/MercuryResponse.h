@@ -6,7 +6,7 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "Protobuf.h"
+#include "ProtoHelper.h"
 #include "Utils.h"
 
 typedef std::vector<std::vector<uint8_t>> mercuryParts;

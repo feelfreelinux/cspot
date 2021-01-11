@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+message AudioFile {
+    optional bytes file_id = 1;
+    optional AudioFormat format = 2;
+}
+
+message Track {
+    optional bytes gid = 1;
+    optional string name = 2;
+    optional sint32 duration = 7;
+    repeated AudioFile file = 12;
+}
+
+message Episode {
+    optional bytes gid = 1;
+    optional string name = 2;
+    optional sint32 duration = 7;
+    repeated AudioFile audio = 12;
+}
+
+enum AudioFormat {
+    OGG_VORBIS_96 = 0;
+    OGG_VORBIS_160 = 1;
+    OGG_VORBIS_320 = 2;
+    MP3_256 = 3;
+    MP3_320 = 4;
+    MP3_160 = 5;
+    MP3_96 = 6;
+    MP3_160_ENC = 7;
+    AAC_24 = 8;
+    AAC_48 = 9;
+}

@@ -2,7 +2,7 @@
 #define PROTOBUF_H
 #include <iostream>
 #include <memory>
-#include "protosranie/sranie.h"
+#include "protobuf.h"
 #include <PbReader.h>
 #include <PbCommon.h>
 

@@ -28,16 +28,16 @@ endif()
 include_directories("cJSON")
 include_directories("include")
 include_directories("tremor")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("protos")
 
-
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
+message(${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh)
+execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c" "cJSON/cJSON.c")
-
+set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
 
 add_library(cspot STATIC ${SOURCES})
 target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS})
 
-target_include_directories(cspot PUBLIC "include" "tremor" "cJSON" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(cspot PUBLIC "include" "protos" "tremor" "cJSON" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})
