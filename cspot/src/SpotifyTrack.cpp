@@ -38,9 +38,24 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     if (this->fileId.size() != 0)
         return;
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
+    auto crypt = new Crypto();
     trackInfo = decodePb<Track>(response->parts[0]);
 
     std::cout << "--- Track name: " << trackInfo.name.value() << std::endl;
+    std::cout << trackInfo.restriction.size() << std::endl;
+    for (int x = 0; x < trackInfo.restriction.size(); x ++) {
+        if (trackInfo.restriction[x].countries_allowed.has_value()) {
+            if (trackInfo.restriction[x].countries_allowed.value().find("PL") == std::string::npos) {
+                std::cout << "Track not allowed!" << std::endl;
+            }
+        }
+
+        if (trackInfo.restriction[x].countries_forbidden.has_value()) {
+            if (trackInfo.restriction[x].countries_forbidden.value().find("PL") != std::string::npos) {
+                std::cout << "Track not allowed!" << std::endl;
+            }
+        }
+    }
     auto trackId = trackInfo.gid.value();
     printf("UDO %d\n", trackId.size());
     this->fileId = std::vector<uint8_t>();
@@ -49,7 +64,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     for (int x = 0; x < trackInfo.file.size(); x++)
     {
         printf("ruchanie %d\n", trackInfo.file[x].format);
-        if (trackInfo.file[x].format == AudioFormat::OGG_VORBIS_320)
+        if (trackInfo.file[x].format == AudioFormat::OGG_VORBIS_160)
         {
             this->fileId = trackInfo.file[x].file_id.value();
             printf("so got it %d?", this->fileId.size());

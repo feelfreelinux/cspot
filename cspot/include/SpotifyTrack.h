@@ -9,6 +9,7 @@
 #include "Utils.h"
 #include "MercuryResponse.h"
 #include <fstream>
+#include "Crypto.h"
 #include <functional>
 #include "ChunkedAudioStream.h"
 #include "TrackReference.h"
