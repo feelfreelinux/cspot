@@ -64,11 +64,6 @@ void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<u
     buffer.insert(buffer.end(), audioKeySequence.begin(), audioKeySequence.end());
     auto suffix = std::vector<uint8_t>({0x00, 0x00});
     buffer.insert(buffer.end(), suffix.begin(), suffix.end());
-    printf("\n");
-    for (int x = 0; x < buffer.size(); x ++) {
-        printf("%d, ", buffer[x]);
-    }
-    printf("\n");
 
     // Bump audio key sequence
     this->audioKeySequence += 1;

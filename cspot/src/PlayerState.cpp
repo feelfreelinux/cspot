@@ -176,11 +176,6 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
 
     this->seqNum += 1;
     auto fram = encodePb(innerFrame);
-    printf("\n");
-    for (int x = 0; x < fram.size(); x ++) {
-        printf("%d, ", fram[x]);
-    }
-    printf("\n");
     return fram;
 }
 
