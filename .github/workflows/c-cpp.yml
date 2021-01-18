@@ -18,6 +18,8 @@ jobs:
       uses: jwlawson/actions-setup-cmake@v1.4
       with:
         cmake-version: '3.18.x'
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v1
     - name: Install avachi libraries (mDNS) and asound
       run: sudo apt-get install libavahi-compat-libdnssd-dev libasound2-dev
       if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -26,7 +28,6 @@ jobs:
         brew upgrade openssl@1.1
         brew link --force openssl@1.1
         brew install portaudio
-        brew install grpc protobuf
         brew link --force portaudio
         export PKG_CONFIG_PATH="/usr/local/Cellar/portaudio/19.6.0/lib/pkgconfig"
         export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/openssl@1.1/lib/pkgconfig"
