@@ -195,7 +195,13 @@ void MercuryManager::handleQueue()
             printf("Received packet with code %d of length %d\n", packet->command, packet->data.size());
             switch (static_cast<MercuryType>(packet->command))
             {
-
+            case MercuryType::COUNTRY_CODE_RESPONSE:
+            {
+                printf("Received country code\n");
+                countryCode = std::string(packet->data.begin(), packet->data.end());
+                std::cout << countryCode << std::endl;
+                break;
+            }
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {

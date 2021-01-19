@@ -14,22 +14,19 @@ void Session::connect(std::unique_ptr<PlainConnection> connection)
 {
     this->conn = std::move(connection);
     auto helloPacket = this->sendClientHelloRequest();
-    printf("Post koczy :/\n");
-    exit(0);
     this->processAPHelloResponse(helloPacket);
 }
 
 void Session::connectWithRandomAp()
 {
-    printf("Mocz\n");
     auto apResolver = std::make_unique<ApResolve>();
     this->conn = std::make_unique<PlainConnection>();
 
     auto apAddr = apResolver->fetchFirstApAddress();
+    std::cout << "Connecting with AP <" << apAddr << ">\n";
     this->conn->connectToAp(apAddr);
-        printf("MoczMocz\n");
-
     auto helloPacket = this->sendClientHelloRequest();
+    printf("yes packet \n");
     this->processAPHelloResponse(helloPacket);
 }
 
@@ -79,7 +76,9 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 
 void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
 {
+    printf("recv\n");
     auto data = this->conn->recvPacket();
+    printf("Maybe corn?\n");
 
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
@@ -121,6 +120,8 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto sendKey = std::vector<uint8_t>(resultData.begin() + 0x14, resultData.begin() + 0x34);
     auto recvKey = std::vector<uint8_t>(resultData.begin() + 0x34, resultData.begin() + 0x54);
 
+    printf("Maybe ruchanie?\n");
+
     // Init shanno-encrypted connection
     this->shanConn->wrapConnection(this->conn, sendKey, recvKey);
 }
@@ -129,30 +130,24 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message
     this->crypto->dhInit();
-    clientHello = {};
+
     // Copy the public key into diffiehellman hello packet
-    printf("MoczMoczMoczMocz\n");
-    clientHello.login_crypto_hello = {};
     clientHello.login_crypto_hello.diffie_hellman.emplace();
-    clientHello.build_info = {};
-    clientHello.feature_set = {};
+    clientHello.feature_set.emplace();
     clientHello.login_crypto_hello.diffie_hellman->gc = this->crypto->publicKey;
     clientHello.login_crypto_hello.diffie_hellman->server_keys_known = 1;
-    printf("kocz kocz\n");
     clientHello.build_info.product = Product::PRODUCT_PARTNER;
     clientHello.build_info.platform = Platform::PLATFORM_LINUX_X86;
     clientHello.build_info.version = 112800721;
     clientHello.feature_set->autoupdate2 = true;
-    clientHello.cryptosuites_supported = std::vector<Cryptosuite>();
-    clientHello.cryptosuites_supported.push_back(Cryptosuite::CRYPTO_SUITE_SHANNON);
+    clientHello.cryptosuites_supported = std::vector<Cryptosuite>({Cryptosuite::CRYPTO_SUITE_SHANNON});
     clientHello.padding = std::vector<uint8_t>({0x1E});
 
     // Generate the random nonce
     clientHello.client_nonce = crypto->generateVectorWithRandomData(16);
-    printf("Zanim dupsko moje\n");
     auto vecData = encodePb(clientHello);
-    printf("Po dupsku moim :(\n");
-    for (int x = 0; x < vecData.size(); x ++) {
+    printf("Hello hi\n");
+    for (int x = 0; x < vecData.size(); x++) {
         printf("%d, ", vecData[x]);
     }
     printf("\n");

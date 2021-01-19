@@ -34,13 +34,13 @@ SpotifyTrack::~SpotifyTrack()
 }
 
 
-bool canPlayTrack(std::vector<Restriction> &restrictions)
+bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
 {
     for (int x = 0; x < restrictions.size(); x++)
     {
         if (restrictions[x].countries_allowed.has_value())
         {
-            if (restrictions[x].countries_allowed.value().find("PL") == std::string::npos)
+            if (restrictions[x].countries_allowed.value().find(manager->countryCode) == std::string::npos)
             {
                 std::cout << "Track not allowed!" << std::endl;
                 return false;
@@ -49,7 +49,7 @@ bool canPlayTrack(std::vector<Restriction> &restrictions)
 
         if (restrictions[x].countries_forbidden.has_value())
         {
-            if (restrictions[x].countries_forbidden.value().find("PL") != std::string::npos)
+            if (restrictions[x].countries_forbidden.value().find(manager->countryCode) != std::string::npos)
             {
                 std::cout << "Track not allowed!" << std::endl;
                 return false;
