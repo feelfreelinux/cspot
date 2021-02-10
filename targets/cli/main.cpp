@@ -20,12 +20,11 @@
 
 int main(int argc, char **argv)
 {
-<<<<<<< HEAD
     try
     {
 
-    std::string credentialsFileName = "authBlob.json";
-    std::ifstream blobFile(credentialsFileName);
+        std::string credentialsFileName = "authBlob.json";
+        std::ifstream blobFile(credentialsFileName);
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)
@@ -42,9 +41,6 @@ int main(int argc, char **argv)
             std::cout << "ddd 2021\n";
             return 0;
         }
-
-        std::string credentialsFileName = "authBlob.json";
-        std::ifstream blobFile(credentialsFileName);
 
         std::shared_ptr<LoginBlob> blob;
         // this means username/password login instead of mdns
