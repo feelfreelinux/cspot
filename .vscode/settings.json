@@ -99,7 +99,8 @@
         "*.inc": "cpp",
         "*.ipp": "cpp",
         "cassert": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "__functional_03": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "cmake.sourceDirectory": "${workspaceFolder}/targets/cli"

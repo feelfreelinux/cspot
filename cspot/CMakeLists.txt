@@ -25,32 +25,19 @@ if(UNIX AND NOT APPLE)
     set(EXTRA_REQ_LIBS ${EXTRA_REQ_LIBS} dns_sd)
 endif()
 
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/nanopb/extra)
-find_package(Nanopb REQUIRED)
-include_directories(${NANOPB_INCLUDE_DIRS})
-
 include_directories("cJSON")
-
 include_directories("include")
 include_directories("tremor")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("protos")
 
-
-
-add_definitions(-DPB_ENABLE_MALLOC)
-set(PROTOS protocol/proto/authentication.proto protocol/proto/keyexchange.proto protocol/proto/mercury.proto protocol/proto/metadata.proto protocol/proto/playlist.proto protocol/proto/pubsub.proto protocol/proto/radio.proto protocol/proto/spirc.proto)
-message(${PROTOS})
-nanopb_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_custom_target(generate_proto_sources DEPENDS ${PROTO_SRCS} ${PROTO_HDRS})
-set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}
-    PROPERTIES GENERATED TRUE)
-
+message(${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh)
+execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/misc.c" "tremor/floor1.c" "tremor/floor0.c" "tremor/vorbisfile.c" "tremor/res012.c" "tremor/mapping0.c" "tremor/codebook.c" "tremor/framing.c" "tremor/bitwise.c" "tremor/floor_lookup.c" "cJSON/cJSON.c")
+set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
 
-
-add_library(cspot STATIC ${SOURCES} ${PROTO_SRCS})
+add_library(cspot STATIC ${SOURCES})
 target_link_libraries(cspot PRIVATE ${EXTRA_REQ_LIBS})
 
-target_include_directories(cspot PUBLIC "include" "tremor" "cJSON" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS})
+target_include_directories(cspot PUBLIC "include" "protos" "tremor" "cJSON" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})

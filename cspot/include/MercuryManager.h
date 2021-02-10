@@ -10,9 +10,7 @@
 #include "MercuryResponse.h"
 #include "Packet.h"
 #include "Utils.h"
-#include "PBUtils.h"
-#include "mercury.pb.h"
-#include "metadata.pb.h"
+#include "ProtoHelper.h"
 #include "MercuryManager.h"
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"
@@ -77,6 +75,7 @@ public:
   voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
   std::shared_ptr<TimeProvider> timeProvider;
+  std::string countryCode;
 
   bool timeoutHandler();
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);

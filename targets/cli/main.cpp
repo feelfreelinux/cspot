@@ -20,8 +20,12 @@
 
 int main(int argc, char **argv)
 {
+<<<<<<< HEAD
     try
     {
+
+    std::string credentialsFileName = "authBlob.json";
+    std::ifstream blobFile(credentialsFileName);
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)

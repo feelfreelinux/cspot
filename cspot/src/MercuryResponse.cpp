@@ -1,6 +1,4 @@
 #include "MercuryResponse.h"
-#include "pb_encode.h"
-#include "pb_decode.h"
 
 MercuryResponse::MercuryResponse(std::vector<uint8_t> &data)
 {
@@ -31,5 +29,5 @@ void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
         pos += 2 + partSize;
     }
 
-    this->mercuryHeader = PBWrapper<Header>(headerBytes);
+    this->mercuryHeader = decodePb<Header>(headerBytes);
 }

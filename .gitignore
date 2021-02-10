@@ -3,3 +3,4 @@
 build/
 py/
 authBlob.json
+cspot/protos

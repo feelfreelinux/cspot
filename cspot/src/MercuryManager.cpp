@@ -195,7 +195,13 @@ void MercuryManager::handleQueue()
             printf("Received packet with code %d of length %d\n", packet->command, packet->data.size());
             switch (static_cast<MercuryType>(packet->command))
             {
-
+            case MercuryType::COUNTRY_CODE_RESPONSE:
+            {
+                printf("Received country code\n");
+                countryCode = std::string(packet->data.begin(), packet->data.end());
+                std::cout << countryCode << std::endl;
+                break;
+            }
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
             case MercuryType::AUDIO_KEY_SUCCESS_RESPONSE:
             {
@@ -238,9 +244,9 @@ void MercuryManager::handleQueue()
             {
                 auto response = std::make_unique<MercuryResponse>(packet->data);
 
-                if (this->subscriptions.count(std::string(response->mercuryHeader->uri)) > 0)
+                if (this->subscriptions.count(response->mercuryHeader.uri.value()) > 0)
                 {
-                    this->subscriptions[std::string(response->mercuryHeader->uri)](std::move(response));
+                    this->subscriptions[response->mercuryHeader.uri.value()](std::move(response));
                     //this->subscriptions.erase(std::string(response->mercuryHeader.uri));
                 }
                 break;
@@ -257,9 +263,9 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
     std::cout << MercuryTypeMap[method] << std::endl;
-    Header mercuryHeader = {};
-    mercuryHeader.uri = (char *)(uri.c_str());
-    mercuryHeader.method = (char *)(MercuryTypeMap[method].c_str());
+    Header mercuryHeader;
+    mercuryHeader.uri = uri;
+    mercuryHeader.method = MercuryTypeMap[method];
 
     // GET and SEND are actually the same. Therefore the override
     // The difference between them is only in header's method
@@ -268,7 +274,7 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
         method = MercuryType::SEND;
     }
 
-    auto headerBytes = encodePB(Header_fields, &mercuryHeader);
+    auto headerBytes = encodePb(mercuryHeader);
 
     // Register a subscription when given method is called
     if (method == MercuryType::SUB)
