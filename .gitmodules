@@ -7,4 +7,4 @@
 	url = https://github.com/DaveGamble/cJSON.git
 [submodule "cspot/cpp-reflection"]
 	path = cspot/cpp-reflection
-	url = git@github.com:alufers/cpp-reflection.git
+	url = https://github.com/alufers/cpp-reflection.git
