@@ -3,11 +3,9 @@ FROM ubuntu:focal AS builder
 RUN export DEBIAN_FRONTEND=noninteractive \
  && apt-get update \
  && apt-get install --no-install-recommends -y \
-    git python3 python3-pip \
+    git ca-certificates golang protobuf-compiler \
     libavahi-compat-libdnssd-dev libasound2-dev libasound2-plugins \
     cmake build-essential libssl-dev
-
-RUN pip3 install protobuf grpcio-tools
 
 WORKDIR /src
 

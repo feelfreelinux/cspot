@@ -3,7 +3,7 @@ version: '3'
 services:
   cspot-pulse:
     build: .
-    container_name: cspot
+    container_name: cspot-pulse
     restart: always
     network_mode: host
     volumes:
@@ -19,7 +19,7 @@ services:
   cspot-alsa:
     # someone test pls
     build: .
-    container_name: cspot
+    container_name: cspot-alsa
     restart: always
     network_mode: host
     volumes:
