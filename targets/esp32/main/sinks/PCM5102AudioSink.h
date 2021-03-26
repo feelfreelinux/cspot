@@ -1,5 +1,5 @@
-#ifndef ES9018AUDIOSINK_H
-#define ES9018AUDIOSINK_H
+#ifndef PCM5102AUDIOSINK_H
+#define PCM5102AUDIOSINK_H
 
 #include <vector>
 #include <iostream>
@@ -11,11 +11,11 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-class ES9018AudioSink : public BufferedAudioSink
+class PCM5102AudioSink : public BufferedAudioSink
 {
 public:
-    ES9018AudioSink();
-    ~ES9018AudioSink();
+    PCM5102AudioSink();
+    ~PCM5102AudioSink();
 private:
 };
 

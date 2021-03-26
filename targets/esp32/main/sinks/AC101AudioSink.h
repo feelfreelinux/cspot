@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <iostream>
-#include "AudioSink.h"
+#include "BufferedAudioSink.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/unistd.h>
@@ -13,12 +13,11 @@
 #include "ac101.h"
 #include "adac.h"
 
-class AC101AudioSink : public AudioSink
+class AC101AudioSink : public BufferedAudioSink
 {
 public:
     AC101AudioSink();
     ~AC101AudioSink();
-    void feedPCMFrames(std::vector<uint8_t> &data);
     void volumeChanged(uint16_t volume);
 private:
     adac_s *dac;

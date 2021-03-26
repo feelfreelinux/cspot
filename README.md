@@ -98,8 +98,15 @@ You can view the [`cspot-cli`]([targets/cli/main.cpp) program for a reference on
 - [`NamedPipeAudioSink`](targets/cli/NamedPipeAudioSink.cpp) - all platforms, writes to a file/FIFO pipe called `outputFifo` which can later be played back by FFmpeg. Used mainly for testing and development.
 
 Additionaly the following audio sinks are implemented for the esp32 target:
-- [`ES9018AudioSink`](targets/esp32/main/sinks/ES9018AudioSink.cpp) - provides playback via the ES9018 DAC connected to the ESP32
-- [`AC101AudioSink`](targets/esp32/main/sinks/AC101AudioSink.cpp) - provides playback via AC101 DAC used in cheap ESP32 A1S audiokit boards, commonly found on aliexpress.
+- [`ES9018AudioSink`](targets/esp32/main/sinks/ES9018AudioSink.cpp) - provides playback via a ES9018 DAC connected to the ESP32
+- [`AC101AudioSink`](targets/esp32/main/sinks/AC101AudioSink.cpp) - provides playback via the AC101 DAC used in cheap ESP32 A1S audiokit boards, commonly found on aliexpress.
+- [`PCM5102AudioSink`](targets/esp32/main/sinks/PCM5012AudioSink.cpp) - provides playback via a PCM5102 DAC connected to the ESP32, commonly found in the shape of small purple modules at various online retailers. Wiring can be configured in the sink and defaults to:
+  - SCK to Ground
+  - BCK to PGIO27
+  - DIN to GPIO25
+  - LCK to GPIO32
+  - GND to Ground
+  - VIN to 3.3V (but supposedly 5V tolerant)
 - TODO: internal esp32 DAC for crappy quality testing.
 
 You can also easily add support for your own DAC of choice by implementing your own audio sink. Each new audio sink must implement the `void feedPCMFrames(std::vector<uint8_t> &data)` method which should accept stereo PCM audio data at 44100 Hz and 16 bits per sample. Please note that the sink should somehow buffer the data, because playing it back may result in choppy audio.
