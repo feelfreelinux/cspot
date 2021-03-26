@@ -1,36 +1,11 @@
 #include "AC101AudioSink.h"
-#define typeof(x) __typeof__(x)
+
 #include "driver/i2s.h"
-
-#include "freertos/task.h"
-#include "freertos/ringbuf.h"
-
-RingbufHandle_t dataBuffer;
-
-static void i2sFeed(void *pvParameters)
-{
-    while (true)
-    {
-        size_t itemSize;
-        char *item = (char *)xRingbufferReceiveUpTo(dataBuffer, &itemSize, portMAX_DELAY, 512);
-        if (item != NULL)
-        {
-            //vTaskDelay(1);
-            size_t written = 0;
-            while (written < itemSize)
-            {
-                i2s_write((i2s_port_t)0, item, itemSize, &written, portMAX_DELAY);
-            }
-            vRingbufferReturnItem(dataBuffer, (void *)item);
-        }
-    }
-}
 
 AC101AudioSink::AC101AudioSink()
 {
     // Disable software volume control, all handled by ::volumeChanged
     softwareVolumeControl = false;
-    dataBuffer = xRingbufferCreate(4096 * 8, RINGBUF_TYPE_BYTEBUF);
 
     i2s_config_t i2s_config = {
 
@@ -58,7 +33,8 @@ AC101AudioSink::AC101AudioSink()
     dac->init(0, 0, &i2s_config);
     dac->speaker(false);
     dac->power(ADAC_ON);
-    xTaskCreatePinnedToCore(&i2sFeed, "i2sFeed", 4096, NULL, 10, NULL, 1);
+
+    startI2sFeed();
 }
 
 AC101AudioSink::~AC101AudioSink()
@@ -67,9 +43,4 @@ AC101AudioSink::~AC101AudioSink()
 
 void AC101AudioSink::volumeChanged(uint16_t volume) {
     dac->volume(volume, volume);
-}
-
-void AC101AudioSink::feedPCMFrames(std::vector<uint8_t> &data)
-{
-    xRingbufferSend(dataBuffer, &data[0], data.size(), portMAX_DELAY);
 }
