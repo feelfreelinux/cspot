@@ -16,6 +16,7 @@ PCM5102AudioSink::PCM5102AudioSink()
         .dma_buf_len = 512,
         .use_apll = true,
         .tx_desc_auto_clear = true, //Auto clear tx descriptor on underflow
+        .fixed_mclk = 384 * 44100
     };
 
     i2s_pin_config_t pin_config = {

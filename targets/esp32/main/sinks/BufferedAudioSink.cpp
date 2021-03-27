@@ -24,13 +24,18 @@ static void i2sFeed(void *pvParameters)
     }
 }
 
-void BufferedAudioSink::startI2sFeed()
-{
-    dataBuffer = xRingbufferCreate(4096 * 8, RINGBUF_TYPE_BYTEBUF);
-    xTaskCreatePinnedToCore(&i2sFeed, "i2sFeed", 4096, NULL, 10, NULL, 1);
+void BufferedAudioSink::startI2sFeed(size_t buf_size)
+{    
+    dataBuffer = xRingbufferCreate(buf_size, RINGBUF_TYPE_BYTEBUF);
+    xTaskCreatePinnedToCore(&i2sFeed, "i2sFeed", 4096, NULL, 10, NULL, tskNO_AFFINITY);
 }
 
 void BufferedAudioSink::feedPCMFrames(std::vector<uint8_t> &data)
 {
-    xRingbufferSend(dataBuffer, &data[0], data.size(), portMAX_DELAY);
+    feedPCMFramesInternal(&data[0], data.size());
+}
+
+void BufferedAudioSink::feedPCMFramesInternal(const void *pvItem, size_t xItemSize)
+{
+    xRingbufferSend(dataBuffer, pvItem, xItemSize, portMAX_DELAY);
 }
