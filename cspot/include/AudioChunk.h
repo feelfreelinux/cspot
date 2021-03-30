@@ -5,7 +5,7 @@
 #include <string>
 #include <algorithm>
 #include "pthread.h"
-#include "WrappedSemaphore.h"
+#include "platform/WrappedSemaphore.h"
 #include "Crypto.h"
 #include "Utils.h"
 

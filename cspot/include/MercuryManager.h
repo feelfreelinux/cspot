@@ -15,7 +15,7 @@
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"
 #include "Task.h"
-#include "WrappedSemaphore.h"
+#include "platform/WrappedSemaphore.h"
 #include "TimeProvider.h"
 #include "Session.h"
 
