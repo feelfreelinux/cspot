@@ -20,6 +20,8 @@ jobs:
         cmake-version: '3.18.x'
     - name: Install Protoc
       uses: arduino/setup-protoc@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }} # https://github.com/arduino/setup-protoc/issues/6
     - name: Install avachi libraries (mDNS) and asound
       run: sudo apt-get install libavahi-compat-libdnssd-dev libasound2-dev
       if: ${{ matrix.os == 'ubuntu-latest' }}
