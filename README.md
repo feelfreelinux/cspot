@@ -22,7 +22,7 @@ Currently in state of rapid development.
 
 Summary:
 
-- cmake (version 3.18 or higher)
+- cmake (version 3.0 or higher)
 - gcc / clang for the CLI target
 - [esp-idf](https://github.com/espressif/esp-idf) for building for the esp32
 - portaudio for playback on MacOS
