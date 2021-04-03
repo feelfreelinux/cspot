@@ -21,12 +21,10 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
 
 void SpircController::subscribe()
 {
-            printf("dlon!\n");
-
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
         sendCmd(MessageType::kMessageTypeHello);
-        printf("Sent hello!\n");
+        printf("Sent kMessageTypeHello!\n");
     };
     mercuryCallback subLambda = [=](std::unique_ptr<MercuryResponse> res) {
         this->handleFrame(res->parts[0]);

@@ -26,7 +26,7 @@ void Session::connectWithRandomAp()
     std::cout << "Connecting with AP <" << apAddr << ">\n";
     this->conn->connectToAp(apAddr);
     auto helloPacket = this->sendClientHelloRequest();
-    printf("yes packet \n");
+    printf("Sending APHello packet...\n");
     this->processAPHelloResponse(helloPacket);
 }
 
@@ -120,7 +120,7 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto sendKey = std::vector<uint8_t>(resultData.begin() + 0x14, resultData.begin() + 0x34);
     auto recvKey = std::vector<uint8_t>(resultData.begin() + 0x34, resultData.begin() + 0x54);
 
-    printf("Maybe ruchanie?\n");
+    printf("Received shannon keys\n");
 
     // Init shanno-encrypted connection
     this->shanConn->wrapConnection(this->conn, sendKey, recvKey);
@@ -146,11 +146,6 @@ std::vector<uint8_t> Session::sendClientHelloRequest()
     // Generate the random nonce
     clientHello.client_nonce = crypto->generateVectorWithRandomData(16);
     auto vecData = encodePb(clientHello);
-    printf("Hello hi\n");
-    for (int x = 0; x < vecData.size(); x++) {
-        printf("%d, ", vecData[x]);
-    }
-    printf("\n");
     auto prefix = std::vector<uint8_t>({0x00, 0x04});
     return this->conn->sendPrefixPacket(prefix, vecData);
 }

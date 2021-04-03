@@ -49,16 +49,12 @@ bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
     {
         if (restrictions[x].countries_allowed.has_value())
         {
-            if (countryListContains(restrictions[x].countries_allowed.value(), manager->countryCode)) {
-                return true;
-            }
+            return countryListContains(restrictions[x].countries_allowed.value(), manager->countryCode);
         }
 
         if (restrictions[x].countries_forbidden.has_value())
         {
-            if (countryListContains(restrictions[x].countries_forbidden.value(), manager->countryCode)) {
-                return false;
-            }
+            return !countryListContains(restrictions[x].countries_forbidden.value(), manager->countryCode);
         }
     }
 
