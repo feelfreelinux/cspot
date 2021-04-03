@@ -33,6 +33,15 @@ SpotifyTrack::~SpotifyTrack()
     this->manager->freeAudioKeyCallback();
 }
 
+bool SpotifyTrack::countryListContains(std::string countryList, std::string country) {
+    for (int x = 0; x < countryList.size(); x+=2) {
+        if (countryList.substr(x, 2) == country) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
 {
@@ -40,18 +49,14 @@ bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
     {
         if (restrictions[x].countries_allowed.has_value())
         {
-            if (restrictions[x].countries_allowed.value().find(manager->countryCode) == std::string::npos)
-            {
-                std::cout << "Track not allowed!" << std::endl;
-                return false;
+            if (countryListContains(restrictions[x].countries_allowed.value(), manager->countryCode)) {
+                return true;
             }
         }
 
         if (restrictions[x].countries_forbidden.has_value())
         {
-            if (restrictions[x].countries_forbidden.value().find(manager->countryCode) != std::string::npos)
-            {
-                std::cout << "Track not allowed!" << std::endl;
+            if (countryListContains(restrictions[x].countries_forbidden.value(), manager->countryCode)) {
                 return false;
             }
         }
