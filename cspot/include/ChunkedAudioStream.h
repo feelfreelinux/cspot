@@ -57,7 +57,7 @@ public:
     size_t pos = SPOTIFY_HEADER_SIZE; // size of some spotify header
     uint32_t fileSize;
     uint32_t readBeforeSeek = 0;
-    bool loadedMeta = false;
+    bool loadingMeta = true;
     bool isPaused = false;
     bool isRunning = false;
     bool finished = false;

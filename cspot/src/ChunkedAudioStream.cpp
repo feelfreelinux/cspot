@@ -65,8 +65,9 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 void ChunkedAudioStream::seekMs(uint32_t positionMs)
 {
     pthread_mutex_lock(&this->seekMutex);
-
+    loadingMeta = true;
     ov_time_seek(&vorbisFile, positionMs);
+    loadingMeta = false;
     pthread_mutex_unlock(&this->seekMutex);
     printf("--- Finished seeking!");
 }
@@ -74,7 +75,7 @@ void ChunkedAudioStream::seekMs(uint32_t positionMs)
 void ChunkedAudioStream::startPlaybackLoop()
 {
 
-    // while (!loadedMeta);
+    loadingMeta = true;
     isRunning = true;
 
     int32_t r = ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
@@ -88,6 +89,7 @@ void ChunkedAudioStream::startPlaybackLoop()
         this->requestChunk(0);
     }
 
+    loadingMeta = false;
     bool eof = false;
     while (!eof && isRunning)
     {
@@ -146,14 +148,12 @@ void ChunkedAudioStream::fetchTraillingPacket()
 
     chunks.push_back(endChunk);
     endChunk->isLoadedSemaphore->wait();
-    loadedMeta = true;
 }
 
 std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
 {
     auto toRead = bytes;
     auto res = std::vector<uint8_t>();
-    bool onlyKeptMemoryRead = false;
 READ:
     while (res.size() < bytes)
     {
@@ -196,10 +196,6 @@ READ:
 
         if (chunk != nullptr)
         {
-            if (chunk->keepInMemory)
-            {
-                onlyKeptMemoryRead = true;
-            }
             auto offset = pos - chunk->startPosition;
             if (chunk->isLoaded)
             {
@@ -232,7 +228,7 @@ READ:
         }
     }
 
-    if (!onlyKeptMemoryRead)
+    if (!loadingMeta)
     {
 
         auto requestedOffset = 0;
