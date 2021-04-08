@@ -25,8 +25,8 @@ jobs:
           wget https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz && tar -xvf go1.15.2.linux-amd64.tar.gz && \
           mv go /usr/local && \
           export GOROOT=/usr/local/go && \
-          export PATH=$PATH:$GOPATH/bin:$GOROOT/bin && \
-          export GOPATH=$HOME && \
+          export PATH=\$PATH:\$GOPATH/bin:\$GOROOT/bin && \
+          export GOPATH=\$HOME && \
           apt-get install --no-install-recommends --assume-yes protobuf-compiler && \
           python3 -m pip install --upgrade pip setuptools wheel && \
           pip3 install protobuf grpcio-tools && cd targets/esp32 && idf.py build"
