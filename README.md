@@ -100,7 +100,7 @@ You can view the [`cspot-cli`]([targets/cli/main.cpp) program for a reference on
 Additionaly the following audio sinks are implemented for the esp32 target:
 - [`ES9018AudioSink`](targets/esp32/main/sinks/ES9018AudioSink.cpp) - provides playback via a ES9018 DAC connected to the ESP32
 - [`AC101AudioSink`](targets/esp32/main/sinks/AC101AudioSink.cpp) - provides playback via the AC101 DAC used in cheap ESP32 A1S audiokit boards, commonly found on aliexpress.
-- [`PCM5102AudioSink`](targets/esp32/main/sinks/PCM5012AudioSink.cpp) - provides playback via a PCM5102 DAC connected to the ESP32, commonly found in the shape of small purple modules at various online retailers. Wiring can be configured in the sink and defaults to:
+- [`PCM5102AudioSink`](targets/esp32/main/sinks/PCM5102AudioSink.cpp) - provides playback via a PCM5102 DAC connected to the ESP32, commonly found in the shape of small purple modules at various online retailers. Wiring can be configured in the sink and defaults to:
   - SCK to Ground
   - BCK to PGIO27
   - DIN to GPIO25
