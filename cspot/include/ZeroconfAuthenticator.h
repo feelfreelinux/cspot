@@ -27,7 +27,6 @@
 #ifdef ESP_PLATFORM
 #include "mdns.h"
 #else
-#include "dns_sd.h"
 #include <unistd.h>
 #endif
 

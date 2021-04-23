@@ -167,14 +167,6 @@ void ZeroconfAuthenticator::registerZeroconf()
     mdns_service_add("cspot", "_spotify-connect", "_tcp", serverPort, serviceTxtData, 3);
 
 #else
-    DNSServiceRef ref = NULL;
-    TXTRecordRef txtRecord;
-    TXTRecordCreate(&txtRecord, 0, NULL);
-    TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
-    TXTRecordSetValue(&txtRecord, "CPath", 1, "/");
-    TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char *)informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
-    TXTRecordDeallocate(&txtRecord);
 #endif
 }
 
