@@ -11,3 +11,6 @@
 [submodule "cspot/mbedtls"]
 	path = cspot/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "targets/cli/tinyalsa"]
+	path = targets/cli/tinyalsa
+	url = https://github.com/tinyalsa/tinyalsa

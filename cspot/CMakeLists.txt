@@ -60,6 +60,6 @@ set(SOURCES ${SOURCES} "tremor/mdct.c" "tremor/dsp.c" "tremor/info.c" "tremor/mi
 set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
 
 add_library(cspot STATIC ${SOURCES})
-target_link_libraries(cspot PRIVATE -static mbedtls ${EXTRA_REQ_LIBS})
+target_link_libraries(cspot PRIVATE -static pthread mbedtls ${EXTRA_REQ_LIBS})
 
 target_include_directories(cspot PUBLIC "include" "protos" "tremor" "mbedtls" "cJSON" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})

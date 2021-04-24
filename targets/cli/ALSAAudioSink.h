@@ -6,7 +6,7 @@
 #include <vector>
 #include <fstream>
 #include "AudioSink.h"
-#include <alsa/asoundlib.h>
+#include <tinyalsa/pcm.h>
 #include <stdio.h>
 #include <Task.h>
 #include <unistd.h>
@@ -118,11 +118,9 @@ public:
 
 private:
     RingbufferPointer<std::vector<uint8_t>, 3> ringbuffer;
-    unsigned int pcm;
-    snd_pcm_t *pcm_handle;
-    snd_pcm_hw_params_t *params;
-    snd_pcm_uframes_t frames;
-    int buff_size;
+    pcm * pcmHandle;
+    unsigned int frames;
+    int buff_size = 140;
     std::vector<uint8_t> buff;
 };
 #endif
