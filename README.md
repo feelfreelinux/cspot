@@ -27,7 +27,8 @@ Summary:
 - [esp-idf](https://github.com/espressif/esp-idf) for building for the esp32
 - portaudio for playback on MacOS
 - downloaded submodules
-- python libraries for the [nanopb](https://github.com/nanopb/nanopb) generator
+- golang (1.16)
+- protoc
 - on Linux you will additionally need:
     - `libasound` and `libavahi-compat-libdnssd`
 
