@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 cd cpp-reflection
 go build -o protoc-gen-cpprefl .
 cd ..
