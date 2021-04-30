@@ -9,7 +9,7 @@
 #include <netdb.h>
 #include <memory>
 #include <cstdint>
-#include <pthread.h>
+#include "platform/WrappedMutex.h"
 #include "Utils.h"
 #include "Shannon.h"
 #include "PlainConnection.h"
@@ -26,8 +26,8 @@ private:
     uint32_t sendNonce = 0;
     uint32_t recvNonce = 0;
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
-    pthread_mutex_t writeMutex;
-    pthread_mutex_t readMutex;
+    WrappedMutex writeMutex;
+    WrappedMutex readMutex;
     
 public:
     ShannonConnection();

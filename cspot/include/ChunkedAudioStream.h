@@ -6,11 +6,11 @@
 #include <fstream>
 #include <array>
 #include <unistd.h>
-#include <pthread.h>
 #include "ivorbisfile.h"
 #include "MercuryManager.h"
 #include "AudioSink.h"
 #include "AudioChunk.h"
+#include "platform/WrappedMutex.h"
 
 #define SPOTIFY_HEADER_SIZE 167
 #define BUFFER_SIZE 0x20000 * 1.5
@@ -63,7 +63,7 @@ public:
     bool finished = false;
     pcmDataCallback pcmCallback;
     std::shared_ptr<AudioSink> audioSink;
-    pthread_mutex_t seekMutex;
+    WrappedMutex seekMutex;
 
     std::vector<uint8_t> read(size_t bytes);
     void seekMs(uint32_t positionMs);

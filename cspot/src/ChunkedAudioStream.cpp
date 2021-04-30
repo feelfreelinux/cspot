@@ -30,7 +30,8 @@ static long vorbisTellCb(ChunkedAudioStream *self)
     return static_cast<long>(self->pos);
 }
 
-ChunkedAudioStream::~ChunkedAudioStream() {
+ChunkedAudioStream::~ChunkedAudioStream()
+{
 }
 
 ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs)
@@ -41,7 +42,6 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     this->manager = manager;
     this->fileId = fileId;
     this->startPositionMs = startPositionMs;
-    pthread_mutex_init(&seekMutex, NULL);
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
@@ -64,11 +64,13 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
 void ChunkedAudioStream::seekMs(uint32_t positionMs)
 {
-    pthread_mutex_lock(&this->seekMutex);
+
+    this->seekMutex.lock();
     loadingMeta = true;
     ov_time_seek(&vorbisFile, positionMs);
     loadingMeta = false;
-    pthread_mutex_unlock(&this->seekMutex);
+    this->seekMutex.unlock();
+
     printf("--- Finished seeking!");
 }
 
@@ -96,9 +98,10 @@ void ChunkedAudioStream::startPlaybackLoop()
         if (!isPaused)
         {
             std::vector<uint8_t> pcmOut(4096 / 4);
-            pthread_mutex_lock(&this->seekMutex);
+
+            this->seekMutex.lock();
             long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096 / 4, &currentSection);
-            pthread_mutex_unlock(&this->seekMutex);
+            this->seekMutex.unlock();
             if (ret == 0)
             {
                 // and done :)

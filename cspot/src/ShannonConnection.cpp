@@ -1,18 +1,15 @@
 #include "ShannonConnection.h"
 
-ShannonConnection::ShannonConnection() {
-    // Create mutexes for thread safety
-    pthread_mutex_init(&this->writeMutex, NULL);
-    pthread_mutex_init(&this->readMutex, NULL);
+ShannonConnection::ShannonConnection()
+{
 }
 
-ShannonConnection::~ShannonConnection() {
-    // Destroy the mutexes
-    pthread_mutex_destroy(&this->writeMutex);
-    pthread_mutex_destroy(&this->readMutex); 
+ShannonConnection::~ShannonConnection()
+{
 }
 
-void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey) {
+void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, std::vector<uint8_t> &sendKey, std::vector<uint8_t> &recvKey)
+{
     this->conn = conn;
 
     this->sendCipher = std::make_unique<Shannon>();
@@ -27,8 +24,9 @@ void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, st
     this->recvCipher->nonce(pack<uint32_t>(htonl(0)));
 }
 
-void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
-    pthread_mutex_lock(&this->writeMutex); 
+void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data)
+{
+    this->writeMutex.lock();
     auto rawPacket = this->cipherPacket(cmd, data);
 
     // Shannon encrypt the packet and write it to sock
@@ -40,16 +38,17 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data) {
     this->sendCipher->finish(mac);
 
     // Update the nonce
-	this->sendNonce += 1;
+    this->sendNonce += 1;
     this->sendCipher->nonce(pack<uint32_t>(htonl(this->sendNonce)));
 
     // Write the mac to sock
     this->conn->writeBlock(mac);
-    pthread_mutex_unlock(&this->writeMutex); 
+    this->writeMutex.unlock();
 }
 
-std::unique_ptr<Packet> ShannonConnection::recvPacket() {
-    pthread_mutex_lock(&this->readMutex); 
+std::unique_ptr<Packet> ShannonConnection::recvPacket()
+{
+    this->readMutex.lock();
     // Receive 3 bytes, cmd + int16 size
     auto data = this->conn->readBlock(3);
     this->recvCipher->decrypt(data);
@@ -59,7 +58,8 @@ std::unique_ptr<Packet> ShannonConnection::recvPacket() {
     auto readSize = ntohs(extract<uint16_t>(data, 1));
 
     // Read and decode if the packet has an actual body
-    if (readSize > 0) {
+    if (readSize > 0)
+    {
         packetData = this->conn->readBlock(readSize);
         this->recvCipher->decrypt(packetData);
     }
@@ -71,22 +71,24 @@ std::unique_ptr<Packet> ShannonConnection::recvPacket() {
     std::vector<uint8_t> mac2(MAC_SIZE);
     this->recvCipher->finish(mac2);
 
-    if (mac != mac2) {
+    if (mac != mac2)
+    {
         printf("Shannon read: Mac doesn't match\n");
     }
 
     // Update the nonce
-	this->recvNonce += 1;
+    this->recvNonce += 1;
     this->recvCipher->nonce(pack<uint32_t>(htonl(this->recvNonce)));
 
     // Unlock the mutex
-    pthread_mutex_unlock(&this->readMutex); 
+    this->readMutex.unlock();
 
     // data[0] == cmd
     return std::make_unique<Packet>(data[0], packetData);
 }
 
-std::vector<uint8_t> ShannonConnection::cipherPacket(uint8_t cmd, std::vector<uint8_t> &data) {
+std::vector<uint8_t> ShannonConnection::cipherPacket(uint8_t cmd, std::vector<uint8_t> &data)
+{
     // Generate packet structure, [Command] [Size] [Raw data]
     auto sizeRaw = pack<uint16_t>(htons(uint16_t(data.size())));
 
