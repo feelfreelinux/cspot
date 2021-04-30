@@ -1,5 +1,6 @@
 #include "MercuryManager.h"
 #include <iostream>
+#include "Logger.h"
 
 std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::GET, "GET"},
@@ -32,13 +33,13 @@ bool MercuryManager::timeoutHandler()
 
     if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
     {
-        printf("Reconnection required, no mercury response\n");
+        CSPOT_LOG(debug, "Reconnection required, no mercury response");
         return true;
     }
 
     if (currentTimestamp - this->lastPingTimestamp > PING_TIMEOUT_MS)
     {
-        printf("Reconnection required, no ping received\n");
+        CSPOT_LOG(debug, "Reconnection required, no ping received");
         return true;
     }
     return false;
@@ -116,7 +117,7 @@ void MercuryManager::reconnect()
     this->lastPingTimestamp = -1;
     this->lastRequestTimestamp = -1;
 RECONNECT:
-    printf("Trying to reconnect...\n");
+    CSPOT_LOG(debug, "Trying to reconnect...");
     try
     {
         if (this->session->shanConn->conn != nullptr)
@@ -134,11 +135,11 @@ RECONNECT:
         this->session->shanConn->conn->timeoutHandler = [this]() {
             return this->timeoutHandler();
         };
-        printf("Reconnected successfuly :)\n");
+        CSPOT_LOG(debug, "Reconnected successfuly :)");
     }
     catch (...)
     {
-        printf("Reconnection failed, willl retry in %d secs\n", RECONNECTION_RETRY_MS / 1000);
+        CSPOT_LOG(debug, "Reconnection failed, willl retry in %d secs", RECONNECTION_RETRY_MS / 1000);
         usleep(RECONNECTION_RETRY_MS * 1000);
         goto RECONNECT;
         //reconnect();
@@ -164,7 +165,7 @@ void MercuryManager::runTask()
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
         {
-            printf("Got ping, syncing timestamp\n");
+            CSPOT_LOG(debug, "Got ping, syncing timestamp");
             this->timeProvider->syncWithPingPacket(packet->data);
 
             this->lastPingTimestamp = this->timeProvider->getSyncedTimestamp();
@@ -192,14 +193,14 @@ void MercuryManager::handleQueue()
         {
             auto packet = std::move(this->queue[0]);
             this->queue.erase(this->queue.begin());
-            printf("Received packet with code %d of length %d\n", packet->command, packet->data.size());
+            CSPOT_LOG(debug, "Received packet with code %d of length %d", packet->command, packet->data.size());
             switch (static_cast<MercuryType>(packet->command))
             {
             case MercuryType::COUNTRY_CODE_RESPONSE:
             {
-                printf("Received country code\n");
+
                 countryCode = std::string(packet->data.begin(), packet->data.end());
-                std::cout << countryCode << std::endl;
+                CSPOT_LOG(debug, "Received country code: %s", countryCode.c_str());
                 break;
             }
             case MercuryType::AUDIO_KEY_FAILURE_RESPONSE:
@@ -262,7 +263,8 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
 {
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
-    std::cout << MercuryTypeMap[method] << std::endl;
+ 
+    CSPOT_LOG(debug, "executing MercuryType %s", MercuryTypeMap[method].c_str());
     Header mercuryHeader;
     mercuryHeader.uri = uri;
     mercuryHeader.method = MercuryTypeMap[method];

@@ -1,4 +1,5 @@
 #include "SpircController.h"
+#include "Logger.h"
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
@@ -24,7 +25,7 @@ void SpircController::subscribe()
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
         sendCmd(MessageType::kMessageTypeHello);
-        printf("Sent kMessageTypeHello!\n");
+        CSPOT_LOG(debug, "Sent kMessageTypeHello!");
     };
     mercuryCallback subLambda = [=](std::unique_ptr<MercuryResponse> res) {
         this->handleFrame(res->parts[0]);
@@ -41,7 +42,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     {
     case MessageType::kMessageTypeNotify:
     {
-        printf("Notify frame\n");
+        CSPOT_LOG(debug, "Notify frame");
         // Pause the playback if another player took control
         if (state->isActive() && state->remoteFrame.device_state->is_active.value())
         {
@@ -53,7 +54,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType::kMessageTypeSeek:
     {
-        printf("Seek command\n");
+        CSPOT_LOG(debug, "Seek command");
         state->updatePositionMs(state->remoteFrame.position.value());
         this->player->seekMs(state->remoteFrame.position.value());
         notify();
@@ -66,7 +67,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     case MessageType::kMessageTypePause:
     {
-        printf("Pause command\n");
+        CSPOT_LOG(debug, "Pause command");
         player->pause();
         state->setPlaybackState(PlaybackState::Paused);
         notify();
@@ -82,7 +83,9 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         if (state->nextTrack())
         {
             loadTrack();
-        } else {
+        }
+        else
+        {
             player->cancelCurrentTrack();
         }
         notify();
@@ -94,10 +97,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     case MessageType::kMessageTypeLoad:
     {
-        for (int x = 0; x < data.size(); x++) {
+        for (int x = 0; x < data.size(); x++)
+        {
             printf("%d, ", data[x]);
         }
-        printf("\nLoad frame!\n");
+        CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);
         state->setPlaybackState(PlaybackState::Loading);
@@ -112,19 +116,19 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
     case MessageType::kMessageTypeReplace:
     {
-        printf("Got replace frame\n");
+        CSPOT_LOG(debug, "Got replace frame!");
         break;
     }
     case MessageType::kMessageTypeShuffle:
     {
-        printf("Got shuffle frame\n");
+        CSPOT_LOG(debug, "Got shuffle frame");
         state->setShuffle(state->remoteFrame.state->shuffle.value());
         this->notify();
         break;
     }
     case MessageType::kMessageTypeRepeat:
     {
-        printf("Got repeat frame\n");
+        CSPOT_LOG(debug, "Got repeat frame");
         state->setRepeat(state->remoteFrame.state->repeat.value());
         this->notify();
         break;

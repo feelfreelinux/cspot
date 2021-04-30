@@ -3,10 +3,12 @@
 #include <cstring>
 #include <netinet/tcp.h>
 #include <errno.h>
+#include "Logger.h"
 
 PlainConnection::PlainConnection(){};
 
-PlainConnection::~PlainConnection(){
+PlainConnection::~PlainConnection()
+{
     closeSocket();
 };
 
@@ -62,7 +64,7 @@ void PlainConnection::connectToAp(std::string apAddress)
     }
 
     freeaddrinfo(airoot);
-    printf("Connected to spotify server\n");
+    CSPOT_LOG(debug, "Connected to spotify server");
 }
 
 std::vector<uint8_t> PlainConnection::recvPacket()

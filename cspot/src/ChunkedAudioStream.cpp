@@ -1,4 +1,5 @@
 #include "ChunkedAudioStream.h"
+#include "Logger.h"
 
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
@@ -71,7 +72,7 @@ void ChunkedAudioStream::seekMs(uint32_t positionMs)
     loadingMeta = false;
     this->seekMutex.unlock();
 
-    printf("--- Finished seeking!");
+    CSPOT_LOG(debug, "--- Finished seeking!");
 }
 
 void ChunkedAudioStream::startPlaybackLoop()
@@ -81,7 +82,7 @@ void ChunkedAudioStream::startPlaybackLoop()
     isRunning = true;
 
     int32_t r = ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
-    printf("--- Loaded file\n");
+    CSPOT_LOG(debug, "--- Loaded file");
     if (this->startPositionMs != 0)
     {
         ov_time_seek(&vorbisFile, startPositionMs);
@@ -129,7 +130,7 @@ void ChunkedAudioStream::startPlaybackLoop()
 
     ov_clear(&vorbisFile);
     vorbisCallbacks = {};
-    printf("Track finished \n");
+    CSPOT_LOG(debug, "Track finished");
     finished = true;
 
     if (eof)
@@ -191,7 +192,7 @@ READ:
         if (pos >= fileSize)
         {
 
-            printf("EOL!\n");
+            CSPOT_LOG(debug, "EOL!");
             return res;
         }
 
@@ -254,7 +255,7 @@ READ:
             else
             {
                 auto chunkReq = manager->fetchAudioChunk(fileId, audioKey, (pos + requestedOffset) / 4, (pos + requestedOffset + AUDIO_CHUNK_SIZE) / 4);
-                printf("Chunk req end pos %d\n", chunkReq->endPosition);
+                CSPOT_LOG(debug, "Chunk req end pos %d", chunkReq->endPosition);
                 this->chunks.push_back(chunkReq);
             }
         }
@@ -304,13 +305,13 @@ void ChunkedAudioStream::seek(size_t dpos, Whence whence)
 
         this->chunks.push_back(manager->fetchAudioChunk(fileId, audioKey, startPosition, startPosition + (AUDIO_CHUNK_SIZE / 4)));
     }
-    printf("Change in current chunk %d\n", currentChunk);
+    CSPOT_LOG(debug, "Change in current chunk %d", currentChunk);
 }
 
 std::shared_ptr<AudioChunk> ChunkedAudioStream::requestChunk(size_t chunkIndex)
 {
 
-    printf("Chunk Req %d\n", chunkIndex);
+    CSPOT_LOG(debug, "Chunk Req %d\n", chunkIndex);
     auto chunk = manager->fetchAudioChunk(fileId, audioKey, chunkIndex);
     this->chunks.push_back(chunk);
     return chunk;

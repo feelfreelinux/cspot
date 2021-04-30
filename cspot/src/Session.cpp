@@ -1,5 +1,6 @@
 #include "Session.h"
 #include "MercuryManager.h"
+#include "Logger.h"
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
@@ -23,10 +24,10 @@ void Session::connectWithRandomAp()
     this->conn = std::make_unique<PlainConnection>();
 
     auto apAddr = apResolver->fetchFirstApAddress();
-    std::cout << "Connecting with AP <" << apAddr << ">\n";
+    CSPOT_LOG(debug, "Connecting with AP <%s>", apAddr.c_str());
     this->conn->connectToAp(apAddr);
     auto helloPacket = this->sendClientHelloRequest();
-    printf("Sending APHello packet...\n");
+    CSPOT_LOG(debug, "Sending APHello packet...");
     this->processAPHelloResponse(helloPacket);
 }
 
@@ -55,7 +56,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     {
     case AUTH_SUCCESSFUL_COMMAND:
     {
-        printf("Authorization successful\n");
+        CSPOT_LOG(debug, "Authorization successful");
 
         // @TODO store the reusable credentials
         // PBWrapper<APWelcome> welcomePacket(packet->data)
@@ -64,11 +65,11 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     }
     case AUTH_DECLINED_COMMAND:
     {
-        printf("Authorization declined\n");
+        CSPOT_LOG(error, "Authorization declined");
         break;
     }
     default:
-        printf("Unknown auth fail code %d\n", packet->command);
+        CSPOT_LOG(error, "Unknown auth fail code %d", packet->command);
     }
 
     return std::vector<uint8_t>(0);
@@ -76,10 +77,9 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 
 void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
 {
-    printf("recv\n");
+    CSPOT_LOG(debug, "Processing AP hello response...");
     auto data = this->conn->recvPacket();
-    printf("Maybe corn?\n");
-
+    CSPOT_LOG(debug, "Received AP hello response");
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
     apResponse = decodePb<APResponseMessage>(skipSize);
@@ -120,7 +120,7 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto sendKey = std::vector<uint8_t>(resultData.begin() + 0x14, resultData.begin() + 0x34);
     auto recvKey = std::vector<uint8_t>(resultData.begin() + 0x34, resultData.begin() + 0x54);
 
-    printf("Received shannon keys\n");
+    CSPOT_LOG(debug, "Received shannon keys");
 
     // Init shanno-encrypted connection
     this->shanConn->wrapConnection(this->conn, sendKey, recvKey);

@@ -1,5 +1,5 @@
 #include "AudioChunkManager.h"
-// #include "esp_system.h"
+#include "Logger.h"
 
 AudioChunkManager::AudioChunkManager()
 {
@@ -12,7 +12,7 @@ std::shared_ptr<AudioChunk> AudioChunkManager::registerNewChunk(uint16_t seqId, 
 {
     auto chunk = std::make_shared<AudioChunk>(seqId, audioKey, startPos * 4, endPos * 4);
     this->chunks.push_back(chunk);
-    printf("Chunk requested %d\n", seqId);
+    CSPOT_LOG(debug, "Chunk requested %d", seqId);
 
     return chunk;
 }
@@ -75,7 +75,7 @@ void AudioChunkManager::runTask()
                     {
                     case DATA_SIZE_HEADER:
                     {
-                        printf("ID: %d: header decrypt!\n", seqId);
+                        CSPOT_LOG(debug, "ID: %d: header decrypt!", seqId);
                         auto headerSize = ntohs(extract<uint16_t>(data, 2));
                         // Got file size!
                         chunk->headerFileSize = ntohl(extract<uint32_t>(data, 5)) * 4;
@@ -87,7 +87,7 @@ void AudioChunkManager::runTask()
                         {
                             chunk->endPosition = chunk->headerFileSize;
                         }
-                        printf("ID: %d: Starting decrypt!\n", seqId);
+                        CSPOT_LOG(debug, "ID: %d: Starting decrypt!", seqId);
                         chunk->decrypt();
                         chunk->isLoadedSemaphore->give();
                         break;

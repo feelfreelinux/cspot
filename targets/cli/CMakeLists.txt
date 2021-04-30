@@ -9,15 +9,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../cspot ${CMAKE_CURRENT_BINARY_
 file(GLOB SOURCES "*.cpp")
 include_directories(".")
 
-if(UNIX AND NOT APPLE)
-    add_definitions(-DCSPOT_ENABLE_ALSA_SINK)
-    set(THINGS_TO_LINK ${THINGS_TO_LINK} asound)
-else()
-    add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
-    find_package( portaudio REQUIRED )
-    include_directories( ${PORTAUDIO_INCLUDE_DIRS} )
-    set(THINGS_TO_LINK ${THINGS_TO_LINK} ${PORTAUDIO_LIBRARIES})
-endif()
+add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
+find_package( portaudio REQUIRED )
+include_directories( ${PORTAUDIO_INCLUDE_DIRS} )
+set(THINGS_TO_LINK ${THINGS_TO_LINK} ${PORTAUDIO_LIBRARIES})
+
 
 
 add_executable(cspotcli ${SOURCES})

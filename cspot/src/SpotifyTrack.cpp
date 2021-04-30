@@ -3,6 +3,7 @@
 #include "MercuryManager.h"
 #include <cassert>
 #include "CspotAssert.h"
+#include "Logger.h"
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference)
 {
@@ -69,8 +70,10 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
     trackInfo = decodePb<Track>(response->parts[0]);
 
-    std::cout << "--- Track name: " << trackInfo.name.value() << std::endl;
-    std::cout << trackInfo.restriction.size() << std::endl;
+    
+  
+    CSPOT_LOG(info, "Track name: %s",trackInfo.name.value().c_str());
+    CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
     int altIndex = 0;
     while (!canPlayTrack(trackInfo.restriction))
     {
