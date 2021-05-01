@@ -1,4 +1,5 @@
 #include "PlayerState.h"
+#include "Logger.h"
 
 PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
 {
@@ -109,7 +110,7 @@ void PlayerState::updatePositionMs(uint32_t position)
 }
 void PlayerState::updateTracks()
 {
-    printf("---- Track count %d\n", remoteFrame.state->track.size());
+    CSPOT_LOG(info, "---- Track count %d", remoteFrame.state->track.size());
     // innerFrame.state->context_uri = remoteFrame.state->context_uri == nullptr ? nullptr : strdup(otherFrame->state->context_uri);
 
     innerFrame.state->track = remoteFrame.state->track;

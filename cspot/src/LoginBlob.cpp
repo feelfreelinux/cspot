@@ -1,5 +1,6 @@
 #include "LoginBlob.h"
 #include "JSONObject.h"
+#include "Logger.h"
 
 LoginBlob::LoginBlob()
 {
@@ -30,7 +31,7 @@ std::vector<uint8_t> LoginBlob::decodeBlob(const std::vector<uint8_t> &blob, con
     // Check checksum
     if (mac != checksum)
     {
-        std::cout << "Mac doesn't match!" << std::endl;
+        CSPOT_LOG(error, "Mac doesn't match!" );
     }
 
     encryptionKey = std::vector<uint8_t>(encryptionKey.begin(), encryptionKey.begin() + 16);

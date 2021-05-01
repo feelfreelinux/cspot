@@ -4,6 +4,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "Logger.h"
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -19,7 +20,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator()
 std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
 {
 
-    printf("Starting zeroconf auth server at port %d\n", this->serverPort);
+    CSPOT_LOG(info, "Starting zeroconf auth server at port %d", this->serverPort);
 
     struct addrinfo hints, *server;
     memset(&hints, 0, sizeof hints);
@@ -97,12 +98,12 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
             }
         }
 
-        printf("RQ: %s\n", currentString.c_str());
+        CSPOT_LOG(debug, "RQ: %s", currentString.c_str());
 
         if (isAddUserRequest)
         {
 
-            printf("Got POST request!\n");
+            CSPOT_LOG(info, "Got POST request!");
             JSONObject obj;
             obj["status"] = 101;
             obj["spotifyError"] = 0;
@@ -128,7 +129,7 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::listenForRequests()
         else
         {
 
-            printf("Got GET request!\n");
+            CSPOT_LOG(info, "Got GET request!");
             std::string jsonInfo = buildJsonInfo();
 
             std::stringstream stream;

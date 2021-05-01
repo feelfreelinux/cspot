@@ -97,10 +97,6 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     case MessageType::kMessageTypeLoad:
     {
-        for (int x = 0; x < data.size(); x++)
-        {
-            printf("%d, ", data[x]);
-        }
         CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);

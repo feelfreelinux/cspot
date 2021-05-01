@@ -1,4 +1,5 @@
 #include "ShannonConnection.h"
+#include "Logger.h"
 
 ShannonConnection::ShannonConnection()
 {
@@ -73,7 +74,7 @@ std::unique_ptr<Packet> ShannonConnection::recvPacket()
 
     if (mac != mac2)
     {
-        printf("Shannon read: Mac doesn't match\n");
+        CSPOT_LOG(error, "Shannon read: Mac doesn't match");
     }
 
     // Update the nonce

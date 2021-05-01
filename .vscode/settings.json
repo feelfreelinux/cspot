@@ -100,7 +100,9 @@
         "*.ipp": "cpp",
         "cassert": "cpp",
         "queue": "cpp",
-        "__functional_03": "cpp"
+        "__functional_03": "cpp",
+        "source_location": "cpp",
+        "future": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "cmake.sourceDirectory": "${workspaceFolder}/targets/cli"

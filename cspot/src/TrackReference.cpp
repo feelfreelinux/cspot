@@ -1,15 +1,17 @@
 #include "TrackReference.h"
+#include "Logger.h"
 
 TrackReference::TrackReference(TrackRef *ref)
 {
-    if (ref->gid.has_value()) {
+    if (ref->gid.has_value())
+    {
         gid = ref->gid.value();
     }
     else if (ref->uri.has_value())
     {
         auto uri = ref->uri.value();
         auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
-        std::cout << idString << std::endl;
+        CSPOT_LOG(debug, "idString = %s", idString.c_str());
         gid = base62Decode(idString);
         isEpisode = true;
     }
@@ -17,7 +19,6 @@ TrackReference::TrackReference(TrackRef *ref)
 
 TrackReference::~TrackReference()
 {
-
 }
 
 std::vector<uint8_t> TrackReference::base62Decode(std::string uri)

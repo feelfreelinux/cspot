@@ -25,7 +25,7 @@ void PlainConnection::connectToAp(std::string apAddress)
     // Lookup host
     if (getaddrinfo(hostname.c_str(), portStr.c_str(), &h, &airoot))
     {
-        printf("getaddrinfo failed\n");
+        CSPOT_LOG(error, "getaddrinfo failed");
     }
 
     // find the right ai, connect to server
@@ -114,7 +114,7 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
             case ETIMEDOUT:
                 if (timeoutHandler())
                 {
-                    printf("Throwing cuz reconnection\n");
+                    CSPOT_LOG(error, "Connection lost, will need to reconnect...");
                     throw std::runtime_error("Reconnection required");
                 }
                 goto READ;
@@ -164,7 +164,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
 
 void PlainConnection::closeSocket()
 {
-    printf("Closing socket...\n");
+    CSPOT_LOG(info, "Closing socket...");
     shutdown(this->apSock, SHUT_RDWR);
     close(this->apSock);
 }

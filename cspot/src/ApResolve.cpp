@@ -14,6 +14,7 @@
 #include <sstream>
 #include <cJSON.h>
 #include <fstream>
+#include "Logger.h"
 
 ApResolve::ApResolve() {}
 
@@ -25,7 +26,7 @@ std::string ApResolve::getApList()
 
     if ((host == NULL) || (host->h_addr == NULL))
     {
-        printf("apresolve: DNS lookup error\n");
+        CSPOT_LOG(error, "apresolve: DNS lookup error");
         throw std::runtime_error("Resolve failed");
     }
     
@@ -41,7 +42,7 @@ std::string ApResolve::getApList()
     if (connect(sockFd, (struct sockaddr *)&client, sizeof(client)) < 0)
     {
         close(sockFd);
-        printf("Could not connect to apresolve\n");
+        CSPOT_LOG(error, "Could not connect to apresolve");
         throw std::runtime_error("Resolve failed");
     }
 
@@ -58,7 +59,7 @@ std::string ApResolve::getApList()
     // Send the request
     if (send(sockFd, request.c_str(), request.length(), 0) != (int)request.length())
     {
-        printf("apresolve: can't send request\n");
+        CSPOT_LOG(error, "apresolve: can't send request");
         throw std::runtime_error("Resolve failed");
     }
 

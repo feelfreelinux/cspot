@@ -34,15 +34,17 @@ SpotifyTrack::~SpotifyTrack()
     this->manager->freeAudioKeyCallback();
 }
 
-bool SpotifyTrack::countryListContains(std::string countryList, std::string country) {
-    for (int x = 0; x < countryList.size(); x+=2) {
-        if (countryList.substr(x, 2) == country) {
+bool SpotifyTrack::countryListContains(std::string countryList, std::string country)
+{
+    for (int x = 0; x < countryList.size(); x += 2)
+    {
+        if (countryList.substr(x, 2) == country)
+        {
             return true;
         }
     }
     return false;
 }
-
 
 bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
 {
@@ -70,9 +72,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
     trackInfo = decodePb<Track>(response->parts[0]);
 
-    
-  
-    CSPOT_LOG(info, "Track name: %s",trackInfo.name.value().c_str());
+    CSPOT_LOG(info, "Track name: %s", trackInfo.name.value().c_str());
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
     int altIndex = 0;
     while (!canPlayTrack(trackInfo.restriction))
@@ -81,7 +81,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         trackInfo.gid = trackInfo.alternative[altIndex].gid;
         trackInfo.file = trackInfo.alternative[altIndex].file;
         altIndex++;
-        std::cout << "Trying alternative " << altIndex << std::endl;
+        CSPOT_LOG(info, "Trying alternative %d", altIndex);
     }
     auto trackId = trackInfo.gid.value();
     this->fileId = std::vector<uint8_t>();
@@ -102,11 +102,11 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
 {
     if (this->fileId.size() != 0)
         return;
-    printf("Got to episode\n");
+    CSPOT_LOG(debug, "Got to episode");
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
     episodeInfo = decodePb<Episode>(response->parts[0]);
 
-    std::cout << "--- Episode name: " << episodeInfo.name.value() << std::endl;
+    CSPOT_LOG(info, "--- Episode name: %s", episodeInfo.name.value().c_str());
 
     this->fileId = std::vector<uint8_t>();
 
@@ -127,7 +127,7 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
     audioKeyCallback audioKeyLambda = [=](bool success, std::vector<uint8_t> res) {
         if (success)
         {
-            printf("Successfully got audio key!\n");
+            CSPOT_LOG(info, "Successfully got audio key!");
             auto audioKey = std::vector<uint8_t>(res.begin() + 4, res.end());
             if (this->fileId.size() > 0)
             {
@@ -136,13 +136,13 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
             }
             else
             {
-                printf("Error while fetching audiokey...\n");
+                CSPOT_LOG(error, "Error while fetching audiokey...");
             }
         }
         else
         {
             auto code = ntohs(extract<uint16_t>(res, 4));
-            printf("Error while fetching audiokey... %d\n", code);
+            CSPOT_LOG(error, "Error while fetching audiokey, error code: %d", code);
         }
     };
 

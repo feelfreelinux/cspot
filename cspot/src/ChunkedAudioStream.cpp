@@ -110,7 +110,7 @@ void ChunkedAudioStream::startPlaybackLoop()
             }
             else if (ret < 0)
             {
-                printf("Got em error in the stream\n");
+                CSPOT_LOG(error, "An error has occured in the stream");
 
                 // Error in the stream
             }
@@ -227,7 +227,7 @@ READ:
         }
         else
         {
-            printf("Actual request %d\n", chunkIndex);
+            CSPOT_LOG(debug, "Actual request %d", chunkIndex);
             this->requestChunk(chunkIndex);
         }
     }
@@ -311,7 +311,7 @@ void ChunkedAudioStream::seek(size_t dpos, Whence whence)
 std::shared_ptr<AudioChunk> ChunkedAudioStream::requestChunk(size_t chunkIndex)
 {
 
-    CSPOT_LOG(debug, "Chunk Req %d\n", chunkIndex);
+    CSPOT_LOG(debug, "Chunk Req %d", chunkIndex);
     auto chunk = manager->fetchAudioChunk(fileId, audioKey, chunkIndex);
     this->chunks.push_back(chunk);
     return chunk;

@@ -219,7 +219,7 @@ void MercuryManager::handleQueue()
             }
             case MercuryType::AUDIO_CHUNK_FAILURE_RESPONSE:
             {
-                printf("Audio Chunk failure!\n");
+                CSPOT_LOG(error, "Audio Chunk failure!");
                 this->audioChunkManager->handleChunkData(packet->data, true);
                 this->lastRequestTimestamp = -1;
                 break;
@@ -231,7 +231,7 @@ void MercuryManager::handleQueue()
                 auto response = std::make_unique<MercuryResponse>(packet->data);
                 if (response->parts.size() > 0)
                 {
-                    std::cout << " MercuryType::UNSUB response->parts[0].size() " << response->parts[0].size() << "\n";
+                    CSPOT_LOG(debug, " MercuryType::UNSUB response->parts[0].size() = %d", response->parts[0].size());
                 }
                 if (this->callbacks.count(response->sequenceId) > 0)
                 {
@@ -263,7 +263,7 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
 {
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
- 
+
     CSPOT_LOG(debug, "executing MercuryType %s", MercuryTypeMap[method].c_str());
     Header mercuryHeader;
     mercuryHeader.uri = uri;
