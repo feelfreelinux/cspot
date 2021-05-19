@@ -20,9 +20,9 @@ class SpotifyTrack
 {
 private:
     std::shared_ptr<MercuryManager> manager;
-    void trackInformationCallback(std::unique_ptr<MercuryResponse> response);
-    void episodeInformationCallback(std::unique_ptr<MercuryResponse> response);
-    void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration);
+    void trackInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms);
+    void episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms);
+    void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms);
     bool countryListContains(std::string countryList, std::string country);
     bool canPlayTrack(std::vector<Restriction> &restrictions);
     Track trackInfo;
@@ -32,7 +32,7 @@ private:
     std::vector<uint8_t> currentChunkData;
     std::vector<uint8_t> currentChunkHeader;
 public:
-    SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackRef);
+    SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackRef, uint32_t position_ms);
     ~SpotifyTrack();
     uint64_t reqSeqNum = -1;
     std::function<void()> loadedTrackCallback;

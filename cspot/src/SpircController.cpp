@@ -12,7 +12,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     player->endOfFileCallback = [=]() {
         if (state->nextTrack())
         {
-            loadTrack();
+            loadTrack(0);
         }
     };
 
@@ -82,7 +82,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     case MessageType::kMessageTypeNext:
         if (state->nextTrack())
         {
-            loadTrack();
+            loadTrack(0);
         }
         else
         {
@@ -92,7 +92,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     case MessageType::kMessageTypePrev:
         state->prevTrack();
-        loadTrack();
+        loadTrack(0);
         notify();
         break;
     case MessageType::kMessageTypeLoad:
@@ -106,7 +106,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         // And it does... on every single platform EXCEPT for ESP32 for some reason.
         // For which it corrupts memory and makes printf fail. so yeah. its cursed.
         state->updateTracks();
-        loadTrack();
+        loadTrack(state->remoteFrame.state->position_ms.value());
+        state->updatePositionMs(state->remoteFrame.state->position_ms.value());
         this->notify();
         break;
     }
@@ -134,7 +135,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
 }
 
-void SpircController::loadTrack()
+void SpircController::loadTrack(uint32_t position_ms)
 {
     state->setPlaybackState(PlaybackState::Loading);
     std::function<void()> loadedLambda = [=]() {
@@ -143,7 +144,7 @@ void SpircController::loadTrack()
         this->notify();
     };
 
-    player->handleLoad(state->getCurrentTrack(), loadedLambda);
+    player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms);
 }
 
 void SpircController::notify()
