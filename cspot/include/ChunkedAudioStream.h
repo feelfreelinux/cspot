@@ -50,7 +50,7 @@ private:
     std::shared_ptr<AudioChunk> findChunkForPosition(size_t position);
 
 public:
-    ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs);
+    ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs, bool isPaused);
     ~ChunkedAudioStream();
     int requestedChunkIndex = 0;
     std::function<void()> streamFinishedCallback;

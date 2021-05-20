@@ -32,7 +32,7 @@ public:
     uint32_t logVolume;
 
     void setVolume(uint32_t volume);
-    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms);
+    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
     void pause();
     void cancelCurrentTrack();
     void seekMs(size_t positionMs);

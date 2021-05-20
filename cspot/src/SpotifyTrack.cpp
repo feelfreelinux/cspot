@@ -5,17 +5,17 @@
 #include "CspotAssert.h"
 #include "Logger.h"
 
-SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference, uint32_t position_ms)
+SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference, uint32_t position_ms, bool isPaused)
 {
     this->manager = manager;
     this->fileId = std::vector<uint8_t>();
 
     mercuryCallback trackResponseLambda = [=](std::unique_ptr<MercuryResponse> res) {
-        this->trackInformationCallback(std::move(res), position_ms);
+        this->trackInformationCallback(std::move(res), position_ms, isPaused);
     };
 
     mercuryCallback episodeResponseLambda = [=](std::unique_ptr<MercuryResponse> res) {
-        this->episodeInformationCallback(std::move(res), position_ms);
+        this->episodeInformationCallback(std::move(res), position_ms, isPaused);
     };
 
     if (trackReference->isEpisode)
@@ -64,7 +64,7 @@ bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
     return true;
 }
 
-void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms)
+void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused)
 {
     if (this->fileId.size() != 0)
         return;
@@ -95,10 +95,10 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         }
     }
 
-    this->requestAudioKey(this->fileId, trackId, trackInfo.duration.value(), position_ms);
+    this->requestAudioKey(this->fileId, trackId, trackInfo.duration.value(), position_ms, isPaused);
 }
 
-void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms)
+void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused)
 {
     if (this->fileId.size() != 0)
         return;
@@ -119,10 +119,10 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         }
     }
 
-    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value(), position_ms);
+    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value(), position_ms, isPaused);
 }
 
-void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms)
+void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms, bool isPaused)
 {
     audioKeyCallback audioKeyLambda = [=](bool success, std::vector<uint8_t> res) {
         if (success)
@@ -131,7 +131,7 @@ void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint
             auto audioKey = std::vector<uint8_t>(res.begin() + 4, res.end());
             if (this->fileId.size() > 0)
             {
-                this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackDuration, this->manager, position_ms);
+                this->audioStream = std::make_unique<ChunkedAudioStream>(this->fileId, audioKey, trackDuration, this->manager, position_ms, isPaused);
                 loadedTrackCallback();
             }
             else
