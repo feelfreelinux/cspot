@@ -119,7 +119,7 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         }
     }
 
-    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value(), 0);
+    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value(), position_ms);
 }
 
 void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms)
