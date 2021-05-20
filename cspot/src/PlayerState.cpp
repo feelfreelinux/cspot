@@ -41,7 +41,7 @@ void PlayerState::setPlaybackState(const PlaybackState state)
     {
     case PlaybackState::Loading:
         // Prepare the playback at position 0
-        innerFrame.state->status = PlayStatus::kPlayStatusLoading;
+        innerFrame.state->status = PlayStatus::kPlayStatusPause;
         innerFrame.state->position_ms = 0;
         innerFrame.state->position_measured_at = timeProvider->getSyncedTimestamp();
         break;
