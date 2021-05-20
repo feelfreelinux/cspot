@@ -35,7 +35,7 @@ ChunkedAudioStream::~ChunkedAudioStream()
 {
 }
 
-ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs)
+ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs, bool isPaused)
 {
     this->audioSink = audioSink;
     this->audioKey = audioKey;
@@ -43,6 +43,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     this->manager = manager;
     this->fileId = fileId;
     this->startPositionMs = startPositionMs;
+    this->isPaused = isPaused;
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;

@@ -85,7 +85,7 @@ void Player::cancelCurrentTrack()
     }
 }
 
-void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()> &trackLoadedCallback)
+void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused)
 {
     std::lock_guard<std::mutex> guard(loadTrackMutex);
     cancelCurrentTrack();
@@ -96,7 +96,7 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
 
     auto loadedLambda = trackLoadedCallback;
 
-    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference);
+    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference, position_ms, isPaused);
     track->loadedTrackCallback = [this, track, framesCallback, loadedLambda]() {
         loadedLambda();
         track->audioStream->streamFinishedCallback = this->endOfFileCallback;
