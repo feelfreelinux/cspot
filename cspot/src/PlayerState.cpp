@@ -1,9 +1,10 @@
 #include "PlayerState.h"
 #include "Logger.h"
 
-PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
+PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared_ptr<ConfigJSON> config)
 {
     this->timeProvider = timeProvider;
+    this->config = config;
 
     // Prepare default state
     innerFrame.state.emplace();
@@ -17,8 +18,8 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     innerFrame.device_state->sw_version = swVersion;
     innerFrame.device_state->is_active = false;
     innerFrame.device_state->can_play = true;
-    innerFrame.device_state->volume = MAX_VOLUME;
-    innerFrame.device_state->name = defaultDeviceName;
+    innerFrame.device_state->volume = config->volume;
+    innerFrame.device_state->name = config->deviceName;
 
     // Prepare player's capabilities
     innerFrame.device_state->capabilities = std::vector<Capability>();
@@ -130,6 +131,8 @@ void PlayerState::updateTracks()
 void PlayerState::setVolume(uint32_t volume)
 {
     innerFrame.device_state->volume = volume;
+    config->volume = volume;
+    config->save();
 }
 
 void PlayerState::setShuffle(bool shuffle)

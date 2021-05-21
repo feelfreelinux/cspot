@@ -1,12 +1,13 @@
 #include "SpircController.h"
 #include "Logger.h"
 
-SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
+SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink, std::shared_ptr<ConfigJSON> config)
 {
 
     this->manager = manager;
+    this->config = config;
     this->player = std::make_unique<Player>(manager, audioSink);
-    this->state = std::make_unique<PlayerState>(manager->timeProvider);
+    this->state = std::make_unique<PlayerState>(manager->timeProvider, config);
     this->username = username;
 
     player->endOfFileCallback = [=]() {
@@ -16,7 +17,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
         }
     };
 
-    player->setVolume(MAX_VOLUME);
+    player->setVolume(config->volume);
     subscribe();
 }
 
@@ -146,7 +147,8 @@ void SpircController::loadTrack(uint32_t position_ms, bool isPaused)
         if(isPaused)
         {
             state->setPlaybackState(PlaybackState::Paused);
-        }else
+        }
+        else
         {
             state->setPlaybackState(PlaybackState::Playing);
         }

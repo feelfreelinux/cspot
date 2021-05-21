@@ -18,12 +18,18 @@
 #include "ALSAAudioSink.h"
 #include "CommandLineArguments.h"
 
+#include "ConfigJSON.h"
+#include "CliFile.h"
+#include "Logger.h"
+
 int main(int argc, char **argv)
 {
     try
     {
 
         std::string credentialsFileName = "authBlob.json";
+        std::string configFileName = "config.json";
+
         std::ifstream blobFile(credentialsFileName);
 
         auto args = CommandLineArguments::parse(argc, argv);
@@ -40,6 +46,17 @@ int main(int argc, char **argv)
             std::cout << "\n";
             std::cout << "ddd 2021\n";
             return 0;
+        }
+
+        //  CliFile - Linux, MacOS
+        //  @TODO: ESPFile - ESP32
+        //  later config is passed to SpircController
+        auto file = std::make_shared<CliFile>();
+        std::shared_ptr<ConfigJSON> config = std::make_shared<ConfigJSON>(configFileName, file);
+
+        if(!config->load())
+        {
+          CSPOT_LOG(error, "Config error");
         }
 
         std::shared_ptr<LoginBlob> blob;
@@ -90,7 +107,7 @@ int main(int argc, char **argv)
 #else
             auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif
-            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, config);
             mercuryManager->reconnectedCallback = [spircController]() {
                 return spircController->subscribe();
             };
