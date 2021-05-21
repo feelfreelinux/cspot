@@ -1,5 +1,6 @@
 set(COMPONENT_SRCS
     "main.cpp"
+    "ESPFile.cpp"
     "sinks/AC101AudioSink.cpp"
     "sinks/BufferedAudioSink.cpp"
     "sinks/ES9018AudioSink.cpp"

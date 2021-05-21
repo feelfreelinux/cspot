@@ -28,6 +28,9 @@
 #include <AC101AudioSink.h>
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
+#include "ConfigJSON.h"
+#include "ESPFile.h"
+#include "ProtoHelper.h"
 
 static const char *TAG = "cspot";
 
@@ -38,6 +41,22 @@ extern "C"
 static void cspotTask(void *pvParameters)
 {
     auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
+
+
+    auto file = std::make_shared<ESPFile>();
+    std::shared_ptr<ConfigJSON> config = std::make_shared<ConfigJSON>("config.json", file);
+
+    //  @TODO: Add proper file support
+//    if(!config->load())
+//    {
+//      CSPOT_LOG(error, "Config error");
+//    }
+
+    // For now use static config
+    config->volume = 32767;
+    config->deviceName = defaultDeviceName;
+    config->format = AudioFormat::OGG_VORBIS_160;
+
     auto blob = zeroconfAuthenticator->listenForRequests();
 
     auto session = std::make_unique<Session>();
@@ -51,7 +70,7 @@ static void cspotTask(void *pvParameters)
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
         auto audioSink = std::make_shared<AC101AudioSink>();
-        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, config);
         mercuryManager->reconnectedCallback = [spircController]() {
             return spircController->subscribe();
         };
