@@ -15,7 +15,8 @@ bool ConfigJSON::load()
     // Config filename check
     if(_jsonFileName.length() > 0)
     {
-      std::string jsonConfig = _file->readFile(_jsonFileName);
+      std::string jsonConfig;
+      _file->readFile(_jsonFileName, jsonConfig);
 
       // Ignore config if empty
       if(jsonConfig.length() > 0)
@@ -39,8 +40,9 @@ bool ConfigJSON::load()
               break;
             case 96:
               this->format = AudioFormat::OGG_VORBIS_96;
+              break;
             default:
-              this->format = AudioFormat::OGG_VORBIS_160;
+              this->format = AudioFormat::OGG_VORBIS_320;
               break;
           }
         }

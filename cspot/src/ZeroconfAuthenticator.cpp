@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "Logger.h"
+#include "ConfigJSON.h"
 
 ZeroconfAuthenticator::ZeroconfAuthenticator()
 {
@@ -216,7 +217,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["libraryVersion"] = swVersion;
     obj["accountReq"] = "PREMIUM";
     obj["brandDisplayName"] = brandName;
-    obj["modelDisplayName"] = defaultDeviceName;
+    obj["modelDisplayName"] = configMan->deviceName.c_str();
     obj["voiceSupport"] = "NO";
     obj["availability"] = "";
     obj["productID"] = 0;
@@ -226,7 +227,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["scope"] = "streaming,client-authorization-universal";
     obj["activeUser"] = "";
     obj["deviceID"] = deviceId;
-    obj["remoteName"] = defaultDeviceName;
+    obj["remoteName"] = configMan->deviceName.c_str();
     obj["publicKey"] = encodedKey;
     obj["deviceType"] = "SPEAKER";
     return obj.toString();

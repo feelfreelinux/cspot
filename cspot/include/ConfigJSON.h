@@ -21,4 +21,6 @@ public:
     AudioFormat format;
 };
 
+extern std::shared_ptr<ConfigJSON> configMan;
+
 #endif

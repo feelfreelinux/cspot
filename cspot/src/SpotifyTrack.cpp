@@ -4,6 +4,7 @@
 #include <cassert>
 #include "CspotAssert.h"
 #include "Logger.h"
+#include "ConfigJSON.h"
 
 SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference, uint32_t position_ms, bool isPaused)
 {
@@ -86,12 +87,12 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     auto trackId = trackInfo.gid.value();
     this->fileId = std::vector<uint8_t>();
 
-    // TODO: option to set file quality
     for (int x = 0; x < trackInfo.file.size(); x++)
     {
-        if (trackInfo.file[x].format == AudioFormat::OGG_VORBIS_320)
+        if (trackInfo.file[x].format == configMan->format)
         {
             this->fileId = trackInfo.file[x].file_id.value();
+            break; // If file found stop searching
         }
     }
 
@@ -116,6 +117,7 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         if (episodeInfo.audio[x].format == AudioFormat::OGG_VORBIS_96)
         {
             this->fileId = episodeInfo.audio[x].file_id.value();
+            break; // If file found stop searching
         }
     }
 

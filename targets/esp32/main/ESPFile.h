@@ -8,7 +8,7 @@ class ESPFile : public FileHelper
 public:
     ESPFile();
     ~ESPFile();
-    std::string readFile(std::string filename);
+    bool readFile(std::string filename, std::string &fileContent);
     bool writeFile(std::string filename, std::string fileContent);
 };
 #endif

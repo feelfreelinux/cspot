@@ -1,13 +1,13 @@
 #include "SpircController.h"
 #include "Logger.h"
+#include "ConfigJSON.h"
 
-SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink, std::shared_ptr<ConfigJSON> config)
+SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
 {
 
     this->manager = manager;
-    this->config = config;
     this->player = std::make_unique<Player>(manager, audioSink);
-    this->state = std::make_unique<PlayerState>(manager->timeProvider, config);
+    this->state = std::make_unique<PlayerState>(manager->timeProvider);
     this->username = username;
 
     player->endOfFileCallback = [=]() {
@@ -17,7 +17,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
         }
     };
 
-    player->setVolume(config->volume);
+    player->setVolume(configMan->volume);
     subscribe();
 }
 

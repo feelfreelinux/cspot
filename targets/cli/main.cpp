@@ -22,6 +22,8 @@
 #include "CliFile.h"
 #include "Logger.h"
 
+std::shared_ptr<ConfigJSON> configMan;
+
 int main(int argc, char **argv)
 {
     try
@@ -48,13 +50,10 @@ int main(int argc, char **argv)
             return 0;
         }
 
-        //  CliFile - Linux, MacOS
-        //  @TODO: ESPFile - ESP32
-        //  later config is passed to SpircController
         auto file = std::make_shared<CliFile>();
-        std::shared_ptr<ConfigJSON> config = std::make_shared<ConfigJSON>(configFileName, file);
+        configMan = std::make_shared<ConfigJSON>(configFileName, file);
 
-        if(!config->load())
+        if(!configMan->load())
         {
           CSPOT_LOG(error, "Config error");
         }
@@ -98,6 +97,7 @@ int main(int argc, char **argv)
         {
             // @TODO Actually store this token somewhere
             auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
+
             mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 #else
             auto audioSink = std::make_shared<NamedPipeAudioSink>();
 #endif
-            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, config);
+            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
             mercuryManager->reconnectedCallback = [spircController]() {
                 return spircController->subscribe();
             };

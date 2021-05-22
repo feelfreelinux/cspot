@@ -5,7 +5,7 @@
 #include "esp_wifi.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
+#include "esp_littlefs.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include "freertos/FreeRTOS.h"
@@ -31,8 +31,11 @@
 #include "ConfigJSON.h"
 #include "ESPFile.h"
 #include "ProtoHelper.h"
+#include "Logger.h"
 
 static const char *TAG = "cspot";
+
+std::shared_ptr<ConfigJSON> configMan;
 
 extern "C"
 {
@@ -44,18 +47,12 @@ static void cspotTask(void *pvParameters)
 
 
     auto file = std::make_shared<ESPFile>();
-    std::shared_ptr<ConfigJSON> config = std::make_shared<ConfigJSON>("config.json", file);
+    configMan = std::make_shared<ConfigJSON>("/littlefs/config.json", file);
 
-    //  @TODO: Add proper file support
-//    if(!config->load())
-//    {
-//      CSPOT_LOG(error, "Config error");
-//    }
-
-    // For now use static config
-    config->volume = 32767;
-    config->deviceName = defaultDeviceName;
-    config->format = AudioFormat::OGG_VORBIS_160;
+    if(!configMan->load())
+    {
+      CSPOT_LOG(error, "Config error");
+    }
 
     auto blob = zeroconfAuthenticator->listenForRequests();
 
@@ -70,13 +67,54 @@ static void cspotTask(void *pvParameters)
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
         auto audioSink = std::make_shared<AC101AudioSink>();
-        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, config);
+        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->reconnectedCallback = [spircController]() {
             return spircController->subscribe();
         };
         mercuryManager->handleQueue();
     }
 }
+
+void init_littlefs()
+{
+    esp_vfs_littlefs_conf_t conf = {
+        .base_path = "/littlefs",
+        .partition_label = "littlefs",
+        .format_if_mount_failed = true,
+        .dont_mount = false,
+    };
+
+    esp_err_t ret = esp_vfs_littlefs_register(&conf);
+
+    if (ret != ESP_OK)
+    {
+      if (ret == ESP_FAIL)
+      {
+        ESP_LOGE(TAG, "Failed to mount or format filesystem");
+      }
+      else if (ret == ESP_ERR_NOT_FOUND)
+      {
+        ESP_LOGE(TAG, "Failed to find LittleFS partition");
+      }
+      else
+      {
+        ESP_LOGE(TAG, "Failed to initialize LittleFS (%s)", esp_err_to_name(ret));
+      }
+      return;
+    }
+
+    size_t total = 0, used = 0;
+    ret = esp_littlefs_info(conf.partition_label, &total, &used);
+    if (ret != ESP_OK)
+    {
+      ESP_LOGE(TAG, "Failed to get LittleFS partition information (%s)", esp_err_to_name(ret));
+    }
+    else
+    {
+      ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    }
+}
+
 
 void app_main(void)
 {
@@ -87,6 +125,9 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    init_littlefs();
+
     esp_wifi_set_ps(WIFI_PS_NONE);
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
