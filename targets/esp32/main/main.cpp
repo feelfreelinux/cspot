@@ -25,7 +25,8 @@
 
 #include <ApResolve.h>
 #include <inttypes.h>
-#include <AC101AudioSink.h>
+#include <InternalAudioSink.h>
+//#include <AC101AudioSink.h>
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 #include "ConfigJSON.h"
@@ -45,7 +46,7 @@ static void cspotTask(void *pvParameters)
 {
     auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
 
-
+    // Config file
     auto file = std::make_shared<ESPFile>();
     configMan = std::make_shared<ConfigJSON>("/littlefs/config.json", file);
 
@@ -54,7 +55,24 @@ static void cspotTask(void *pvParameters)
       CSPOT_LOG(error, "Config error");
     }
 
-    auto blob = zeroconfAuthenticator->listenForRequests();
+    // Blob file
+    std::string credentialsFileName = "/littlefs/authBlob.json";
+    std::shared_ptr<LoginBlob> blob;
+    std::string jsonData;
+
+    bool read_status = file->readFile(credentialsFileName, jsonData);
+
+    if(jsonData.length() > 0 && read_status)
+    {
+      blob = std::make_shared<LoginBlob>();
+      blob->loadJson(jsonData);
+    }
+    else
+    {
+      auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+      blob = authenticator->listenForRequests();
+      file->writeFile(credentialsFileName, blob->toJson());
+    }
 
     auto session = std::make_unique<Session>();
     session->connectWithRandomAp();
@@ -66,7 +84,8 @@ static void cspotTask(void *pvParameters)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
-        auto audioSink = std::make_shared<AC101AudioSink>();
+        auto audioSink = std::make_shared<InternalAudioSink>();
+//        auto audioSink = std::make_shared<AC101AudioSink>();
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->reconnectedCallback = [spircController]() {
             return spircController->subscribe();

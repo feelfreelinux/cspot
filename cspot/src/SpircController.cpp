@@ -101,7 +101,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);
-        state->setPlaybackState(PlaybackState::Loading);
+//        state->setPlaybackState(PlaybackState::Loading);
 
         // Every sane person on the planet would expect std::move to work here.
         // And it does... on every single platform EXCEPT for ESP32 for some reason.

@@ -58,34 +58,22 @@ int main(int argc, char **argv)
           CSPOT_LOG(error, "Config error");
         }
 
+        // Blob file
         std::shared_ptr<LoginBlob> blob;
-        // this means username/password login instead of mdns
-        if (!args->username.empty())
-        {
-            blob = std::make_shared<LoginBlob>();
-            blob->loadUserPass(args->username, args->password);
-        }
-        // Check if credential file exists
-        else if (!blobFile.good())
-        {
-            // Start zeroauth if not authenticated yet
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-            blob = authenticator->listenForRequests();
+        std::string jsonData;
 
-            // Store blob to file
-            std::ofstream blobJsonFile(credentialsFileName);
-            blobJsonFile << blob->toJson();
-            blobJsonFile.close();
+        bool read_status = file->readFile(credentialsFileName, jsonData);
+
+        if(jsonData.length() > 0 && read_status)
+        {
+          blob = std::make_shared<LoginBlob>();
+          blob->loadJson(jsonData);
         }
         else
         {
-            // Load blob from json and reuse it
-            std::string jsonData((std::istreambuf_iterator<char>(blobFile)),
-                                 std::istreambuf_iterator<char>());
-
-            blob = std::make_shared<LoginBlob>();
-            // Assemble blob from json
-            blob->loadJson(jsonData);
+          auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+          blob = authenticator->listenForRequests();
+          file->writeFile(credentialsFileName, blob->toJson());
         }
 
         auto session = std::make_unique<Session>();
