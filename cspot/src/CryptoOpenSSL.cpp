@@ -1,4 +1,5 @@
 #include "CryptoOpenSSL.h"
+#include "Logger.h"
 
 namespace
 {
@@ -177,6 +178,9 @@ std::vector<uint8_t> CryptoOpenSSL::dhCalculateShared(const std::vector<uint8_t>
 std::vector<uint8_t> CryptoOpenSSL::generateVectorWithRandomData(size_t length)
 {
     std::vector<uint8_t> randomVec(length);
-    RAND_pseudo_bytes(randomVec.data(), length);
+    if(RAND_bytes(randomVec.data(), length) == 0)
+    {
+      CSPOT_LOG(error, "Error generating random");
+    }
     return randomVec;
 }
