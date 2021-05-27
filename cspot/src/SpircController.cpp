@@ -64,6 +64,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     case MessageType::kMessageTypeVolume:
         state->setVolume(state->remoteFrame.volume.value());
         player->setVolume(state->remoteFrame.volume.value());
+        configMan->save();
         notify();
         break;
     case MessageType::kMessageTypePause:
@@ -72,7 +73,6 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         player->pause();
         state->setPlaybackState(PlaybackState::Paused);
         notify();
-
         break;
     }
     case MessageType::kMessageTypePlay:
@@ -101,7 +101,6 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);
-//        state->setPlaybackState(PlaybackState::Loading);
 
         // Every sane person on the planet would expect std::move to work here.
         // And it does... on every single platform EXCEPT for ESP32 for some reason.

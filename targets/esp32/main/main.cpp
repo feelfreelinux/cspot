@@ -25,14 +25,27 @@
 
 #include <ApResolve.h>
 #include <inttypes.h>
-#include <InternalAudioSink.h>
-//#include <AC101AudioSink.h>
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 #include "ConfigJSON.h"
 #include "ESPFile.h"
 #include "ProtoHelper.h"
 #include "Logger.h"
+
+// Config
+#define SINK        INTERNAL // INTERNAL, AC101, ES8018, PCM5102
+#define QUALITY     320      // 320, 160, 96
+#define DEVICE_NAME "CSpot"
+
+#if SINK == INTERNAL
+#include <InternalAudioSink.h>
+#elif SINK == AC101
+#include <AC101AudioSink.h>
+#elif SINK == ES8018
+#include <ES9018AudioSink.h>
+#elif SINK == PCM5102
+#include <PCM5102AudioSink.h>
+#endif
 
 static const char *TAG = "cspot";
 
@@ -54,6 +67,16 @@ static void cspotTask(void *pvParameters)
     {
       CSPOT_LOG(error, "Config error");
     }
+
+    configMan->deviceName = DEVICE_NAME;
+
+#if QUALITY == 320
+    configMan->format = AudioFormat::OGG_VORBIS_320;
+#elif QUALITY == 160
+    configMan->format = AudioFormat::OGG_VORBIS_160;
+#else
+    configMan->format = AudioFormat::OGG_VORBIS_96;
+#endif
 
     // Blob file
     std::string credentialsFileName = "/littlefs/authBlob.json";
@@ -84,8 +107,17 @@ static void cspotTask(void *pvParameters)
         // @TODO Actually store this token somewhere
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
+
+#if SINK == INTERNAL
         auto audioSink = std::make_shared<InternalAudioSink>();
-//        auto audioSink = std::make_shared<AC101AudioSink>();
+#elif SINK == AC101
+        auto audioSink = std::make_shared<AC101AudioSink>();
+#elif SINK == ES8018
+        auto audioSink = std::make_shared<ES9018AudioSink>();
+#elif SINK == PCM5102
+        auto audioSink = std::make_shared<PCM5102AudioSink>();
+#endif
+
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->reconnectedCallback = [spircController]() {
             return spircController->subscribe();
