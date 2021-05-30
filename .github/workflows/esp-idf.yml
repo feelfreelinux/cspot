@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
     - name: Install Protoc
       uses: arduino/setup-protoc@v1
     - name: Cache build
