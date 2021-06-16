@@ -1,11 +1,10 @@
-
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_wifi.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "esp_littlefs.h"
+#include "esp_spiffs.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include "freertos/FreeRTOS.h"
@@ -61,7 +60,7 @@ static void cspotTask(void *pvParameters)
 
     // Config file
     auto file = std::make_shared<ESPFile>();
-    configMan = std::make_shared<ConfigJSON>("/littlefs/config.json", file);
+    configMan = std::make_shared<ConfigJSON>("/spiffs/config.json", file);
 
     if(!configMan->load())
     {
@@ -79,7 +78,7 @@ static void cspotTask(void *pvParameters)
 #endif
 
     // Blob file
-    std::string credentialsFileName = "/littlefs/authBlob.json";
+    std::string credentialsFileName = "/spiffs/authBlob.json";
     std::shared_ptr<LoginBlob> blob;
     std::string jsonData;
 
@@ -126,43 +125,43 @@ static void cspotTask(void *pvParameters)
     }
 }
 
-void init_littlefs()
+void init_spiffs()
 {
-    esp_vfs_littlefs_conf_t conf = {
-        .base_path = "/littlefs",
-        .partition_label = "littlefs",
-        .format_if_mount_failed = true,
-        .dont_mount = false,
+    esp_vfs_spiffs_conf_t conf = {
+      .base_path = "/spiffs",
+      .partition_label = NULL,
+      .max_files = 5,
+      .format_if_mount_failed = true
     };
 
-    esp_err_t ret = esp_vfs_littlefs_register(&conf);
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
 
     if (ret != ESP_OK)
     {
-      if (ret == ESP_FAIL)
-      {
-        ESP_LOGE(TAG, "Failed to mount or format filesystem");
-      }
-      else if (ret == ESP_ERR_NOT_FOUND)
-      {
-        ESP_LOGE(TAG, "Failed to find LittleFS partition");
-      }
-      else
-      {
-        ESP_LOGE(TAG, "Failed to initialize LittleFS (%s)", esp_err_to_name(ret));
-      }
-      return;
+        if (ret == ESP_FAIL)
+        {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        }
+        else if (ret == ESP_ERR_NOT_FOUND)
+        {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;
     }
 
     size_t total = 0, used = 0;
-    ret = esp_littlefs_info(conf.partition_label, &total, &used);
+    ret = esp_spiffs_info(conf.partition_label, &total, &used);
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "Failed to get LittleFS partition information (%s)", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
     }
     else
     {
-      ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
     }
 }
 
@@ -177,7 +176,7 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    init_littlefs();
+    init_spiffs();
 
     esp_wifi_set_ps(WIFI_PS_NONE);
     ESP_ERROR_CHECK(esp_netif_init());
