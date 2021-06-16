@@ -11,6 +11,7 @@ public:
     virtual void feedPCMFrames(std::vector<uint8_t> &data) = 0;
     virtual void volumeChanged(uint16_t volume) {}
     bool softwareVolumeControl = true;
+    bool usign = false;
 };
 
 #endif

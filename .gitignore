@@ -3,4 +3,5 @@ __pycache__/
 build/
 py/
 authBlob.json
+config.json
 cspot/protos

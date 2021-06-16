@@ -18,12 +18,20 @@
 #include "ALSAAudioSink.h"
 #include "CommandLineArguments.h"
 
+#include "ConfigJSON.h"
+#include "CliFile.h"
+#include "Logger.h"
+
+std::shared_ptr<ConfigJSON> configMan;
+
 int main(int argc, char **argv)
 {
     try
     {
 
         std::string credentialsFileName = "authBlob.json";
+        std::string configFileName = "config.json";
+
         std::ifstream blobFile(credentialsFileName);
 
         auto args = CommandLineArguments::parse(argc, argv);
@@ -42,34 +50,30 @@ int main(int argc, char **argv)
             return 0;
         }
 
-        std::shared_ptr<LoginBlob> blob;
-        // this means username/password login instead of mdns
-        if (!args->username.empty())
-        {
-            blob = std::make_shared<LoginBlob>();
-            blob->loadUserPass(args->username, args->password);
-        }
-        // Check if credential file exists
-        else if (!blobFile.good())
-        {
-            // Start zeroauth if not authenticated yet
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-            blob = authenticator->listenForRequests();
+        auto file = std::make_shared<CliFile>();
+        configMan = std::make_shared<ConfigJSON>(configFileName, file);
 
-            // Store blob to file
-            std::ofstream blobJsonFile(credentialsFileName);
-            blobJsonFile << blob->toJson();
-            blobJsonFile.close();
+        if(!configMan->load())
+        {
+          CSPOT_LOG(error, "Config error");
+        }
+
+        // Blob file
+        std::shared_ptr<LoginBlob> blob;
+        std::string jsonData;
+
+        bool read_status = file->readFile(credentialsFileName, jsonData);
+
+        if(jsonData.length() > 0 && read_status)
+        {
+          blob = std::make_shared<LoginBlob>();
+          blob->loadJson(jsonData);
         }
         else
         {
-            // Load blob from json and reuse it
-            std::string jsonData((std::istreambuf_iterator<char>(blobFile)),
-                                 std::istreambuf_iterator<char>());
-
-            blob = std::make_shared<LoginBlob>();
-            // Assemble blob from json
-            blob->loadJson(jsonData);
+          auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+          blob = authenticator->listenForRequests();
+          file->writeFile(credentialsFileName, blob->toJson());
         }
 
         auto session = std::make_unique<Session>();
@@ -81,6 +85,7 @@ int main(int argc, char **argv)
         {
             // @TODO Actually store this token somewhere
             auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
+
             mercuryManager->startTask();
 
 #ifdef CSPOT_ENABLE_ALSA_SINK

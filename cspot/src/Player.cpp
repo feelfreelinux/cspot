@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "Logger.h"
 
 // #include <valgrind/memcheck.h>
 
@@ -53,7 +54,16 @@ void Player::feedPCM(std::vector<uint8_t> &data)
         psample = (int16_t *)(data.data());
         for (int32_t i = 0; i < (data.size() / 2); i++)
         {
-            int32_t temp = (int32_t)psample[i] * logVolume;
+            int32_t temp;
+            // Offset data for unsigned sinks
+            if(this->audioSink->usign)
+            {
+                temp = ((int32_t)psample[i] + 0x8000) * logVolume;
+            }
+            else
+            {
+                temp = ((int32_t)psample[i]) * logVolume;
+            }
             psample[i] = (temp >> 16) & 0xFFFF;
         }
     }

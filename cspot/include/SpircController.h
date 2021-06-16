@@ -11,6 +11,7 @@
 #include "PlayerState.h"
 #include "ConstantParameters.h"
 #include "Player.h"
+#include "ConfigJSON.h"
 #include <cassert>
 
 class SpircController {
@@ -21,6 +22,7 @@ private:
     std::unique_ptr<Player> player;
     std::unique_ptr<PlayerState> state;
     std::shared_ptr<AudioSink> audioSink;
+    std::shared_ptr<ConfigJSON> config;
 
     void sendCmd(MessageType typ);
     void notify();
