@@ -31,18 +31,21 @@
 #include "ProtoHelper.h"
 #include "Logger.h"
 
-// Config
-#define SINK        INTERNAL // INTERNAL, AC101, ES8018, PCM5102
+// Config sink
+#define AC101 // INTERNAL, AC101, ES8018, PCM5102
 #define QUALITY     320      // 320, 160, 96
 #define DEVICE_NAME "CSpot"
 
-#if SINK == INTERNAL
+#ifdef INTERNAL
 #include <InternalAudioSink.h>
-#elif SINK == AC101
+#endif
+#ifdef AC101
 #include <AC101AudioSink.h>
-#elif SINK == ES8018
+#endif
+#ifdef ES8018
 #include <ES9018AudioSink.h>
-#elif SINK == PCM5102
+#endif
+#ifdef PCM5102
 #include <PCM5102AudioSink.h>
 #endif
 
@@ -107,13 +110,16 @@ static void cspotTask(void *pvParameters)
         auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
         mercuryManager->startTask();
 
-#if SINK == INTERNAL
+#ifdef INTERNAL
         auto audioSink = std::make_shared<InternalAudioSink>();
-#elif SINK == AC101
+#endif
+#ifdef AC101
         auto audioSink = std::make_shared<AC101AudioSink>();
-#elif SINK == ES8018
+#endif
+#ifdef ES8018
         auto audioSink = std::make_shared<ES9018AudioSink>();
-#elif SINK == PCM5102
+#endif
+#ifdef PCM5102
         auto audioSink = std::make_shared<PCM5102AudioSink>();
 #endif
 
