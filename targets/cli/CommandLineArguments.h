@@ -3,9 +3,10 @@
 #include <string>
 #include <memory>
 #include <stdexcept>
+#include "ProtoHelper.h"
 /**
  * Represents the command line arguments passed to the program.
- * 
+ *
  */
 class CommandLineArguments
 {
@@ -15,9 +16,14 @@ public:
      */
     std::string username;
     /**
-         * The spotify password.
-         */
+     * The spotify password.
+    */
     std::string password;
+    /**
+     * Bitrate setting.
+    */
+    bool setBitrate = false;
+    AudioFormat bitrate;
     /**
      * Determines whether the help text should be printed.
      */
