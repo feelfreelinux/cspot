@@ -1,4 +1,5 @@
 #include "CommandLineArguments.h"
+#include "ProtoHelper.h"
 
 CommandLineArguments::CommandLineArguments(std::string u, std::string p, bool shouldShowHelp) : username(u), password(p), shouldShowHelp(shouldShowHelp) {}
 
@@ -38,6 +39,31 @@ std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc, char
                 throw std::invalid_argument("expected path after the password flag");
             }
             result->password = std::string(argv[++i]);
+        }
+        else if (stringVal == "-b" || stringVal == "--bitrate")
+        {
+            if (i >= argc - 1)
+            {
+                throw std::invalid_argument("expected path after the bitrate flag");
+            }
+            i++;
+            if(std::string(argv[i]) == "320")
+            {
+              result->bitrate = AudioFormat::OGG_VORBIS_320;
+            }
+            else if(std::string(argv[i]) == "160")
+            {
+              result->bitrate = AudioFormat::OGG_VORBIS_160;
+            }
+            else if(std::string(argv[i]) == "96")
+            {
+              result->bitrate = AudioFormat::OGG_VORBIS_96;
+            }
+            else
+            {
+              throw std::invalid_argument("invalid bitrate argument");
+            }
+            result->setBitrate = true;
         }
         else
         {

@@ -45,6 +45,7 @@ int main(int argc, char **argv)
             std::cout << "\n";
             std::cout << "-u, --username            your spotify username\n";
             std::cout << "-p, --password            your spotify password, note that if you use facebook login you can set a password in your account settings\n";
+            std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
             std::cout << "\n";
             std::cout << "ddd 2021\n";
             return 0;
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
 
         if(!configMan->load())
         {
-          CSPOT_LOG(error, "Config error");
+            CSPOT_LOG(error, "Config error");
         }
 
         // Blob file
@@ -64,16 +65,28 @@ int main(int argc, char **argv)
 
         bool read_status = file->readFile(credentialsFileName, jsonData);
 
-        if(jsonData.length() > 0 && read_status)
-        {
-          blob = std::make_shared<LoginBlob>();
-          blob->loadJson(jsonData);
+        // Login using Command line arguments
+        if (!args->username.empty()){
+            blob = std::make_shared<LoginBlob>();
+            blob->loadUserPass(args->username, args->password);
         }
+        // Login using Blob
+        else if(jsonData.length() > 0 && read_status)
+        {
+            blob = std::make_shared<LoginBlob>();
+            blob->loadJson(jsonData);
+        }
+        // ZeroconfAuthenticator
         else
         {
-          auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-          blob = authenticator->listenForRequests();
-          file->writeFile(credentialsFileName, blob->toJson());
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>();
+            blob = authenticator->listenForRequests();
+            file->writeFile(credentialsFileName, blob->toJson());
+        }
+
+        if(args->setBitrate)
+        {
+            configMan->format = args->bitrate;
         }
 
         auto session = std::make_unique<Session>();
