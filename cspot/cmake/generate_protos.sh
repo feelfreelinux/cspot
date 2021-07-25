@@ -1,5 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 set -e
+echo cocker 12
 cd cpp-reflection
 go build -o protoc-gen-cpprefl .
 cd ..
