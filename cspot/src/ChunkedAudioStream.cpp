@@ -163,11 +163,16 @@ READ:
     while (res.size() < bytes)
     {
         auto position = pos;
+        auto isLoadingMeta = loadingMeta;
 
         // Erase all chunks not close to current position
         chunks.erase(std::remove_if(
                          chunks.begin(), chunks.end(),
-                         [&position](const std::shared_ptr<AudioChunk> &chunk) {
+                         [position, &isLoadingMeta](const std::shared_ptr<AudioChunk> &chunk) {
+                             if (isLoadingMeta) {
+                                 return false;
+                             }
+
                              if (chunk->keepInMemory)
                              {
                                  return false;
@@ -218,6 +223,7 @@ READ:
             }
             else
             {
+                CSPOT_LOG(debug, "Waiting for chunk to load");
                 chunk->isLoadedSemaphore->wait();
                 if (chunk->isFailed)
                 {
