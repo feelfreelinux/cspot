@@ -211,8 +211,13 @@ READ:
             {
                 if (chunk->decryptedData.size() - offset >= toRead)
                 {
-                    res.insert(res.end(), chunk->decryptedData.begin() + offset, chunk->decryptedData.begin() + offset + toRead);
-                    this->pos += toRead;
+                    if((chunk->decryptedData.begin() + offset) < chunk->decryptedData.end()) {
+                        res.insert(res.end(), chunk->decryptedData.begin() + offset,
+                                    chunk->decryptedData.begin() + offset + toRead);
+                        this->pos += toRead;
+                    } else {
+                        chunk->decrypt();
+                    }
                 }
                 else
                 {
