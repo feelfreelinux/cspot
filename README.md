@@ -64,7 +64,7 @@ $ cd targets/cli
 $ mkdir -p build && cd build
 
 # use cmake to generate build files, and select an audio sink
-$ cmake .. -DCSPOT_ENABLE_PORTAUDIO_SINK
+$ cmake .. -DUSE_PORTAUDIO=ON
 
 # compile
 $ make 

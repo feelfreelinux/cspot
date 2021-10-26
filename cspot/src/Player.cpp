@@ -43,20 +43,20 @@ void Player::seekMs(size_t positionMs)
     // VALGRIND_DO_LEAK_CHECK;
 }
 
-void Player::feedPCM(std::vector<uint8_t> &data)
+void Player::feedPCM(std::vector<uint8_t>& data)
 {
     // Simple digital volume control alg
     // @TODO actually extract it somewhere
     if (this->audioSink->softwareVolumeControl)
     {
-        int16_t *psample;
+        int16_t* psample;
         uint32_t pmax;
-        psample = (int16_t *)(data.data());
+        psample = (int16_t*)(data.data());
         for (int32_t i = 0; i < (data.size() / 2); i++)
         {
             int32_t temp;
             // Offset data for unsigned sinks
-            if(this->audioSink->usign)
+            if (this->audioSink->usign)
             {
                 temp = ((int32_t)psample[i] + 0x8000) * logVolume;
             }
@@ -73,15 +73,30 @@ void Player::feedPCM(std::vector<uint8_t> &data)
 
 void Player::runTask()
 {
-    while (true)
+    std::scoped_lock lock(this->runningMutex);
+    this->isRunning = true;
+    while (isRunning)
     {
-        this->trackQueue.wpop(currentTrack);
-        currentTrack->audioStream->startPlaybackLoop();
-        currentTrack->loadedTrackCallback = nullptr;
-        currentTrack->audioStream->streamFinishedCallback = nullptr;
-        currentTrack->audioStream->audioSink = nullptr;
-        currentTrack->audioStream->pcmCallback = nullptr;
+        if (this->trackQueue.pop(currentTrack)) {
+            printf("Running...\n");
+            currentTrack->audioStream->startPlaybackLoop();
+            currentTrack->loadedTrackCallback = nullptr;
+            currentTrack->audioStream->streamFinishedCallback = nullptr;
+            currentTrack->audioStream->audioSink = nullptr;
+            currentTrack->audioStream->pcmCallback = nullptr;
+        }
     }
+
+    printf("Finished...\n");
+}
+
+void Player::stop() {
+    this->isRunning = false;
+    printf("Set is running to false...\n");
+    cancelCurrentTrack();
+    printf("Cancelled...\n");
+    std::scoped_lock lock(this->runningMutex);
+    printf("Locked...\n");
 }
 
 void Player::cancelCurrentTrack()
@@ -95,18 +110,19 @@ void Player::cancelCurrentTrack()
     }
 }
 
-void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused)
+void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()>& trackLoadedCallback, uint32_t position_ms, bool isPaused)
 {
     std::lock_guard<std::mutex> guard(loadTrackMutex);
     cancelCurrentTrack();
 
-    pcmDataCallback framesCallback = [=](std::vector<uint8_t> &frames) {
+    pcmDataCallback framesCallback = [=](std::vector<uint8_t>& frames) {
         this->feedPCM(frames);
     };
 
     auto loadedLambda = trackLoadedCallback;
 
     auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference, position_ms, isPaused);
+    track->trackInfoReceived = this->trackChanged;
     track->loadedTrackCallback = [this, track, framesCallback, loadedLambda]() {
         loadedLambda();
         track->audioStream->streamFinishedCallback = this->endOfFileCallback;

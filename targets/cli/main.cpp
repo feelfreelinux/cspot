@@ -116,8 +116,7 @@ int main(int argc, char **argv)
             mercuryManager->handleQueue();
         }
 
-        while (true)
-            ;
+        while (true);
     }
     catch (std::invalid_argument e)
     {

@@ -14,6 +14,7 @@
 #include "MercuryManager.h"
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"
+#include <atomic>
 #include "Task.h"
 #include "platform/WrappedSemaphore.h"
 #include "TimeProvider.h"
@@ -57,6 +58,7 @@ class MercuryManager : public Task
 private:
   std::map<uint64_t, mercuryCallback> callbacks;
   std::mutex reconnectionMutex;
+  std::mutex runningMutex;
   std::map<std::string, mercuryCallback> subscriptions;
   std::unique_ptr<Session> session;
   std::shared_ptr<LoginBlob> lastAuthBlob; 
@@ -65,6 +67,7 @@ private:
   std::unique_ptr<WrappedSemaphore> queueSemaphore;
   unsigned long long lastRequestTimestamp = -1;
   unsigned long long lastPingTimestamp = -1;
+  std::atomic<bool> isRunning = false;
   uint64_t sequenceId;
   uint32_t audioKeySequence;
   audioKeyCallback keyCallback;
@@ -82,6 +85,8 @@ public:
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription);
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload);
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback);
+  void updateQueue();
+  void stop();
   void handleQueue();
   void requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback);
   std::shared_ptr<AudioChunk> fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint16_t index);

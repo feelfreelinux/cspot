@@ -162,6 +162,14 @@ void SpircController::notify()
     this->sendCmd(MessageType::kMessageTypeNotify);
 }
 
+void SpircController::setTrackChangedCallback(trackChangedCallback callback) {
+    player->trackChanged = callback;
+}
+
+void SpircController::stopPlayer() {
+    this->player->stop();
+}
+
 void SpircController::sendCmd(MessageType typ)
 {
     // Serialize current player state

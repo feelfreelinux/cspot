@@ -10,9 +10,11 @@ WrappedSemaphore::~WrappedSemaphore()
     dispatch_release(semaphoreHandle);
 }
 
-void WrappedSemaphore::wait()
+int WrappedSemaphore::wait()
 {
-    dispatch_semaphore_wait(semaphoreHandle, DISPATCH_TIME_FOREVER);
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC / 10);
+
+    return dispatch_semaphore_wait(semaphoreHandle, timeout);
 }
 
 void WrappedSemaphore::give()

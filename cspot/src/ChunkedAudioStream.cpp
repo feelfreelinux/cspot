@@ -47,7 +47,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
-    beginChunk->isHeaderFileSizeLoadedSemaphore->wait();
+    while(beginChunk->isHeaderFileSizeLoadedSemaphore->wait() != 0);
     this->fileSize = beginChunk->headerFileSize;
     chunks.push_back(beginChunk);
 
@@ -152,7 +152,7 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    endChunk->isLoadedSemaphore->wait();
+    while (endChunk->isLoadedSemaphore->wait() != 0);
 }
 
 std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
@@ -229,10 +229,10 @@ READ:
             else
             {
                 CSPOT_LOG(debug, "Waiting for chunk to load");
-                chunk->isLoadedSemaphore->wait();
+                while (chunk->isLoadedSemaphore->wait() != 0);
                 if (chunk->isFailed)
                 {
-                    this->requestChunk(chunkIndex)->isLoadedSemaphore->wait();
+                    while (this->requestChunk(chunkIndex)->isLoadedSemaphore->wait() != 0);
                     goto READ;
                 }
             }

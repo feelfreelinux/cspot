@@ -14,9 +14,13 @@ WrappedSemaphore::~WrappedSemaphore()
     vSemaphoreDelete(semaphoreHandle);
 }
 
-void WrappedSemaphore::wait()
+int WrappedSemaphore::wait()
 {
-    xSemaphoreTake(semaphoreHandle, portMAX_DELAY);
+    if (xSemaphoreTake(semaphoreHandle, 1000) == pdTRUE) {
+        return 0;
+    }
+
+    return 1;
 }
 
 void WrappedSemaphore::give()

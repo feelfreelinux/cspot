@@ -6,6 +6,7 @@
 #include <fstream>
 #include <array>
 #include <unistd.h>
+#include <atomic>
 #include "ivorbisfile.h"
 #include "MercuryManager.h"
 #include "AudioSink.h"
@@ -58,9 +59,9 @@ public:
     uint32_t fileSize;
     uint32_t readBeforeSeek = 0;
     bool loadingMeta = true;
-    bool isPaused = false;
-    bool isRunning = false;
-    bool finished = false;
+    std::atomic<bool> isPaused = false;
+    std::atomic<bool> isRunning = false;
+    std::atomic<bool> finished = false;
     pcmDataCallback pcmCallback;
     std::shared_ptr<AudioSink> audioSink;
     WrappedMutex seekMutex;

@@ -11,7 +11,7 @@ bool CliFile::readFile(std::string filename, std::string &fileContent)
                                 std::istreambuf_iterator<char>());
 
     fileContent = jsonConfig;
-
+ 
     return true;
 }
 

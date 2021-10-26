@@ -47,7 +47,7 @@ bool SpotifyTrack::countryListContains(std::string countryList, std::string coun
     return false;
 }
 
-bool SpotifyTrack::canPlayTrack(std::vector<Restriction> &restrictions)
+bool SpotifyTrack::canPlayTrack(std::vector<Restriction>& restrictions)
 {
     for (int x = 0; x < restrictions.size(); x++)
     {
@@ -74,6 +74,16 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     trackInfo = decodePb<Track>(response->parts[0]);
 
     CSPOT_LOG(info, "Track name: %s", trackInfo.name.value().c_str());
+
+    if (trackInfoReceived != nullptr)
+    {
+        TrackInfo simpleTrackInfo = {
+            .name = trackInfo.name.value(),
+        };
+
+        trackInfoReceived(simpleTrackInfo);
+    }
+
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
     int altIndex = 0;
     while (!canPlayTrack(trackInfo.restriction))

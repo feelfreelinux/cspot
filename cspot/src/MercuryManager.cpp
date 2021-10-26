@@ -7,7 +7,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::SEND, "SEND"},
     {MercuryType::SUB, "SUB"},
     {MercuryType::UNSUB, "UNSUB"},
-});
+    });
 
 MercuryManager::MercuryManager(std::unique_ptr<Session> session)
 {
@@ -54,7 +54,7 @@ void MercuryManager::unregisterMercuryCallback(uint64_t seqId)
     }
 }
 
-void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback &audioCallback)
+void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<uint8_t> fileId, audioKeyCallback& audioCallback)
 {
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     auto buffer = fileId;
@@ -63,7 +63,7 @@ void MercuryManager::requestAudioKey(std::vector<uint8_t> trackId, std::vector<u
     buffer.insert(buffer.end(), trackId.begin(), trackId.end());
     auto audioKeySequence = pack<uint32_t>(htonl(this->audioKeySequence));
     buffer.insert(buffer.end(), audioKeySequence.begin(), audioKeySequence.end());
-    auto suffix = std::vector<uint8_t>({0x00, 0x00});
+    auto suffix = std::vector<uint8_t>({ 0x00, 0x00 });
     buffer.insert(buffer.end(), suffix.begin(), suffix.end());
 
     // Bump audio key sequence
@@ -79,12 +79,12 @@ void MercuryManager::freeAudioKeyCallback()
     this->keyCallback = nullptr;
 }
 
-std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint16_t index)
+std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t>& audioKey, uint16_t index)
 {
     return this->fetchAudioChunk(fileId, audioKey, index * AUDIO_CHUNK_SIZE / 4, (index + 1) * AUDIO_CHUNK_SIZE / 4);
 }
 
-std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
+std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t> fileId, std::vector<uint8_t>& audioKey, uint32_t startPos, uint32_t endPos)
 {
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     auto sampleStartBytes = pack<uint32_t>(htonl(startPos));
@@ -92,11 +92,11 @@ std::shared_ptr<AudioChunk> MercuryManager::fetchAudioChunk(std::vector<uint8_t>
 
     auto buffer = pack<uint16_t>(htons(this->audioChunkSequence));
     auto hardcodedData = std::vector<uint8_t>(
-        {0x00, 0x01, // Channel num, currently just hardcoded to 1
+        { 0x00, 0x01, // Channel num, currently just hardcoded to 1
          0x00, 0x00,
          0x00, 0x00, 0x00, 0x00, // bytes magic
          0x00, 0x00, 0x9C, 0x40,
-         0x00, 0x02, 0x00, 0x00});
+         0x00, 0x02, 0x00, 0x00 });
     buffer.insert(buffer.end(), hardcodedData.begin(), hardcodedData.end());
     buffer.insert(buffer.end(), fileId.begin(), fileId.end());
     buffer.insert(buffer.end(), sampleStartBytes.begin(), sampleStartBytes.end());
@@ -148,15 +148,17 @@ RECONNECT:
 
 void MercuryManager::runTask()
 {
+    std::scoped_lock(this->runningMutex);
     // Listen for mercury replies and handle them accordingly
-    while (true)
+    isRunning = true;
+    while (isRunning)
     {
         std::unique_ptr<Packet> packet;
         try
         {
             packet = this->session->shanConn->recvPacket();
         }
-        catch (const std::runtime_error &e)
+        catch (const std::runtime_error& e)
         {
             // Reconnection required
             this->reconnect();
@@ -184,11 +186,17 @@ void MercuryManager::runTask()
     }
 }
 
-void MercuryManager::handleQueue()
-{
-    while (true)
-    {
-        queueSemaphore->wait();
+void MercuryManager::stop() {
+    CSPOT_LOG(debug, "Stopping mercury manager");
+    this->session->close();
+    isRunning = false;
+    audioChunkManager->isRunning = false;
+    std::scoped_lock(audioChunkManager->runningMutex, this->runningMutex);
+    CSPOT_LOG(debug, "mercury stopped");
+}
+
+void MercuryManager::updateQueue() {
+    if (queueSemaphore->wait() == 0) {
         if (this->queue.size() > 0)
         {
             auto packet = std::move(this->queue[0]);
@@ -259,7 +267,15 @@ void MercuryManager::handleQueue()
     }
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload)
+void MercuryManager::handleQueue()
+{
+    while (isRunning)
+    {
+        this->updateQueue();
+    }
+}
+
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback& subscription, mercuryParts& payload)
 {
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
@@ -281,10 +297,10 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
     // Register a subscription when given method is called
     if (method == MercuryType::SUB)
     {
-        this->subscriptions.insert({uri, subscription});
+        this->subscriptions.insert({ uri, subscription });
     }
 
-    this->callbacks.insert({sequenceId, callback});
+    this->callbacks.insert({ sequenceId, callback });
 
     // Structure: [Sequence size] [SequenceId] [0x1] [Payloads number]
     // [Header size] [Header] [Payloads (size + data)]
@@ -319,19 +335,19 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
     return this->sequenceId - 1;
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryParts &payload)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryParts& payload)
 {
     mercuryCallback subscription = nullptr;
     return this->execute(method, uri, callback, subscription, payload);
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback& subscription)
 {
     auto payload = mercuryParts(0);
     return this->execute(method, uri, callback, subscription, payload);
 }
 
-uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback &callback)
+uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback)
 {
     auto payload = mercuryParts(0);
     return this->execute(method, uri, callback, payload);

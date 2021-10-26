@@ -9,6 +9,7 @@
 #include "ProtoHelper.h"
 #include "Session.h"
 #include "PlayerState.h"
+#include "SpotifyTrack.h"
 #include "ConstantParameters.h"
 #include "Player.h"
 #include "ConfigJSON.h"
@@ -17,7 +18,6 @@
 class SpircController {
 private:
     std::shared_ptr<MercuryManager> manager;
-
     std::string username;
     std::unique_ptr<Player> player;
     std::unique_ptr<PlayerState> state;
@@ -31,6 +31,8 @@ private:
 public:
     SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink);
     void subscribe();
+    void setTrackChangedCallback(trackChangedCallback callback);
+    void stopPlayer();
 };
 
 #endif

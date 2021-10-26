@@ -15,6 +15,13 @@
 #include "TrackReference.h"
 #include <cassert>
 
+struct TrackInfo {
+    std::string name;
+    std::string album;
+    std::string artist;
+};
+
+typedef std::function<void(TrackInfo&)> trackChangedCallback;
 
 class SpotifyTrack
 {
@@ -37,6 +44,7 @@ public:
     uint64_t reqSeqNum = -1;
     std::function<void()> loadedTrackCallback;
     std::unique_ptr<ChunkedAudioStream> audioStream;
+    trackChangedCallback trackInfoReceived;
     audioKeyCallback audioKeyLambda;
     mercuryCallback responseLambda;
 };

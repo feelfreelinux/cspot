@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <atomic>
+#include <mutex>
 
 #include "Utils.h"
 #include "MercuryManager.h"
@@ -30,6 +32,9 @@ public:
     std::function<void()> endOfFileCallback;
     int volume = 255;
     uint32_t logVolume;
+    std::atomic<bool> isRunning = false;
+    trackChangedCallback trackChanged;
+    std::mutex runningMutex;
 
     void setVolume(uint32_t volume);
     void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
@@ -38,6 +43,7 @@ public:
     void seekMs(size_t positionMs);
     void feedPCM(std::vector<uint8_t> &data);
     void play();
+    void stop();
 
 };
 

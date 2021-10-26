@@ -24,7 +24,7 @@ public:
     WrappedSemaphore(int maxVal = 200);
     ~WrappedSemaphore();
 
-    void wait();
+    int wait();
     void give();
 };
 

@@ -39,10 +39,12 @@ void AudioChunkManager::failAllChunks()
 
 void AudioChunkManager::runTask()
 {
-    while (true)
+    this->isRunning = true;
+    std::scoped_lock lock(this->runningMutex);
+    while (isRunning)
     {
         std::pair<std::vector<uint8_t>, bool> audioPair;
-        if (this->audioChunkDataQueue.wpop(audioPair))
+        if (this->audioChunkDataQueue.pop(audioPair))
         {
             auto data = audioPair.first;
             auto failed = audioPair.second;
@@ -102,6 +104,9 @@ void AudioChunkManager::runTask()
                     }
                 }
             }
+        } else {
         }
     }
+
+    // Playback finished
 }

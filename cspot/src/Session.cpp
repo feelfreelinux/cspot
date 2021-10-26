@@ -126,6 +126,10 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     this->shanConn->wrapConnection(this->conn, sendKey, recvKey);
 }
 
+void Session::close() {
+    this->conn->closeSocket();
+}
+
 std::vector<uint8_t> Session::sendClientHelloRequest()
 {
     // Prepare protobuf message

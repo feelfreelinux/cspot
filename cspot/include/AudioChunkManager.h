@@ -2,7 +2,9 @@
 #define AUDIOCHUNKMANAGER_H
 
 #include <memory>
+#include <atomic>
 #include <algorithm>
+#include <mutex>
 #include "Utils.h"
 #include "AudioChunk.h"
 #include "Queue.h"
@@ -17,7 +19,8 @@ class AudioChunkManager : public Task {
     void runTask();
 public:
     AudioChunkManager();
-
+    std::atomic<bool> isRunning = false;
+    std::mutex runningMutex;
     /**
      * @brief Registers a new audio chunk request.
      * 

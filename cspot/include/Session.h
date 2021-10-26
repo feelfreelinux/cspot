@@ -42,6 +42,7 @@ public:
     std::shared_ptr<LoginBlob> authBlob;
     void connect(std::unique_ptr<PlainConnection> connection);
     void connectWithRandomAp();
+    void close();
     std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
 };
 
