@@ -4,12 +4,21 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
+#include <memory>
 
-class CspotLogger
+class AbstractLogger {
+    public:
+    virtual void debug(std::string filename, int line, const char *format, ...) = 0;
+    virtual void error(std::string filename, int line, const char *format, ...) = 0;
+    virtual void info(std::string filename, int line, const char *format, ...) = 0;
+};
+
+extern std::shared_ptr<AbstractLogger> cspotGlobalLogger;
+class CspotLogger: public AbstractLogger
 {
 public:
     // static bool enableColors = true;
-    static void debug(std::string filename, int line, const char *format, ...)
+    void debug(std::string filename, int line, const char *format, ...)
     {
 
         printf(colorRed);
@@ -23,7 +32,7 @@ public:
         printf("\n");
     };
 
-    static void error(std::string filename, int line, const char *format, ...)
+    void error(std::string filename, int line, const char *format, ...)
     {
 
         printf(colorRed);
@@ -38,7 +47,7 @@ public:
         printf("\n");
     };
 
-    static void info(std::string filename, int line, const char *format, ...)
+    void info(std::string filename, int line, const char *format, ...)
     {
 
         printf(colorBlue);
@@ -53,7 +62,7 @@ public:
         printf("\n");
     };
 
-    static void printFilename(std::string filename)
+    void printFilename(std::string filename)
     {
         std::string basenameStr(filename.substr(filename.rfind("/") + 1));
         unsigned long hash = 5381;
@@ -78,10 +87,12 @@ private:
     static constexpr int allColors[NColors] = {30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97};
 };
 
+void setDefaultLogger();
+
 #define CSPOT_LOG(type, ...)                                \
     do                                                      \
     {                                                       \
-        CspotLogger::type(__FILE__, __LINE__, __VA_ARGS__); \
+        cspotGlobalLogger->type(__FILE__, __LINE__, __VA_ARGS__); \
     } while (0)
 
 #endif

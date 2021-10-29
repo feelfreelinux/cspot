@@ -78,7 +78,6 @@ void Player::runTask()
     while (isRunning)
     {
         if (this->trackQueue.pop(currentTrack)) {
-            printf("Running...\n");
             currentTrack->audioStream->startPlaybackLoop();
             currentTrack->loadedTrackCallback = nullptr;
             currentTrack->audioStream->streamFinishedCallback = nullptr;
@@ -86,17 +85,12 @@ void Player::runTask()
             currentTrack->audioStream->pcmCallback = nullptr;
         }
     }
-
-    printf("Finished...\n");
 }
 
 void Player::stop() {
     this->isRunning = false;
-    printf("Set is running to false...\n");
     cancelCurrentTrack();
-    printf("Cancelled...\n");
     std::scoped_lock lock(this->runningMutex);
-    printf("Locked...\n");
 }
 
 void Player::cancelCurrentTrack()

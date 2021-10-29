@@ -141,6 +141,7 @@ void init_spiffs()
     };
 
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    setDefaultLogger();
 
     if (ret != ESP_OK)
     {

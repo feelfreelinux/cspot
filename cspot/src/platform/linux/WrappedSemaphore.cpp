@@ -10,9 +10,10 @@ WrappedSemaphore::~WrappedSemaphore()
     sem_destroy(&this->semaphoreHandle);
 }
 
-void WrappedSemaphore::wait()
+int WrappedSemaphore::wait()
 {
     sem_wait(&this->semaphoreHandle);
+    return 0;
 }
 
 void WrappedSemaphore::give()

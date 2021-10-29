@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 {
     try
     {
-
+        setDefaultLogger();
         std::string credentialsFileName = "authBlob.json";
         std::string configFileName = "config.json";
 
