@@ -1,7 +1,7 @@
 #include "AudioChunkManager.h"
 #include "Logger.h"
 
-AudioChunkManager::AudioChunkManager()
+AudioChunkManager::AudioChunkManager() : Task(10 * 1024, "audioChunkManager", 1)
 {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
@@ -44,7 +44,7 @@ void AudioChunkManager::runTask()
     while (isRunning)
     {
         std::pair<std::vector<uint8_t>, bool> audioPair;
-        if (this->audioChunkDataQueue.pop(audioPair))
+        if (this->audioChunkDataQueue.wpop(audioPair))
         {
             auto data = audioPair.first;
             auto failed = audioPair.second;
@@ -105,6 +105,7 @@ void AudioChunkManager::runTask()
                 }
             }
         } else {
+            usleep(100);
         }
     }
 

@@ -9,20 +9,30 @@
 #endif
 
 #include <pthread.h>
+#include <string>
 
 class Task
 {
+private:
+    int stackSize = 0;
+    std::string threadName = "";
+    int pinToCore = 0;
 public:
-   Task() {}
+   Task(int stackSize, std::string threadName, int pinToCore) {
+       this->threadName = threadName;
+       this->pinToCore = pinToCore;
+       this->stackSize = stackSize;
+   }
    virtual ~Task() {}
 
    bool startTask()
    {
 #ifdef ESP_PLATFORM
       esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
-      cfg.stack_size = (8 * 1024);
+      cfg.stack_size = this->stackSize;
       cfg.inherit_cfg = true;
-      cfg.pin_to_core = 1;
+      cfg.thread_name = this->threadName.c_str();
+      cfg.pin_to_core = this->pinToCore;
       esp_pthread_set_cfg(&cfg);
 #endif
       return (pthread_create(&_thread, NULL, taskEntryFunc, this) == 0);
