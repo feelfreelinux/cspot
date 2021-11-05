@@ -1,7 +1,7 @@
 #include "AudioChunkManager.h"
 #include "Logger.h"
 
-AudioChunkManager::AudioChunkManager() : Task(10 * 1024, "audioChunkManager", 1)
+AudioChunkManager::AudioChunkManager() : Task(8 * 1024, "audioChunkManager", 1)
 {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();

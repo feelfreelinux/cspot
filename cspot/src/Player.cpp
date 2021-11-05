@@ -3,7 +3,7 @@
 
 // #include <valgrind/memcheck.h>
 
-Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink) : Task((8 * 1024) + 9216, "player", 1)
+Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink) : Task((8 * 1024), "player", 1)
 {
     this->audioSink = audioSink;
     this->manager = manager;
