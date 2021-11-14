@@ -71,7 +71,7 @@ bool ConfigJSON::load()
 
 bool ConfigJSON::save()
 {
-    JSONObject obj;
+    bell::JSONObject obj;
 
     obj["volume"] = this->volume;
     obj["deviceName"] = this->deviceName;

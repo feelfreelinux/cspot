@@ -108,7 +108,7 @@ private:
     bool full_ = 0;
 };
 
-class ALSAAudioSink : public AudioSink, public Task
+class ALSAAudioSink : public AudioSink, public bell::Task
 {
 public:
     ALSAAudioSink();

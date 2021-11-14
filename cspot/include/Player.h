@@ -17,14 +17,14 @@
 #include "Queue.h"
 #include "Task.h"
 
-class Player : public Task {
+class Player : public bell::Task {
 private:
     std::shared_ptr<MercuryManager> manager;
     std::shared_ptr<SpotifyTrack> currentTrack = nullptr;
     std::shared_ptr<AudioSink> audioSink;
     std::mutex loadTrackMutex;
     // @TODO: Use some actual structure here
-    Queue<std::shared_ptr<SpotifyTrack>> trackQueue;
+    bell::Queue<std::shared_ptr<SpotifyTrack>> trackQueue;
     void runTask();
 
 public:

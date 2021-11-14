@@ -124,7 +124,7 @@ void LoginBlob::loadJson(const std::string &json)
 
 std::string LoginBlob::toJson()
 {
-    JSONObject obj;
+    bell::JSONObject obj;
     obj["authData"] = crypto->base64Encode(authData);
     obj["authType"] = this->authType;
     obj["username"] = this->username;

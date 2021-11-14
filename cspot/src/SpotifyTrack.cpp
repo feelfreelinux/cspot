@@ -79,6 +79,8 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     {
         TrackInfo simpleTrackInfo = {
             .name = trackInfo.name.value(),
+            .album = trackInfo.album.value().name.value(),
+            .artist = trackInfo.artist[0].name.value(),
         };
 
         trackInfoReceived(simpleTrackInfo);

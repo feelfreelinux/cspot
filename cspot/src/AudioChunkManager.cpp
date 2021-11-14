@@ -5,7 +5,6 @@ AudioChunkManager::AudioChunkManager()
 {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
-    //this->audioChunkDataQueue = new Queue<std::pair<std::vector<uint8_t>, bool>>;
 }
 
 std::shared_ptr<AudioChunk> AudioChunkManager::registerNewChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t startPos, uint32_t endPos)
