@@ -48,6 +48,9 @@
 #ifdef PCM5102
 #include <PCM5102AudioSink.h>
 #endif
+#ifdef TAS5711
+#include <TAS5711AudioSink.h>
+#endif
 
 static const char *TAG = "cspot";
 
@@ -122,6 +125,9 @@ static void cspotTask(void *pvParameters)
 #ifdef PCM5102
         auto audioSink = std::make_shared<PCM5102AudioSink>();
 #endif
+#ifdef TAS5711
+        auto audioSink = std::make_shared<TAS5711AudioSink>();
+#endif
 
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
         mercuryManager->reconnectedCallback = [spircController]() {
@@ -192,5 +198,5 @@ void app_main(void)
 
     ESP_LOGI("TAG", "Connected to AP, start spotify receiver");
     // for(;;);
-    auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL, 0);
+    auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 10, NULL, 5, NULL, 0);
 }

@@ -5,6 +5,7 @@ set(COMPONENT_SRCS
     "sinks/BufferedAudioSink.cpp"
     "sinks/ES9018AudioSink.cpp"
     "sinks/PCM5102AudioSink.cpp"
+    "sinks/TAS5711AudioSink.cpp"
     "sinks/InternalAudioSink.cpp"
     "sinks/ac101.c"
 )
