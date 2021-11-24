@@ -1,6 +1,7 @@
 #ifndef AUDIOSINK_H
 #define AUDIOSINK_H
 
+#include <stdint.h>
 #include <vector>
 
 class AudioSink

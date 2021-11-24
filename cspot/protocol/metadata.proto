@@ -9,16 +9,25 @@ message Restriction {
     optional string countries_allowed = 0x2;
     optional string countries_forbidden = 0x3;
 }
+
+message Image {
+    optional bytes file_id = 0x1;
+}
+
+message ImageGroup {
+    repeated Image image = 0x1;
+}
+
 message Album {
     optional bytes gid = 0x1;
     optional string name = 0x2;
+    optional ImageGroup cover_group = 0x11;
 }
 
 message Artist {
     optional bytes gid = 0x1;
     optional string name = 0x2;
 }
-
 
 message Track {
     optional bytes gid = 1;

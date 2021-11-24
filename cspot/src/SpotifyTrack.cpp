@@ -75,17 +75,6 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
     CSPOT_LOG(info, "Track name: %s", trackInfo.name.value().c_str());
 
-    if (trackInfoReceived != nullptr)
-    {
-        TrackInfo simpleTrackInfo = {
-            .name = trackInfo.name.value(),
-            .album = trackInfo.album.value().name.value(),
-            .artist = trackInfo.artist[0].name.value(),
-        };
-
-        trackInfoReceived(simpleTrackInfo);
-    }
-
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
     int altIndex = 0;
     while (!canPlayTrack(trackInfo.restriction))
@@ -106,6 +95,19 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
             this->fileId = trackInfo.file[x].file_id.value();
             break; // If file found stop searching
         }
+    }
+
+    if (trackInfoReceived != nullptr)
+    {
+        CSPOT_LOG(info, "Calling %d", trackInfo.album.value().cover_group.value().image.size());
+        TrackInfo simpleTrackInfo = {
+            .name = trackInfo.name.value(),
+            .album = trackInfo.album.value().name.value(),
+            .artist = trackInfo.artist[0].name.value(),
+            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(trackInfo.album.value().cover_group.value().image[0].file_id.value())
+        };
+
+        trackInfoReceived(simpleTrackInfo);
     }
 
     this->requestAudioKey(this->fileId, trackId, trackInfo.duration.value(), position_ms, isPaused);

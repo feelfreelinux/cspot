@@ -34,15 +34,17 @@ private:
     int serverPort;
     bool authorized = false;
     std::unique_ptr<Crypto> crypto;
-    std::unique_ptr<bell::HTTPServer> server;
+    std::shared_ptr<bell::HTTPServer> server;
     authCallback gotBlobCallback;
     void startServer();
     std::string buildJsonInfo();
-    std::shared_ptr<LoginBlob> handleAddUser(std::map<std::string, std::string>& queryMap);
+    void handleAddUser(std::map<std::string, std::string>& queryMap);
     void registerZeroconf();
     std::string getParameterFromUrlEncoded(std::string data, std::string param);
 public:
     ZeroconfAuthenticator(authCallback callback);
+    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::HTTPServer> httpServer);
+    void registerHandlers();
     void listenForRequests();
 };
 

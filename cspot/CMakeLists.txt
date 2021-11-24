@@ -5,7 +5,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
 
 # Add platform specific sources
 # if(${ESP_PLATFORM})
@@ -62,4 +62,4 @@ set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
 add_library(cspot STATIC ${SOURCES})
 target_link_libraries(cspot PRIVATE bell ${EXTRA_REQ_LIBS})
 
-target_include_directories(cspot PUBLIC "include" "protos" ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(cspot PUBLIC "include" "protos" bell ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})

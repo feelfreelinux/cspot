@@ -9,7 +9,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::UNSUB, "UNSUB"},
     });
 
-MercuryManager::MercuryManager(std::unique_ptr<Session> session)
+MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 4 * 1024, 1)
 {
     this->timeProvider = std::make_shared<TimeProvider>();
     this->callbacks = std::map<uint64_t, mercuryCallback>();
@@ -117,6 +117,7 @@ void MercuryManager::reconnect()
     this->lastPingTimestamp = -1;
     this->lastRequestTimestamp = -1;
 RECONNECT:
+    if (!isRunning) return;
     CSPOT_LOG(debug, "Trying to reconnect...");
     try
     {
@@ -188,15 +189,15 @@ void MercuryManager::runTask()
 
 void MercuryManager::stop() {
     CSPOT_LOG(debug, "Stopping mercury manager");
-    this->session->close();
     isRunning = false;
-    audioChunkManager->isRunning = false;
+    audioChunkManager->close();
     std::scoped_lock(audioChunkManager->runningMutex, this->runningMutex);
+    this->session->close();
     CSPOT_LOG(debug, "mercury stopped");
 }
 
 void MercuryManager::updateQueue() {
-    if (queueSemaphore->wait() == 0) {
+    if (queueSemaphore->twait() == 0) {
         if (this->queue.size() > 0)
         {
             auto packet = std::move(this->queue[0]);
@@ -277,6 +278,7 @@ void MercuryManager::handleQueue()
 
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback& subscription, mercuryParts& payload)
 {
+    if (!isRunning) return -1;
     std::lock_guard<std::mutex> guard(reconnectionMutex);
     // Construct mercury header
 

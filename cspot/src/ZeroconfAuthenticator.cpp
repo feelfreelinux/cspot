@@ -17,23 +17,29 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback)
 
     // @TODO: Maybe verify if given port is taken. We're running off pure luck rn
     this->serverPort = SERVER_PORT_MIN + (std::rand() % (SERVER_PORT_MAX - SERVER_PORT_MIN + 1));
-    this->server = std::make_unique<bell::HTTPServer>(this->serverPort);
+    this->server = std::make_shared<bell::HTTPServer>(this->serverPort);
 }
 
-void ZeroconfAuthenticator::listenForRequests()
-{
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::HTTPServer> httpServer) {
+    this->gotBlobCallback = callback;
+    srand((unsigned int)time(NULL));
 
-    CSPOT_LOG(info, "Starting zeroconf auth server at port %d", this->serverPort);
+    this->crypto = std::make_unique<Crypto>();
+    this->crypto->dhInit();
+    this->server = httpServer;
+}
 
+void ZeroconfAuthenticator::registerHandlers() {
     // Make it discoverable for spoti clients
     registerZeroconf();
     auto getInfoHandler = [this](bell::HTTPRequest& request) {
         CSPOT_LOG(info, "Got request for info");
         bell::HTTPResponse response = {
+            .connectionFd = request.connection,
+            .status = 200,
             .body = this->buildJsonInfo(),
             .contentType = "application/json",
-            .connectionFd = request.connection,
-            .status = 200 };
+        };
         server->respond(response);
     };
 
@@ -45,23 +51,26 @@ void ZeroconfAuthenticator::listenForRequests()
         obj["statusString"] = "ERROR-OK";
 
         bell::HTTPResponse response = {
+            .connectionFd = request.connection,
+            .status = 200,
             .body = obj.toString(),
             .contentType = "application/json",
-            .connectionFd = request.connection,
-            .status = 200 };
+        };
         server->respond(response);
 
-        if (!authorized) {
-            auto correctBlob = this->getParameterFromUrlEncoded(request.body, "blob");
-            this->handleAddUser(request.queryParams);
-        }
+        auto correctBlob = this->getParameterFromUrlEncoded(request.body, "blob");
+        this->handleAddUser(request.queryParams);
     };
 
     this->server->registerHandler(bell::RequestType::GET, "/", getInfoHandler);
     this->server->registerHandler(bell::RequestType::POST, "/", addUserHandler);
+}
 
-
-    return this->server->listen();
+void ZeroconfAuthenticator::listenForRequests()
+{
+    CSPOT_LOG(info, "Starting zeroconf auth server at port %d", this->serverPort);
+    registerHandlers();
+    this->server->listen();
 }
 
 void ZeroconfAuthenticator::registerZeroconf()
@@ -75,7 +84,7 @@ void ZeroconfAuthenticator::registerZeroconf()
         {"VERSION", "1.0"},
         {"CPath", "/"},
         {"Stack", "SP"} };
-    mdns_service_add("cspot", "_spotify-connect", "_tcp", serverPort, serviceTxtData, 3);
+    mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
 
 #else
     DNSServiceRef ref = NULL;
@@ -84,7 +93,7 @@ void ZeroconfAuthenticator::registerZeroconf()
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
     TXTRecordSetValue(&txtRecord, "CPath", 1, "/");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char*)informationString, service, NULL, NULL, htons(serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
+    DNSServiceRegister(&ref, 0, 0, (char*)informationString, service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
 #endif
 }
@@ -95,10 +104,8 @@ std::string ZeroconfAuthenticator::getParameterFromUrlEncoded(std::string data, 
     return urlDecode(startStr.substr(0, startStr.find("&")));
 }
 
-std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::map<std::string, std::string>& queryData)
+void ZeroconfAuthenticator::handleAddUser(std::map<std::string, std::string>& queryData)
 {
-    CSPOT_LOG(info, "DECRYPTED");
-
     // Get all urlencoded params
     auto username = queryData["userName"];
     auto blobString = queryData["blob"];
@@ -118,7 +125,6 @@ std::shared_ptr<LoginBlob> ZeroconfAuthenticator::handleAddUser(std::map<std::st
 
     loginBlob->loadZeroconf(blobBytes, secretKey, deviceIdStr, username);
 
-    authorized = true;
     gotBlobCallback(loginBlob);
 }
 

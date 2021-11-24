@@ -1,7 +1,8 @@
 #include "AudioChunkManager.h"
 #include "Logger.h"
+#include "BellUtils.h"
 
-AudioChunkManager::AudioChunkManager()
+AudioChunkManager::AudioChunkManager() : bell::Task("AudioChunkManager", 4 * 1024, 1)
 {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
@@ -36,6 +37,13 @@ void AudioChunkManager::failAllChunks()
     }
 }
 
+void AudioChunkManager::close() {
+    this->isRunning = false;
+    this->failAllChunks();
+    this->audioChunkDataQueue.clear();
+    std::scoped_lock lock(this->runningMutex);
+}
+
 void AudioChunkManager::runTask()
 {
     this->isRunning = true;
@@ -43,7 +51,7 @@ void AudioChunkManager::runTask()
     while (isRunning)
     {
         std::pair<std::vector<uint8_t>, bool> audioPair;
-        if (this->audioChunkDataQueue.pop(audioPair))
+        if (this->audioChunkDataQueue.wtpop(audioPair, 10))
         {
             auto data = audioPair.first;
             auto failed = audioPair.second;

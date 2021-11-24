@@ -37,7 +37,6 @@ ChunkedAudioStream::~ChunkedAudioStream()
 
 ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs, bool isPaused)
 {
-    this->audioSink = audioSink;
     this->audioKey = audioKey;
     this->duration = duration;
     this->manager = manager;
@@ -47,7 +46,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
 
     auto beginChunk = manager->fetchAudioChunk(fileId, audioKey, 0, 0x4000);
     beginChunk->keepInMemory = true;
-    while(beginChunk->isHeaderFileSizeLoadedSemaphore->wait() != 0);
+    while(beginChunk->isHeaderFileSizeLoadedSemaphore->twait() != 0);
     this->fileSize = beginChunk->headerFileSize;
     chunks.push_back(beginChunk);
 
@@ -152,7 +151,7 @@ void ChunkedAudioStream::fetchTraillingPacket()
     endChunk->keepInMemory = true;
 
     chunks.push_back(endChunk);
-    while (endChunk->isLoadedSemaphore->wait() != 0);
+    while (endChunk->isLoadedSemaphore->twait() != 0);
 }
 
 std::vector<uint8_t> ChunkedAudioStream::read(size_t bytes)
@@ -229,10 +228,10 @@ READ:
             else
             {
                 CSPOT_LOG(debug, "Waiting for chunk to load");
-                while (chunk->isLoadedSemaphore->wait() != 0);
+                while (chunk->isLoadedSemaphore->twait() != 0);
                 if (chunk->isFailed)
                 {
-                    while (this->requestChunk(chunkIndex)->isLoadedSemaphore->wait() != 0);
+                    while (this->requestChunk(chunkIndex)->isLoadedSemaphore->twait() != 0);
                     goto READ;
                 }
             }

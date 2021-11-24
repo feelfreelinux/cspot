@@ -50,6 +50,8 @@ public:
      * @brief Fails all requested chunks, used for reconnection.
      */
     void failAllChunks();
+
+    void close();
 };
 
 #endif

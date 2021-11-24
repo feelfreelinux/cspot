@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sstream>
-#include <cJSON.h>
 #include <fstream>
 #include "Logger.h"
+#include <cJSON.h>
 
 ApResolve::ApResolve() {}
 
