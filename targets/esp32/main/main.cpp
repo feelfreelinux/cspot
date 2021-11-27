@@ -32,7 +32,7 @@
 #include "Logger.h"
 
 // Config sink
-#define AC101 // INTERNAL, AC101, ES8018, PCM5102
+#define ES8311 // INTERNAL, AC101, ES8018, PCM5102
 #define QUALITY     320      // 320, 160, 96
 #define DEVICE_NAME "CSpot"
 
@@ -47,6 +47,9 @@
 #endif
 #ifdef PCM5102
 #include <PCM5102AudioSink.h>
+#endif
+#ifdef ES8311
+#include <ES8311AudioSink.h>
 #endif
 
 static const char *TAG = "cspot";
@@ -121,6 +124,9 @@ static void cspotTask(void *pvParameters)
 #endif
 #ifdef PCM5102
         auto audioSink = std::make_shared<PCM5102AudioSink>();
+#endif
+#ifdef ES8311
+        auto audioSink = std::make_shared<ES8311AudioSink>();
 #endif
 
         auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
