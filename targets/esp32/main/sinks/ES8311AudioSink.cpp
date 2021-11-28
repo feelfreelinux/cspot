@@ -4,7 +4,7 @@
 ES8311AudioSink::ES8311AudioSink()
 {
     softwareVolumeControl = false;
-    // usign = true;
+    usign = true;
 
     board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
@@ -36,8 +36,8 @@ ES8311AudioSink::ES8311AudioSink()
 }
 
 void ES8311AudioSink::volumeChanged(uint16_t volume) {
-    volume = (volume+1) >> 10; //this isn't exactly right
     ESP_LOGW("VOL", "SET: volume:%d", volume);
+    volume = volume >> 10;
     board_handle->audio_hal->audio_codec_set_volume(volume);
 }
 
