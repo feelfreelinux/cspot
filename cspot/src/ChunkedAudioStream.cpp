@@ -1,5 +1,6 @@
 #include "ChunkedAudioStream.h"
 #include "Logger.h"
+#include "BellUtils.h"
 
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
@@ -124,7 +125,7 @@ void ChunkedAudioStream::startPlaybackLoop()
         }
         else
         {
-            usleep(100 * 1000);
+            BELL_SLEEP_MS(100);
         }
     }
 
@@ -231,7 +232,8 @@ READ:
                 while (chunk->isLoadedSemaphore->twait() != 0);
                 if (chunk->isFailed)
                 {
-                    while (this->requestChunk(chunkIndex)->isLoadedSemaphore->twait() != 0);
+                    auto requestChunk = this->requestChunk(chunkIndex);
+                    while (requestChunk->isLoadedSemaphore->twait() != 0);
                     goto READ;
                 }
             }

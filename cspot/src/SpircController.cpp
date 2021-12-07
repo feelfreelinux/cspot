@@ -1,9 +1,11 @@
 #include "SpircController.h"
-#include "Logger.h"
 #include "ConfigJSON.h"
+#include "Logger.h"
+#include "SpotifyTrack.h"
 
-SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink)
-{
+SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
+                                 std::string username,
+                                 std::shared_ptr<AudioSink> audioSink) {
 
     this->manager = manager;
     this->player = std::make_unique<Player>(manager, audioSink);
@@ -11,8 +13,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     this->username = username;
 
     player->endOfFileCallback = [=]() {
-        if (state->nextTrack())
-        {
+        if (state->nextTrack()) {
             loadTrack();
         }
     };
@@ -21,8 +22,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager, std::s
     subscribe();
 }
 
-void SpircController::subscribe()
-{
+void SpircController::subscribe() {
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
         sendCmd(MessageType::kMessageTypeHello);
@@ -32,29 +32,70 @@ void SpircController::subscribe()
         this->handleFrame(res->parts[0]);
     };
 
-    manager->execute(MercuryType::SUB, "hm://remote/user/" + this->username + "/", responseLambda, subLambda);
+    manager->execute(MercuryType::SUB,
+                     "hm://remote/user/" + this->username + "/", responseLambda,
+                     subLambda);
 }
 
-void SpircController::handleFrame(std::vector<uint8_t> &data)
-{
+void SpircController::setPause(bool isPaused, bool notifyPlayer) {
+    if (isPaused) {
+        CSPOT_LOG(debug, "External pause command");
+        if (notifyPlayer) player->pause();
+        state->setPlaybackState(PlaybackState::Paused);
+        notify();
+    } else {
+        CSPOT_LOG(debug, "External play command");
+        if (notifyPlayer) player->play();
+        state->setPlaybackState(PlaybackState::Playing);
+        notify();
+    }
+
+    if (eventHandler != nullptr) {
+        CSpotEvent event = {
+            .eventType = CSpotEventType::PLAY_PAUSE,
+            .data = isPaused
+        };
+        
+        eventHandler(event);
+    }
+}
+
+void SpircController::setRemoteVolume(int volume) {
+    state->setVolume(volume);
+    notify();
+}
+
+void SpircController::nextSong() {
+    if (state->nextTrack()) {
+        loadTrack();
+    } else {
+        player->cancelCurrentTrack();
+    }
+    notify();
+}
+
+void SpircController::prevSong() {
+    state->prevTrack();
+    loadTrack();
+    notify();
+}
+
+void SpircController::handleFrame(std::vector<uint8_t> &data) {
     state->remoteFrame = decodePb<Frame>(data);
 
-    switch (state->remoteFrame.typ.value())
-    {
-    case MessageType::kMessageTypeNotify:
-    {
+    switch (state->remoteFrame.typ.value()) {
+    case MessageType::kMessageTypeNotify: {
         CSPOT_LOG(debug, "Notify frame");
         // Pause the playback if another player took control
-        if (state->isActive() && state->remoteFrame.device_state->is_active.value())
-        {
+        if (state->isActive() &&
+            state->remoteFrame.device_state->is_active.value()) {
             state->setActive(false);
             notify();
             player->cancelCurrentTrack();
         }
         break;
     }
-    case MessageType::kMessageTypeSeek:
-    {
+    case MessageType::kMessageTypeSeek: {
         CSPOT_LOG(debug, "Seek command");
         state->updatePositionMs(state->remoteFrame.position.value());
         this->player->seekMs(state->remoteFrame.position.value());
@@ -62,72 +103,54 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
         break;
     }
     case MessageType::kMessageTypeVolume:
-        state->setVolume(state->remoteFrame.volume.value());
+
+        setRemoteVolume(state->remoteFrame.volume.value());
         player->setVolume(state->remoteFrame.volume.value());
         configMan->save();
-        notify();
         break;
-    case MessageType::kMessageTypePause:
-    {
-        CSPOT_LOG(debug, "Pause command");
-        player->pause();
-        state->setPlaybackState(PlaybackState::Paused);
-        notify();
+    case MessageType::kMessageTypePause: {
+        setPause(true);
         break;
     }
     case MessageType::kMessageTypePlay:
-        player->play();
-        state->setPlaybackState(PlaybackState::Playing);
-        notify();
+        setPause(false);
         break;
     case MessageType::kMessageTypeNext:
-        if (state->nextTrack())
-        {
-            loadTrack();
-        }
-        else
-        {
-            player->cancelCurrentTrack();
-        }
-        notify();
+        nextSong();
         break;
     case MessageType::kMessageTypePrev:
-        state->prevTrack();
-        loadTrack();
-        notify();
+        prevSong();
         break;
-    case MessageType::kMessageTypeLoad:
-    {
+    case MessageType::kMessageTypeLoad: {
         CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);
 
         // Every sane person on the planet would expect std::move to work here.
-        // And it does... on every single platform EXCEPT for ESP32 for some reason.
-        // For which it corrupts memory and makes printf fail. so yeah. its cursed.
+        // And it does... on every single platform EXCEPT for ESP32 for some
+        // reason. For which it corrupts memory and makes printf fail. so yeah.
+        // its cursed.
         state->updateTracks();
 
-        bool isPaused = (state->remoteFrame.state->status.value() == PlayStatus::kPlayStatusPlay) ? false : true;
-        loadTrack(state->remoteFrame.state->position_ms.value(), isPaused);
+        // bool isPaused = (state->remoteFrame.state->status.value() ==
+        // PlayStatus::kPlayStatusPlay) ? false : true;
+        loadTrack(state->remoteFrame.state->position_ms.value(), false);
         state->updatePositionMs(state->remoteFrame.state->position_ms.value());
 
         this->notify();
         break;
     }
-    case MessageType::kMessageTypeReplace:
-    {
+    case MessageType::kMessageTypeReplace: {
         CSPOT_LOG(debug, "Got replace frame!");
         break;
     }
-    case MessageType::kMessageTypeShuffle:
-    {
+    case MessageType::kMessageTypeShuffle: {
         CSPOT_LOG(debug, "Got shuffle frame");
         state->setShuffle(state->remoteFrame.state->shuffle.value());
         this->notify();
         break;
     }
-    case MessageType::kMessageTypeRepeat:
-    {
+    case MessageType::kMessageTypeRepeat: {
         CSPOT_LOG(debug, "Got repeat frame");
         state->setRepeat(state->remoteFrame.state->repeat.value());
         this->notify();
@@ -138,44 +161,49 @@ void SpircController::handleFrame(std::vector<uint8_t> &data)
     }
 }
 
-void SpircController::loadTrack(uint32_t position_ms, bool isPaused)
-{
+void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
     state->setPlaybackState(PlaybackState::Loading);
     std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
-        if(isPaused)
-        {
-            state->setPlaybackState(PlaybackState::Paused);
-        }
-        else
-        {
-            state->setPlaybackState(PlaybackState::Playing);
-        }
-        this->notify();
+        setPause(isPaused, false);
     };
 
-    player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms, isPaused);
+    player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms,
+                       isPaused);
 }
 
-void SpircController::notify()
-{
+void SpircController::notify() {
     this->sendCmd(MessageType::kMessageTypeNotify);
 }
 
-void SpircController::setTrackChangedCallback(trackChangedCallback callback) {
-    player->trackChanged = callback;
+void SpircController::setEventHandler(cspotEventHandler callback) {
+    this->eventHandler = callback;
+
+    player->trackChanged = ([this](TrackInfo &track) {
+            TrackInfo info;
+            info.album = track.album;
+            info.artist = track.artist;
+            info.imageUrl = track.imageUrl;
+            info.name = track.name;
+
+            CSpotEvent event = {
+                .eventType = CSpotEventType::TRACK_INFO,
+                .data = info
+            };
+            this->eventHandler(event);
+    });
 }
 
-void SpircController::stopPlayer() {
-    this->player->stop();
-}
+void SpircController::stopPlayer() { this->player->stop(); }
 
-void SpircController::sendCmd(MessageType typ)
-{
+void SpircController::sendCmd(MessageType typ) {
     // Serialize current player state
     auto encodedFrame = state->encodeCurrentFrame(typ);
 
-    mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {};
+    mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
+    };
     auto parts = mercuryParts({encodedFrame});
-    this->manager->execute(MercuryType::SEND, "hm://remote/user/" + this->username + "/", responseLambda, parts);
+    this->manager->execute(MercuryType::SEND,
+                           "hm://remote/user/" + this->username + "/",
+                           responseLambda, parts);
 }

@@ -62,8 +62,9 @@ void ZeroconfAuthenticator::registerHandlers() {
         this->handleAddUser(request.queryParams);
     };
 
-    this->server->registerHandler(bell::RequestType::GET, "/", getInfoHandler);
-    this->server->registerHandler(bell::RequestType::POST, "/", addUserHandler);
+    BELL_LOG(info, "cspot", "Zeroconf registering handlers");
+    this->server->registerHandler(bell::RequestType::GET, "/spotify_info", getInfoHandler);
+    this->server->registerHandler(bell::RequestType::POST, "/spotify_info", addUserHandler);
 }
 
 void ZeroconfAuthenticator::listenForRequests()
@@ -82,7 +83,7 @@ void ZeroconfAuthenticator::registerZeroconf()
     mdns_hostname_set("cspot");
     mdns_txt_item_t serviceTxtData[3] = {
         {"VERSION", "1.0"},
-        {"CPath", "/"},
+        {"CPath", "/spotify_info"},
         {"Stack", "SP"} };
     mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
 
@@ -91,7 +92,7 @@ void ZeroconfAuthenticator::registerZeroconf()
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, NULL);
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
-    TXTRecordSetValue(&txtRecord, "CPath", 1, "/");
+    TXTRecordSetValue(&txtRecord, "CPath", 13, "/spotify_info");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
     DNSServiceRegister(&ref, 0, 0, (char*)informationString, service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);

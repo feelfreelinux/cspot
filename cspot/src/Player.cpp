@@ -89,9 +89,12 @@ void Player::runTask()
 
 void Player::stop() {
     this->isRunning = false;
+    CSPOT_LOG(info, "Stopping player");
     this->trackQueue.clear();
     cancelCurrentTrack();
+    CSPOT_LOG(info, "Track cancelled");
     std::scoped_lock lock(this->runningMutex);
+    CSPOT_LOG(info, "Done");
 }
 
 void Player::cancelCurrentTrack()
