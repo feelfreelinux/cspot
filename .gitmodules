@@ -4,3 +4,7 @@
 [submodule "cspot/bell"]
 	path = cspot/bell
 	url = https://github.com/feelfreelinux/bell
+[submodule "cspot/tremor"]
+	path = cspot/tremor
+	url = https://gitlab.xiph.org/xiph/tremor.git
+	branch = lowmem
