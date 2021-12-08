@@ -5,8 +5,9 @@ set (CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
-# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
-
+if (NOT DEFINED ${USE_EXTERNAL_BELL})
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
+endif()
 # Add platform specific sources
 # if(${ESP_PLATFORM})
 #     file(GLOB ESP_PLATFORM_SOURCES "src/platform/esp/*.cpp" "src/platform/esp/*.c")
