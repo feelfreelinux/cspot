@@ -49,7 +49,7 @@ void AudioChunkManager::runTask() {
     std::scoped_lock lock(this->runningMutex);
     while (isRunning) {
         std::pair<std::vector<uint8_t>, bool> audioPair;
-        if (this->audioChunkDataQueue.wtpop(audioPair, 10)) {
+        if (this->audioChunkDataQueue.wtpop(audioPair, 100)) {
             auto data = audioPair.first;
             auto failed = audioPair.second;
             uint16_t seqId = ntohs(extract<uint16_t>(data, 0));

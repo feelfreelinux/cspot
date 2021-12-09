@@ -54,7 +54,7 @@ ChunkedAudioStream::ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<
     // File size is required for this packet to be downloaded
     this->fetchTraillingPacket();
 
-    vorbisFile = {0};
+    vorbisFile = { };
     vorbisCallbacks =
         {
             (decltype(ov_callbacks::read_func)) & vorbisReadCb,
