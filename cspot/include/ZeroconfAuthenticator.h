@@ -4,7 +4,7 @@
 #include <vector>
 #include <unistd.h>
 #include <string>
-#include <HTTPServer.h>
+#include <BaseHTTPServer.h>
 #include <cstdlib>
 #include "Utils.h"
 #include "LoginBlob.h"
@@ -34,7 +34,7 @@ private:
     int serverPort;
     bool authorized = false;
     std::unique_ptr<Crypto> crypto;
-    std::shared_ptr<bell::HTTPServer> server;
+    std::shared_ptr<bell::BaseHTTPServer> server;
     authCallback gotBlobCallback;
     void startServer();
     std::string buildJsonInfo();
@@ -42,10 +42,8 @@ private:
     void registerZeroconf();
     std::string getParameterFromUrlEncoded(std::string data, std::string param);
 public:
-    ZeroconfAuthenticator(authCallback callback);
-    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::HTTPServer> httpServer);
+    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer);
     void registerHandlers();
-    void listenForRequests();
 };
 
 #endif

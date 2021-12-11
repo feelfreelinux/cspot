@@ -7,20 +7,7 @@
 #include "Logger.h"
 #include "ConfigJSON.h"
 
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback)
-{
-    this->gotBlobCallback = callback;
-    srand((unsigned int)time(NULL));
-
-    this->crypto = std::make_unique<Crypto>();
-    this->crypto->dhInit();
-
-    // @TODO: Maybe verify if given port is taken. We're running off pure luck rn
-    this->serverPort = SERVER_PORT_MIN + (std::rand() % (SERVER_PORT_MAX - SERVER_PORT_MIN + 1));
-    this->server = std::make_shared<bell::HTTPServer>(this->serverPort);
-}
-
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::HTTPServer> httpServer) {
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer) {
     this->gotBlobCallback = callback;
     srand((unsigned int)time(NULL));
 
@@ -65,13 +52,6 @@ void ZeroconfAuthenticator::registerHandlers() {
     BELL_LOG(info, "cspot", "Zeroconf registering handlers");
     this->server->registerHandler(bell::RequestType::GET, "/spotify_info", getInfoHandler);
     this->server->registerHandler(bell::RequestType::POST, "/spotify_info", addUserHandler);
-}
-
-void ZeroconfAuthenticator::listenForRequests()
-{
-    CSPOT_LOG(info, "Starting zeroconf auth server at port %d", this->serverPort);
-    registerHandlers();
-    this->server->listen();
 }
 
 void ZeroconfAuthenticator::registerZeroconf()

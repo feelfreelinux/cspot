@@ -17,6 +17,7 @@
 #include "PortAudioSink.h"
 #include "ALSAAudioSink.h"
 #include "CommandLineArguments.h"
+#include "HTTPServer.h"
 
 #include "ConfigJSON.h"
 #include "CliFile.h"
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
 
 
         std::ifstream blobFile(credentialsFileName);
+        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)
@@ -128,8 +130,9 @@ int main(int argc, char** argv)
         else
         {
             createdFromZeroconf = true;
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback);
-            authenticator->listenForRequests();
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
+            authenticator->registerHandlers();
+            httpServer->listen();
         }
 
         while (true);
