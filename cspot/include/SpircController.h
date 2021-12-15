@@ -75,18 +75,18 @@ public:
     void setRemoteVolume(int volume);
 
 	/** 
-     * @brief Set volume locally and notifies spotify servers
+     * @brief Set device volume and notifies spotify
      *
      * @param volume int between 0 and `MAX_VOLUME`
      */
-    void setVolume(int volume);
+	void setVolume(int volume);
 
 	/** 
-     * @brief Get the player's volume
+     * @brief change volume by a given value
      *
-     * @return player's volume int between 0 and `MAX_VOLUME`
+     * @param volume int between 0 and `MAX_VOLUME`
      */
-    int getVolume();
+    void adjustVolume(int by);
 
     /** 
      * @brief Goes back to previous track and notfies spotify SPIRC

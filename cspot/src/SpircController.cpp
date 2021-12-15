@@ -60,8 +60,13 @@ void SpircController::playToggle() {
 	}
 }
 
-int SpircController::getVolume() {
-	return state->innerFrame.device_state->volume.value_or(-1);
+void SpircController::adjustVolume(int by) {
+	if (state->innerFrame.device_state->volume.has_value()) {
+		int volume = state->innerFrame.device_state->volume.value() + by;
+		if (volume < 0) volume = 0;
+		else if (volume > MAX_VOLUME) volume = MAX_VOLUME;
+		setVolume(volume);
+	}
 }
 
 void SpircController::setVolume(int volume) {
@@ -108,7 +113,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
     }
     case MessageType::kMessageTypeSeek: {
         CSPOT_LOG(debug, "Seek command");
-		sendEvent(CSpotEventType::SEEK);
+		sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position.value());
         state->updatePositionMs(state->remoteFrame.position.value());
         this->player->seekMs(state->remoteFrame.position.value());
         notify();
