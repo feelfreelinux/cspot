@@ -19,7 +19,11 @@
 enum class CSpotEventType {
     PLAY_PAUSE,
     VOLUME,
-    TRACK_INFO
+    TRACK_INFO,
+    STOP,
+    NEXT,
+    PREV,
+    SEEK,
 };
 
 struct CSpotEvent {
@@ -41,6 +45,7 @@ private:
     cspotEventHandler eventHandler;
     void sendCmd(MessageType typ);
     void notify();
+	void sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data = 0);
     void handleFrame(std::vector<uint8_t> &data);
     void loadTrack(uint32_t position_ms = 0, bool isPaused = 0);
 public:
@@ -56,6 +61,11 @@ public:
      * @param pause if true pause content, play otherwise
      */
     void setPause(bool pause, bool notifyPlayer = true);
+
+    /** 
+     * @brief Toggle Play/Pause
+     */
+	void playToggle();
 
     /** 
      * @brief Notifies spotify servers about volume change
