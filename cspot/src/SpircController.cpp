@@ -53,11 +53,21 @@ void SpircController::setPause(bool isPaused, bool notifyPlayer) {
 }
 
 void SpircController::playToggle() {
-	if (state->innerFrame.state->status == PlayStatus::kPlayStatusPause) {
+	if (state->innerFrame.state->status.value() == PlayStatus::kPlayStatusPause) {
 		setPause(false);
 	} else {
 		setPause(true);
 	}
+}
+
+int SpircController::getVolume() {
+	return state->innerFrame.device_state->volume.value_or(-1);
+}
+
+void SpircController::setVolume(int volume) {
+	setRemoteVolume(volume);
+    player->setVolume(volume);
+    configMan->save();
 }
 
 void SpircController::setRemoteVolume(int volume) {
@@ -105,10 +115,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         break;
     }
     case MessageType::kMessageTypeVolume:
-
-        setRemoteVolume(state->remoteFrame.volume.value());
-        player->setVolume(state->remoteFrame.volume.value());
-        configMan->save();
+		sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume.value());
+		setVolume(state->remoteFrame.volume.value());
         break;
     case MessageType::kMessageTypePause:
         setPause(true);
