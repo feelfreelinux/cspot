@@ -1,5 +1,5 @@
-[submodule "cspot/cpp-reflection"]
-	path = cspot/cpp-reflection
+[submodule "cspot/proto/cpp-reflection"]
+	path = cspot/proto/cpp-reflection
 	url = https://github.com/alufers/cpp-reflection.git
 [submodule "cspot/bell"]
 	path = cspot/bell

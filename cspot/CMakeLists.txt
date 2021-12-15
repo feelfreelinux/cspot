@@ -8,6 +8,9 @@ file(GLOB SOURCES "src/*.cpp" "src/*.c")
 if (NOT DEFINED ${USE_EXTERNAL_BELL})
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
 endif()
+
+add_subdirectory("proto")
+
 # Add platform specific sources
 # if(${ESP_PLATFORM})
 #     file(GLOB ESP_PLATFORM_SOURCES "src/platform/esp/*.cpp" "src/platform/esp/*.c")
@@ -51,16 +54,6 @@ if(UNIX AND NOT APPLE)
     # TODO: migrate from this to native linux mDNS
 endif()
 
-include_directories("include")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-include_directories("protos")
-
-message(${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh)
-execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-
-set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
-
 add_library(cspot STATIC ${SOURCES})
-target_link_libraries(cspot PRIVATE bell ${EXTRA_REQ_LIBS})
-
-target_include_directories(cspot PUBLIC "include" "protos" bell ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(cspot PRIVATE bell proto ${EXTRA_REQ_LIBS})
+target_include_directories(cspot PUBLIC "include" bell ${EXTRA_REQ_LIBS})
