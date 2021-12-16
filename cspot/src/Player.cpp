@@ -3,7 +3,7 @@
 
 // #include <valgrind/memcheck.h>
 
-Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink): bell::Task("player", 10 * 1024, 1)
+Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink): bell::Task("player", 10 * 1024, 5, 1)
 {
     this->audioSink = audioSink;
     this->manager = manager;
