@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(cspot)
 
+# Configurable options
+set(CSPOT_EXTERNAL_BELL "" CACHE STRING "External bell library target name, optional")
+
 # CMake options
 set(CMAKE_CXX_STANDARD 17)
 
