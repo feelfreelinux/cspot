@@ -104,7 +104,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         // Pause the playback if another player took control
         if (state->isActive() &&
             state->remoteFrame.device_state->is_active.value()) {
-			sendEvent(CSpotEventType::STOP);
+			sendEvent(CSpotEventType::DISC);
             state->setActive(false);
             notify();
             player->cancelCurrentTrack();

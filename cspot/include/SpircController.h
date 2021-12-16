@@ -20,7 +20,7 @@ enum class CSpotEventType {
     PLAY_PAUSE,
     VOLUME,
     TRACK_INFO,
-    STOP,
+    DISC,
     NEXT,
     PREV,
     SEEK,
