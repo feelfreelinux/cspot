@@ -38,6 +38,7 @@ void SpircController::subscribe() {
 }
 
 void SpircController::setPause(bool isPaused, bool notifyPlayer) {
+	sendEvent(CSpotEventType::PLAY_PAUSE, isPaused);
     if (isPaused) {
         CSPOT_LOG(debug, "External pause command");
         if (notifyPlayer) player->pause();
@@ -49,15 +50,29 @@ void SpircController::setPause(bool isPaused, bool notifyPlayer) {
         state->setPlaybackState(PlaybackState::Playing);
         notify();
     }
+}
 
-    if (eventHandler != nullptr) {
-        CSpotEvent event = {
-            .eventType = CSpotEventType::PLAY_PAUSE,
-            .data = isPaused
-        };
-        
-        eventHandler(event);
-    }
+void SpircController::playToggle() {
+	if (state->innerFrame.state->status.value() == PlayStatus::kPlayStatusPause) {
+		setPause(false);
+	} else {
+		setPause(true);
+	}
+}
+
+void SpircController::adjustVolume(int by) {
+	if (state->innerFrame.device_state->volume.has_value()) {
+		int volume = state->innerFrame.device_state->volume.value() + by;
+		if (volume < 0) volume = 0;
+		else if (volume > MAX_VOLUME) volume = MAX_VOLUME;
+		setVolume(volume);
+	}
+}
+
+void SpircController::setVolume(int volume) {
+	setRemoteVolume(volume);
+    player->setVolume(volume);
+    configMan->save();
 }
 
 void SpircController::setRemoteVolume(int volume) {
@@ -89,6 +104,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         // Pause the playback if another player took control
         if (state->isActive() &&
             state->remoteFrame.device_state->is_active.value()) {
+			sendEvent(CSpotEventType::DISC);
             state->setActive(false);
             notify();
             player->cancelCurrentTrack();
@@ -97,28 +113,28 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
     }
     case MessageType::kMessageTypeSeek: {
         CSPOT_LOG(debug, "Seek command");
+		sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position.value());
         state->updatePositionMs(state->remoteFrame.position.value());
         this->player->seekMs(state->remoteFrame.position.value());
         notify();
         break;
     }
     case MessageType::kMessageTypeVolume:
-
-        setRemoteVolume(state->remoteFrame.volume.value());
-        player->setVolume(state->remoteFrame.volume.value());
-        configMan->save();
+		sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume.value());
+		setVolume(state->remoteFrame.volume.value());
         break;
-    case MessageType::kMessageTypePause: {
+    case MessageType::kMessageTypePause:
         setPause(true);
         break;
-    }
     case MessageType::kMessageTypePlay:
         setPause(false);
         break;
     case MessageType::kMessageTypeNext:
+		sendEvent(CSpotEventType::NEXT);
         nextSong();
         break;
     case MessageType::kMessageTypePrev:
+		sendEvent(CSpotEventType::PREV);
         prevSong();
         break;
     case MessageType::kMessageTypeLoad: {
@@ -176,6 +192,17 @@ void SpircController::notify() {
     this->sendCmd(MessageType::kMessageTypeNotify);
 }
 
+void SpircController::sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data) {
+    if (eventHandler != nullptr) {
+        CSpotEvent event = {
+            .eventType = eventType,
+			.data = data,
+        };
+
+        eventHandler(event);
+    }
+}
+
 void SpircController::setEventHandler(cspotEventHandler callback) {
     this->eventHandler = callback;
 
@@ -186,11 +213,7 @@ void SpircController::setEventHandler(cspotEventHandler callback) {
             info.imageUrl = track.imageUrl;
             info.name = track.name;
 
-            CSpotEvent event = {
-                .eventType = CSpotEventType::TRACK_INFO,
-                .data = info
-            };
-            this->eventHandler(event);
+			this->sendEvent(CSpotEventType::TRACK_INFO, info);
     });
 }
 

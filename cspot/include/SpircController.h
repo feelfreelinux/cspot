@@ -19,7 +19,11 @@
 enum class CSpotEventType {
     PLAY_PAUSE,
     VOLUME,
-    TRACK_INFO
+    TRACK_INFO,
+    DISC,
+    NEXT,
+    PREV,
+    SEEK,
 };
 
 struct CSpotEvent {
@@ -41,6 +45,7 @@ private:
     cspotEventHandler eventHandler;
     void sendCmd(MessageType typ);
     void notify();
+	void sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data = 0);
     void handleFrame(std::vector<uint8_t> &data);
     void loadTrack(uint32_t position_ms = 0, bool isPaused = 0);
 public:
@@ -58,12 +63,30 @@ public:
     void setPause(bool pause, bool notifyPlayer = true);
 
     /** 
+     * @brief Toggle Play/Pause
+     */
+	void playToggle();
+
+    /** 
      * @brief Notifies spotify servers about volume change
      *
      * @param volume int between 0 and `MAX_VOLUME`
      */
     void setRemoteVolume(int volume);
 
+	/** 
+     * @brief Set device volume and notifies spotify
+     *
+     * @param volume int between 0 and `MAX_VOLUME`
+     */
+	void setVolume(int volume);
+
+	/** 
+     * @brief change volume by a given value
+     *
+     * @param volume int between 0 and `MAX_VOLUME`
+     */
+    void adjustVolume(int by);
 
     /** 
      * @brief Goes back to previous track and notfies spotify SPIRC
