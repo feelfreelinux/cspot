@@ -4,8 +4,9 @@ cmake_minimum_required(VERSION 2.8.9)
 set (CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
+option(USE_INTERNAL_BELL "Use external bell" ON)
 
-if (NOT DEFINED ${USE_EXTERNAL_BELL})
+if (USE_INTERNAL_BELL)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
 endif()
 # Add platform specific sources
