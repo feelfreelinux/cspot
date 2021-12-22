@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
     - name: Setup cmake
       uses: jwlawson/actions-setup-cmake@v1.4
       with:
