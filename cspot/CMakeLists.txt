@@ -10,12 +10,14 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Main library sources
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
-option(USE_INTERNAL_BELL "Use external bell" ON)
 
-if (USE_INTERNAL_BELL)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
+# Use externally specified bell library or the submodule
+if(CSPOT_EXTERNAL_BELL)
+    list(APPEND EXTRA_LIBS ${CSPOT_EXTERNAL_BELL})
+else()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell)
+    list(APPEND EXTRA_LIBS bell)
 endif()
-
 # Use protobuf library
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/proto)
 list(APPEND EXTRA_LIBS proto)
