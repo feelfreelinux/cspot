@@ -76,6 +76,8 @@ std::string ApResolve::getApList()
         jsonData += cur;
     }
 
+	close(sockFd);
+
     return jsonData;
 }
 
