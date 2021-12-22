@@ -13,9 +13,9 @@
 #define DATA_SIZE_HEADER 24
 #define DATA_SIZE_FOOTER 2
 
-class AudioChunkManager : public Task {
+class AudioChunkManager : public bell::Task {
     std::vector<std::shared_ptr<AudioChunk>> chunks;
-    Queue<std::pair<std::vector<uint8_t>, bool>> audioChunkDataQueue;
+    bell::Queue<std::pair<std::vector<uint8_t>, bool>> audioChunkDataQueue;
     void runTask();
 public:
     AudioChunkManager();
@@ -50,6 +50,8 @@ public:
      * @brief Fails all requested chunks, used for reconnection.
      */
     void failAllChunks();
+
+    void close();
 };
 
 #endif

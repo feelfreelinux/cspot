@@ -92,7 +92,6 @@ std::vector<uint8_t> bigNumMultiply(std::vector<uint8_t> num, int n)
 
     return num;
 }
-
 unsigned char h2int(char c)
 {
     if (c >= '0' && c <='9'){

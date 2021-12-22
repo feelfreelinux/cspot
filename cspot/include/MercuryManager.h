@@ -53,7 +53,7 @@ enum class MercuryType : uint8_t
 
 extern std::map<MercuryType, std::string> MercuryTypeMap;
 
-class MercuryManager : public Task
+class MercuryManager : public bell::Task
 {
 private:
   std::map<uint64_t, mercuryCallback> callbacks;

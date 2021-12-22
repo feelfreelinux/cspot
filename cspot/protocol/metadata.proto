@@ -10,9 +10,30 @@ message Restriction {
     optional string countries_forbidden = 0x3;
 }
 
+message Image {
+    optional bytes file_id = 0x1;
+}
+
+message ImageGroup {
+    repeated Image image = 0x1;
+}
+
+message Album {
+    optional bytes gid = 0x1;
+    optional string name = 0x2;
+    optional ImageGroup cover_group = 0x11;
+}
+
+message Artist {
+    optional bytes gid = 0x1;
+    optional string name = 0x2;
+}
+
 message Track {
     optional bytes gid = 1;
     optional string name = 2;
+    optional Album album = 0x3;
+    repeated Artist artist = 0x4;
     optional sint32 duration = 7;
     repeated Restriction restriction = 0xb;
     repeated AudioFile file = 0xc;

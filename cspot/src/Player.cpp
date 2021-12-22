@@ -3,7 +3,7 @@
 
 // #include <valgrind/memcheck.h>
 
-Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink) : Task((8 * 1024), "player", 1)
+Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink): bell::Task("player", 10 * 1024, +0, 1)
 {
     this->audioSink = audioSink;
     this->manager = manager;
@@ -91,8 +91,12 @@ void Player::runTask()
 
 void Player::stop() {
     this->isRunning = false;
+    CSPOT_LOG(info, "Stopping player");
+    this->trackQueue.clear();
     cancelCurrentTrack();
+    CSPOT_LOG(info, "Track cancelled");
     std::scoped_lock lock(this->runningMutex);
+    CSPOT_LOG(info, "Done");
 }
 
 void Player::cancelCurrentTrack()

@@ -8,6 +8,7 @@
 #include "platform/WrappedSemaphore.h"
 #include "Crypto.h"
 #include "Utils.h"
+#include <mutex>
 
 class AudioChunk {
 private:
@@ -25,6 +26,7 @@ public:
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;
     pthread_mutex_t loadingMutex;
+    std::mutex dataAccessMutex;
     uint32_t startPosition;
     uint32_t endPosition;
     uint16_t seqId;

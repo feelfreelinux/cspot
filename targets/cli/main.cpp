@@ -17,22 +17,30 @@
 #include "PortAudioSink.h"
 #include "ALSAAudioSink.h"
 #include "CommandLineArguments.h"
+#include "HTTPServer.h"
 
 #include "ConfigJSON.h"
 #include "CliFile.h"
 #include "Logger.h"
 
 std::shared_ptr<ConfigJSON> configMan;
+std::shared_ptr<CliFile> file;
+std::shared_ptr<MercuryManager> mercuryManager;
+std::shared_ptr<SpircController> spircController;
 
-int main(int argc, char **argv)
+std::string credentialsFileName = "authBlob.json";
+std::string configFileName = "config.json";
+bool createdFromZeroconf = false;
+
+int main(int argc, char** argv)
 {
     try
     {
-        setDefaultLogger();
-        std::string credentialsFileName = "authBlob.json";
-        std::string configFileName = "config.json";
+        bell::setDefaultLogger();
+
 
         std::ifstream blobFile(credentialsFileName);
+        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)
@@ -51,13 +59,53 @@ int main(int argc, char **argv)
             return 0;
         }
 
-        auto file = std::make_shared<CliFile>();
+        file = std::make_shared<CliFile>();
         configMan = std::make_shared<ConfigJSON>(configFileName, file);
+        if (args->setBitrate)
+        {
+            configMan->format = args->bitrate;
+        }
 
-        if(!configMan->load())
+        if (!configMan->load())
         {
             CSPOT_LOG(error, "Config error");
         }
+
+        auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {
+            CSPOT_LOG(info, "Creating player");
+            auto session = std::make_unique<Session>();
+            session->connectWithRandomAp();
+            auto token = session->authenticate(blob);
+
+            // Auth successful
+            if (token.size() > 0)
+            {
+                if (createdFromZeroconf) {
+                    file->writeFile(credentialsFileName, blob->toJson());
+                }
+#ifdef CSPOT_ENABLE_ALSA_SINK
+                auto audioSink = std::make_shared<ALSAAudioSink>();
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+                auto audioSink = std::make_shared<PortAudioSink>();
+#else
+                auto audioSink = std::make_shared<NamedPipeAudioSink>();
+#endif
+
+                // @TODO Actually store this token somewhere
+                mercuryManager = std::make_shared<MercuryManager>(std::move(session));
+
+                mercuryManager->startTask();
+
+                spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+                mercuryManager->reconnectedCallback = []() {
+                    return spircController->subscribe();
+                };
+
+                mercuryManager->handleQueue();
+            }
+
+        };
+
 
         // Blob file
         std::shared_ptr<LoginBlob> blob;
@@ -66,54 +114,25 @@ int main(int argc, char **argv)
         bool read_status = file->readFile(credentialsFileName, jsonData);
 
         // Login using Command line arguments
-        if (!args->username.empty()){
+        if (!args->username.empty()) {
             blob = std::make_shared<LoginBlob>();
             blob->loadUserPass(args->username, args->password);
+            createPlayerCallback(blob);
         }
         // Login using Blob
-        else if(jsonData.length() > 0 && read_status)
+        else if (jsonData.length() > 0 && read_status)
         {
             blob = std::make_shared<LoginBlob>();
             blob->loadJson(jsonData);
+            createPlayerCallback(blob);
         }
         // ZeroconfAuthenticator
         else
         {
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-            blob = authenticator->listenForRequests();
-            file->writeFile(credentialsFileName, blob->toJson());
-        }
-
-        if(args->setBitrate)
-        {
-            configMan->format = args->bitrate;
-        }
-
-        auto session = std::make_unique<Session>();
-        session->connectWithRandomAp();
-        auto token = session->authenticate(blob);
-
-        // Auth successful
-        if (token.size() > 0)
-        {
-            // @TODO Actually store this token somewhere
-            auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
-
-            mercuryManager->startTask();
-
-#ifdef CSPOT_ENABLE_ALSA_SINK
-            auto audioSink = std::make_shared<ALSAAudioSink>();
-#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-            auto audioSink = std::make_shared<PortAudioSink>();
-#else
-            auto audioSink = std::make_shared<NamedPipeAudioSink>();
-#endif
-            auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
-            mercuryManager->reconnectedCallback = [spircController]() {
-                return spircController->subscribe();
-            };
-
-            mercuryManager->handleQueue();
+            createdFromZeroconf = true;
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
+            authenticator->registerHandlers();
+            httpServer->listen();
         }
 
         while (true);

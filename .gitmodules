@@ -1,10 +1,10 @@
+[submodule "cspot/cpp-reflection"]
+	path = cspot/cpp-reflection
+	url = https://github.com/alufers/cpp-reflection.git
+[submodule "cspot/bell"]
+	path = cspot/bell
+	url = https://github.com/feelfreelinux/bell
 [submodule "cspot/tremor"]
 	path = cspot/tremor
 	url = https://gitlab.xiph.org/xiph/tremor.git
 	branch = lowmem
-[submodule "cspot/cJSON"]
-	path = cspot/cJSON
-	url = https://github.com/DaveGamble/cJSON.git
-[submodule "cspot/cpp-reflection"]
-	path = cspot/cpp-reflection
-	url = https://github.com/alufers/cpp-reflection.git

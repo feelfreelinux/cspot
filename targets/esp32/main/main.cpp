@@ -32,9 +32,9 @@
 #include "Logger.h"
 
 // Config sink
-#define AC101 // INTERNAL, AC101, ES8018, PCM5102
+#define PCM5102 // INTERNAL, AC101, ES8018, PCM5102
 #define QUALITY     320      // 320, 160, 96
-#define DEVICE_NAME "CSpot"
+#define DEVICE_NAME "CSpot-ESP32"
 
 #ifdef INTERNAL
 #include <InternalAudioSink.h>
@@ -54,7 +54,12 @@
 
 static const char *TAG = "cspot";
 
+std::shared_ptr<ESPFile> file;
+std::shared_ptr<MercuryManager> mercuryManager;
+std::shared_ptr<SpircController> spircController;
 std::shared_ptr<ConfigJSON> configMan;
+std::string credentialsFileName = "/spiffs/authBlob.json";
+bool createdFromZeroconf = false;
 
 extern "C"
 {
@@ -62,16 +67,17 @@ extern "C"
 }
 static void cspotTask(void *pvParameters)
 {
-    auto zeroconfAuthenticator = std::make_shared<ZeroconfAuthenticator>();
+	
+    bell::setDefaultLogger();
 
-    // Config file
-    auto file = std::make_shared<ESPFile>();
-    configMan = std::make_shared<ConfigJSON>("/spiffs/config.json", file);
+	// Config file
+	file = std::make_shared<ESPFile>();
+	configMan = std::make_shared<ConfigJSON>("/spiffs/config.json", file);
 
-    if(!configMan->load())
-    {
-      CSPOT_LOG(error, "Config error");
-    }
+	if(!configMan->load())
+	{
+		CSPOT_LOG(error, "Config error");
+	}
 
     configMan->deviceName = DEVICE_NAME;
 
@@ -81,60 +87,70 @@ static void cspotTask(void *pvParameters)
     configMan->format = AudioFormat::OGG_VORBIS_160;
 #else
     configMan->format = AudioFormat::OGG_VORBIS_96;
+#endif		
+
+    auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {
+        CSPOT_LOG(info, "Creating player");
+        auto session = std::make_unique<Session>();
+        session->connectWithRandomAp();
+        auto token = session->authenticate(blob);
+
+        // Auth successful
+        if (token.size() > 0)
+        {
+			if (createdFromZeroconf) {
+                file->writeFile(credentialsFileName, blob->toJson());
+            }
+#ifdef INTERNAL
+			auto audioSink = std::make_shared<InternalAudioSink>();
+#endif
+#ifdef AC101
+			auto audioSink = std::make_shared<AC101AudioSink>();
+#endif
+#ifdef ES8018
+			auto audioSink = std::make_shared<ES9018AudioSink>();
+#endif
+#ifdef PCM5102
+			auto audioSink = std::make_shared<PCM5102AudioSink>();
 #endif
 
+            // @TODO Actually store this token somewhere
+            mercuryManager = std::make_shared<MercuryManager>(std::move(session));
+
+            mercuryManager->startTask();
+
+            spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+            mercuryManager->reconnectedCallback = []() {
+                return spircController->subscribe();
+            };
+
+            mercuryManager->handleQueue();
+        }
+
+    };
+
     // Blob file
-    std::string credentialsFileName = "/spiffs/authBlob.json";
     std::shared_ptr<LoginBlob> blob;
     std::string jsonData;
 
     bool read_status = file->readFile(credentialsFileName, jsonData);
 
-    if(jsonData.length() > 0 && read_status)
+	if (jsonData.length() > 0 && read_status)
     {
-      blob = std::make_shared<LoginBlob>();
-      blob->loadJson(jsonData);
+        blob = std::make_shared<LoginBlob>();
+        blob->loadJson(jsonData);
+        createPlayerCallback(blob);
     }
+    // ZeroconfAuthenticator
     else
     {
-      auto authenticator = std::make_shared<ZeroconfAuthenticator>();
-      blob = authenticator->listenForRequests();
-      file->writeFile(credentialsFileName, blob->toJson());
+        createdFromZeroconf = true;
+        auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback);
+        authenticator->listenForRequests();
     }
 
-    auto session = std::make_unique<Session>();
-    session->connectWithRandomAp();
-    auto token = session->authenticate(blob);
+	vTaskSuspend(NULL);
 
-    // Auth successful
-    if (token.size() > 0)
-    {
-        // @TODO Actually store this token somewhere
-        auto mercuryManager = std::make_shared<MercuryManager>(std::move(session));
-        mercuryManager->startTask();
-
-#ifdef INTERNAL
-        auto audioSink = std::make_shared<InternalAudioSink>();
-#endif
-#ifdef AC101
-        auto audioSink = std::make_shared<AC101AudioSink>();
-#endif
-#ifdef ES8018
-        auto audioSink = std::make_shared<ES9018AudioSink>();
-#endif
-#ifdef PCM5102
-        auto audioSink = std::make_shared<PCM5102AudioSink>();
-#endif
-#ifdef TAS5711
-        auto audioSink = std::make_shared<TAS5711AudioSink>();
-#endif
-
-        auto spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
-        mercuryManager->reconnectedCallback = [spircController]() {
-            return spircController->subscribe();
-        };
-        mercuryManager->handleQueue();
-    }
 }
 
 void init_spiffs()
@@ -147,7 +163,6 @@ void init_spiffs()
     };
 
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
-    setDefaultLogger();
 
     if (ret != ESP_OK)
     {
@@ -196,7 +211,6 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
 
-    ESP_LOGI("TAG", "Connected to AP, start spotify receiver");
-    // for(;;);
-    auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 10, NULL, 5, NULL, 0);
+    ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
+    auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL, 0);
 }
