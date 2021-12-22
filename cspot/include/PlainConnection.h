@@ -19,6 +19,7 @@ public:
     PlainConnection();
     ~PlainConnection();
     int apSock;
+    bool isClosed = false;
     void connectToAp(std::string apAddress);
     void closeSocket();
     timeoutCallback timeoutHandler;

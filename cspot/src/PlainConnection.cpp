@@ -14,6 +14,7 @@ PlainConnection::~PlainConnection()
 
 void PlainConnection::connectToAp(std::string apAddress)
 {
+    isClosed = false;
     struct addrinfo h, *airoot, *ai;
     std::string hostname = apAddress.substr(0, apAddress.find(":"));
     std::string portStr = apAddress.substr(apAddress.find(":") + 1, apAddress.size());
@@ -58,7 +59,7 @@ void PlainConnection::connectToAp(std::string apAddress)
             break;
         }
 
-        close(this->apSock);
+        this->closeSocket();
         apSock = -1;
         throw std::runtime_error("Can't connect to spotify servers");
     }
@@ -164,6 +165,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
 
 void PlainConnection::closeSocket()
 {
+    if (isClosed) return;
     CSPOT_LOG(info, "Closing socket...");
     shutdown(this->apSock, SHUT_RDWR);
     close(this->apSock);
