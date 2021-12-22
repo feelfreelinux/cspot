@@ -16,6 +16,7 @@
 #include "nvs_flash.h"
 #include "protocol_examples_common.h"
 #include <string>
+#include <memory>
 #include <PlainConnection.h>
 #include <Session.h>
 #include <SpircController.h>
@@ -30,6 +31,7 @@
 #include "ESPFile.h"
 #include "ProtoHelper.h"
 #include "Logger.h"
+#include <HTTPServer.h>
 
 // Config sink
 #define PCM5102 // INTERNAL, AC101, ES8018, PCM5102
@@ -145,8 +147,10 @@ static void cspotTask(void *pvParameters)
     else
     {
         createdFromZeroconf = true;
-        auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback);
-        authenticator->listenForRequests();
+        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
+        auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
+        authenticator->registerHandlers();
+        httpServer->listen();
     }
 
 	vTaskSuspend(NULL);
