@@ -16,6 +16,7 @@
 #include "nvs_flash.h"
 #include "protocol_examples_common.h"
 #include <string>
+#include <memory>
 #include <PlainConnection.h>
 #include <Session.h>
 #include <SpircController.h>
@@ -30,6 +31,8 @@
 #include "ESPFile.h"
 #include "ProtoHelper.h"
 #include "Logger.h"
+#include <HTTPServer.h>
+#include "mdns.h"
 
 // Config sink
 #define PCM5102 // INTERNAL, AC101, ES8018, PCM5102
@@ -47,6 +50,9 @@
 #endif
 #ifdef PCM5102
 #include <PCM5102AudioSink.h>
+#endif
+#ifdef TAS5711
+#include <TAS5711AudioSink.h>
 #endif
 
 static const char *TAG = "cspot";
@@ -142,8 +148,10 @@ static void cspotTask(void *pvParameters)
     else
     {
         createdFromZeroconf = true;
-        auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback);
-        authenticator->listenForRequests();
+        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
+        auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
+        authenticator->registerHandlers();
+        httpServer->listen();
     }
 
 	vTaskSuspend(NULL);
@@ -207,6 +215,10 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
+
+    // setup mdns
+    mdns_init();
+    mdns_hostname_set("cspot");
 
     ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
     auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL, 0);

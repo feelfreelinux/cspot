@@ -114,6 +114,7 @@ void AudioChunkManager::runTask() {
             } catch (...) {
             }
         } else {
+            usleep(100);
         }
     }
 

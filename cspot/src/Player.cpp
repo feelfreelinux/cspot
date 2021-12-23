@@ -83,6 +83,8 @@ void Player::runTask()
             currentTrack->audioStream->streamFinishedCallback = nullptr;
             currentTrack->audioStream->audioSink = nullptr;
             currentTrack->audioStream->pcmCallback = nullptr;
+        } else {
+            usleep(100);
         }
     }
 }

@@ -1,67 +1,34 @@
+cmake_minimum_required(VERSION 2.8.12)
+
 project(cspot)
 
-cmake_minimum_required(VERSION 2.8.9)
-set (CMAKE_CXX_STANDARD 17)
+# Configurable options
+set(CSPOT_EXTERNAL_BELL "" CACHE STRING "External bell library target name, optional")
 
+# CMake options
+set(CMAKE_CXX_STANDARD 17)
+
+# Main library sources
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
-option(USE_INTERNAL_BELL "Use external bell" ON)
 
-if (USE_INTERNAL_BELL)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell ${CMAKE_CURRENT_BINARY_DIR}/bell)
+# Use externally specified bell library or the submodule
+if(CSPOT_EXTERNAL_BELL)
+    list(APPEND EXTRA_LIBS ${CSPOT_EXTERNAL_BELL})
+else()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell)
+    list(APPEND EXTRA_LIBS bell)
 endif()
-# Add platform specific sources
-# if(${ESP_PLATFORM})
-#     file(GLOB ESP_PLATFORM_SOURCES "src/platform/esp/*.cpp" "src/platform/esp/*.c")
-#     set(SOURCES ${SOURCES} ${ESP_PLATFORM_SOURCES} )
-# endif()
+# Use protobuf library
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/proto)
+list(APPEND EXTRA_LIBS proto)
 
-# if(UNIX)
-#     file(GLOB UNIX_PLATFORM_SOURCES "src/platform/unix/*.cpp" "src/platform/unix/*.c")
-#     set(SOURCES ${SOURCES} ${UNIX_PLATFORM_SOURCES} )
-# endif()
-
-# if(APPLE)
-#     file(GLOB APPLE_PLATFORM_SOURCES "src/platform/apple/*.cpp" "src/platform/apple/*.c")
-#     set(SOURCES ${SOURCES} ${APPLE_PLATFORM_SOURCES} )
-# endif()
-
-# if(UNIX AND NOT APPLE)
-# #     file(GLOB LINUX_PLATFORM_SOURCES "src/platform/linux/*.cpp" "src/platform/linux/*.c")
-# #     set(SOURCES ${SOURCES} ${LINUX_PLATFORM_SOURCES} )
-# # endif()
-
-
-# if(${ESP_PLATFORM})
-#     list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/CryptoOpenSSL.cpp) # use MBedTLS 
-#     idf_build_set_property(COMPILE_DEFINITIONS "-DCSPOT_USE_MBEDTLS" APPEND)
-#     set(EXTRA_REQ_LIBS idf::mbedtls idf::pthread idf::mdns)
-#     add_definitions(-Wunused-const-variable -Wchar-subscripts -Wunused-label -Wmaybe-uninitialized -Wmisleading-indentation)
-# else()
-#     list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/CryptoMbedTLS.cpp) # use OpenSSL
-#     find_package(OpenSSL REQUIRED)
-#     if(OPENSSL_FOUND)
-#         set(OPENSSL_USE_STATIC_LIBS TRUE)
-#     endif()
-#     set(EXTRA_REQ_LIBS OpenSSL::Crypto Threads::Threads)
-#     set(THREADS_PREFER_PTHREAD_FLAG ON)
-#     find_package(Threads REQUIRED)
-# endif()
-
+# Add Apple Bonjour compatibility library for Linux
 if(UNIX AND NOT APPLE)
-    set(EXTRA_REQ_LIBS ${EXTRA_REQ_LIBS} dns_sd) # add apple bonjur compatibility library for linux
+    list(APPEND EXTRA_LIBS dns_sd)
     # TODO: migrate from this to native linux mDNS
 endif()
 
-include_directories("include")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-include_directories("protos")
-
-message(${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh)
-execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_protos.sh" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-
-set(SOURCES ${SOURCES} "protos/AnyRefImpl.cpp" "protos/ReflectTypeInfo.cpp")
-
 add_library(cspot STATIC ${SOURCES})
-target_link_libraries(cspot PRIVATE bell ${EXTRA_REQ_LIBS})
-
-target_include_directories(cspot PUBLIC "include" "protos" bell ${EXTRA_REQ_LIBS} ${CMAKE_CURRENT_BINARY_DIR})
+# PUBLIC to propagate includes from bell to cspot dependents
+target_link_libraries(cspot PUBLIC ${EXTRA_LIBS})
+target_include_directories(cspot PUBLIC "include" ${CMAKE_CURRENT_BINARY_DIR})

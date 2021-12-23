@@ -9,7 +9,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::UNSUB, "UNSUB"},
     });
 
-MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 8 * 1024, +1, 1)
+MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 6 * 1024, +1, 1)
 {
     this->timeProvider = std::make_shared<TimeProvider>();
     this->callbacks = std::map<uint64_t, mercuryCallback>();

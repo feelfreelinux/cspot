@@ -6,5 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 # see https://github.com/platformio/platform-espressif32/issues/341
 list(APPEND EXTRA_COMPONENT_DIRS $ENV{IDF_PATH}/examples/common_components/protocol_examples_common)
 
-include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+if(NOT IDF_NO_INCLUDE)
+    include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+endif()
 project(cspot-esp32)
