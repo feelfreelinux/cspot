@@ -32,6 +32,7 @@
 #include "ProtoHelper.h"
 #include "Logger.h"
 #include <HTTPServer.h>
+#include "mdns.h"
 
 // Config sink
 #define PCM5102 // INTERNAL, AC101, ES8018, PCM5102
@@ -214,6 +215,10 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
+
+    // setup mdns
+    mdns_init();
+    mdns_hostname_set("cspot");
 
     ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
     auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 8192 * 8, NULL, 5, NULL, 0);
