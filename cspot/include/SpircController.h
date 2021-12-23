@@ -99,6 +99,11 @@ public:
     void nextSong();
     void setEventHandler(cspotEventHandler handler);
     void stopPlayer();
+
+    /** 
+     * @brief Disconnect players and notify
+     */
+    void disconnect();
 };
 
 #endif
