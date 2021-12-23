@@ -192,7 +192,6 @@ void MercuryManager::stop() {
     isRunning = false;
     audioChunkManager->close();
     std::scoped_lock(audioChunkManager->runningMutex, this->runningMutex);
-    this->session->close();
     CSPOT_LOG(debug, "mercury stopped");
 }
 

@@ -43,13 +43,20 @@ void SpircController::setPause(bool isPaused, bool notifyPlayer) {
         CSPOT_LOG(debug, "External pause command");
         if (notifyPlayer) player->pause();
         state->setPlaybackState(PlaybackState::Paused);
-        notify();
     } else {
         CSPOT_LOG(debug, "External play command");
         if (notifyPlayer) player->play();
         state->setPlaybackState(PlaybackState::Playing);
-        notify();
     }
+    notify();
+}
+
+void SpircController::disconnect(void) {
+    player->cancelCurrentTrack();
+	stopPlayer();
+    state->setActive(false);
+    notify();
+	sendEvent(CSpotEventType::DISC);
 }
 
 void SpircController::playToggle() {
@@ -104,10 +111,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         // Pause the playback if another player took control
         if (state->isActive() &&
             state->remoteFrame.device_state->is_active.value()) {
-			sendEvent(CSpotEventType::DISC);
-            state->setActive(false);
-            notify();
-            player->cancelCurrentTrack();
+			disconnect();
         }
         break;
     }
