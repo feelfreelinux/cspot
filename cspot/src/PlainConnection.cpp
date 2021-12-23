@@ -5,7 +5,10 @@
 #include <errno.h>
 #include "Logger.h"
 
-PlainConnection::PlainConnection(){};
+PlainConnection::PlainConnection()
+{
+	this->apSock = -1;
+};
 
 PlainConnection::~PlainConnection()
 {
@@ -164,7 +167,10 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
 
 void PlainConnection::closeSocket()
 {
-    CSPOT_LOG(info, "Closing socket...");
-    shutdown(this->apSock, SHUT_RDWR);
-    close(this->apSock);
+	if (this->apSock < 0) return;
+
+	CSPOT_LOG(info, "Closing socket...");
+	shutdown(this->apSock, SHUT_RDWR);
+	close(this->apSock);
+	this->apSock = -1;
 }
