@@ -59,8 +59,6 @@ void ZeroconfAuthenticator::registerZeroconf()
     const char* service = "_spotify-connect._tcp";
 
 #ifdef ESP_PLATFORM
-    mdns_init();
-    mdns_hostname_set("cspot");
     mdns_txt_item_t serviceTxtData[3] = {
         {"VERSION", "1.0"},
         {"CPath", "/spotify_info"},
