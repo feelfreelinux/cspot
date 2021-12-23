@@ -162,8 +162,8 @@ void MercuryManager::runTask()
         catch (const std::runtime_error& e)
         {
             // Reconnection required
-            this->reconnect();
-            this->reconnectedCallback();
+            if (isRunning) this->reconnect();
+            if (isRunning) this->reconnectedCallback();
             continue;
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
