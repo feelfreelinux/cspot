@@ -99,12 +99,13 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
 
     if (trackInfoReceived != nullptr)
     {
-        CSPOT_LOG(info, "Calling %d", trackInfo.album.value().cover_group.value().image.size());
         TrackInfo simpleTrackInfo = {
             .name = trackInfo.name.value(),
             .album = trackInfo.album.value().name.value(),
             .artist = trackInfo.artist[0].name.value(),
-            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(trackInfo.album.value().cover_group.value().image[0].file_id.value())
+            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(trackInfo.album.value().cover_group.value().image[0].file_id.value()),
+            .duration = trackInfo.duration.value(),
+
         };
 
         trackInfoReceived(simpleTrackInfo);
