@@ -20,6 +20,7 @@ struct TrackInfo {
     std::string album;
     std::string artist;
     std::string imageUrl;
+    int duration;
 };
 
 typedef std::function<void(TrackInfo&)> trackChangedCallback;
