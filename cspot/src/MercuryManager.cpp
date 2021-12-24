@@ -149,7 +149,7 @@ RECONNECT:
 
 void MercuryManager::runTask()
 {
-    std::scoped_lock(this->runningMutex);
+    std::scoped_lock lock(this->runningMutex);
     // Listen for mercury replies and handle them accordingly
     isRunning = true;
     while (isRunning)
@@ -161,9 +161,10 @@ void MercuryManager::runTask()
         }
         catch (const std::runtime_error& e)
         {
+			if (!isRunning) break;
             // Reconnection required
-            if (isRunning) this->reconnect();
-            if (isRunning) this->reconnectedCallback();
+            this->reconnect();
+            this->reconnectedCallback();
             continue;
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
@@ -191,8 +192,7 @@ void MercuryManager::stop() {
     CSPOT_LOG(debug, "Stopping mercury manager");
     isRunning = false;
     audioChunkManager->close();
-    std::scoped_lock(audioChunkManager->runningMutex, this->runningMutex);
-    this->session->close();
+    std::scoped_lock lock(audioChunkManager->runningMutex, this->runningMutex);
     CSPOT_LOG(debug, "mercury stopped");
 }
 
