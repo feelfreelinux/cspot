@@ -24,6 +24,7 @@ enum class CSpotEventType {
     NEXT,
     PREV,
     SEEK,
+	LOAD,
 };
 
 struct CSpotEvent {
