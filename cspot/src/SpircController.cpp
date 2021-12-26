@@ -55,7 +55,8 @@ void SpircController::disconnect(void) {
     player->cancelCurrentTrack();
     state->setActive(false);
     notify();
-	sendEvent(CSpotEventType::DISC);
+	// Send the event at the end at it might be a last gasp
+	sendEvent(CSpotEventType::DISC);	
 }
 
 void SpircController::playToggle() {

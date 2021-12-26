@@ -59,6 +59,7 @@ private:
   std::map<uint64_t, mercuryCallback> callbacks;
   std::mutex reconnectionMutex;
   std::mutex runningMutex;
+  std::mutex stopMutex;
   std::map<std::string, mercuryCallback> subscriptions;
   std::unique_ptr<Session> session;
   std::shared_ptr<LoginBlob> lastAuthBlob; 
