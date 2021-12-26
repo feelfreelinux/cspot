@@ -74,6 +74,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     trackInfo = decodePb<Track>(response->parts[0]);
 
     CSPOT_LOG(info, "Track name: %s", trackInfo.name.value().c_str());
+        CSPOT_LOG(info, "Track duration: %d", trackInfo.duration.value());
 
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
     int altIndex = 0;

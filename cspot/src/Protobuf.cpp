@@ -91,6 +91,10 @@ void decodeField(std::shared_ptr<PbReader> reader, AnyRef any)
     {
         *any.as<int64_t>() = reader->decodeVarInt<int64_t>();
     }
+    else if (any.is<int32_t>())
+    {
+        *any.as<int32_t>() = reader->decodeVarInt<int32_t>();
+    }
     else
     {
         reader->skip();
