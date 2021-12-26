@@ -29,6 +29,8 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
 
 bool MercuryManager::timeoutHandler()
 {
+    if (!isRunning) return true;
+        
     auto currentTimestamp = timeProvider->getSyncedTimestamp();
 
     if (this->lastRequestTimestamp != -1 && currentTimestamp - this->lastRequestTimestamp > AUDIOCHUNK_TIMEOUT_MS)
@@ -161,7 +163,7 @@ void MercuryManager::runTask()
         }
         catch (const std::runtime_error& e)
         {
-			if (!isRunning) break;
+            if (!isRunning) break;
             // Reconnection required
             this->reconnect();
             this->reconnectedCallback();
@@ -189,10 +191,11 @@ void MercuryManager::runTask()
 }
 
 void MercuryManager::stop() {
+    std::scoped_lock stop(this->stopMutex); 
     CSPOT_LOG(debug, "Stopping mercury manager");
     isRunning = false;
     audioChunkManager->close();
-    std::scoped_lock lock(audioChunkManager->runningMutex, this->runningMutex);
+    std::scoped_lock lock(this->runningMutex);
     CSPOT_LOG(debug, "mercury stopped");
 }
 
@@ -274,6 +277,8 @@ void MercuryManager::handleQueue()
     {
         this->updateQueue();
     }
+    
+    std::scoped_lock lock(this->stopMutex);
 }
 
 uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCallback& callback, mercuryCallback& subscription, mercuryParts& payload)
