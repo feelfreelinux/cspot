@@ -38,7 +38,7 @@ void SpircController::subscribe() {
 }
 
 void SpircController::setPause(bool isPaused, bool notifyPlayer) {
-	sendEvent(CSpotEventType::PLAY_PAUSE, isPaused);
+    sendEvent(CSpotEventType::PLAY_PAUSE, isPaused);
     if (isPaused) {
         CSPOT_LOG(debug, "External pause command");
         if (notifyPlayer) player->pause();
@@ -55,29 +55,29 @@ void SpircController::disconnect(void) {
     player->cancelCurrentTrack();
     state->setActive(false);
     notify();
-	// Send the event at the end at it might be a last gasp
-	sendEvent(CSpotEventType::DISC);	
+    // Send the event at the end at it might be a last gasp
+    sendEvent(CSpotEventType::DISC);    
 }
 
 void SpircController::playToggle() {
-	if (state->innerFrame.state->status.value() == PlayStatus::kPlayStatusPause) {
-		setPause(false);
-	} else {
-		setPause(true);
-	}
+    if (state->innerFrame.state->status.value() == PlayStatus::kPlayStatusPause) {
+        setPause(false);
+    } else {
+        setPause(true);
+    }
 }
 
 void SpircController::adjustVolume(int by) {
-	if (state->innerFrame.device_state->volume.has_value()) {
-		int volume = state->innerFrame.device_state->volume.value() + by;
-		if (volume < 0) volume = 0;
-		else if (volume > MAX_VOLUME) volume = MAX_VOLUME;
-		setVolume(volume);
-	}
+    if (state->innerFrame.device_state->volume.has_value()) {
+        int volume = state->innerFrame.device_state->volume.value() + by;
+        if (volume < 0) volume = 0;
+        else if (volume > MAX_VOLUME) volume = MAX_VOLUME;
+        setVolume(volume);
+    }
 }
 
 void SpircController::setVolume(int volume) {
-	setRemoteVolume(volume);
+    setRemoteVolume(volume);
     player->setVolume(volume);
     configMan->save();
 }
@@ -111,21 +111,21 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         // Pause the playback if another player took control
         if (state->isActive() &&
             state->remoteFrame.device_state->is_active.value()) {
-			disconnect();
+            disconnect();
         }
         break;
     }
     case MessageType::kMessageTypeSeek: {
         CSPOT_LOG(debug, "Seek command");
-		sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position.value());
+        sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position.value());
         state->updatePositionMs(state->remoteFrame.position.value());
         this->player->seekMs(state->remoteFrame.position.value());
         notify();
         break;
     }
     case MessageType::kMessageTypeVolume:
-		sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume.value());
-		setVolume(state->remoteFrame.volume.value());
+        sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume.value());
+        setVolume(state->remoteFrame.volume.value());
         break;
     case MessageType::kMessageTypePause:
         setPause(true);
@@ -134,11 +134,11 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
         setPause(false);
         break;
     case MessageType::kMessageTypeNext:
-		sendEvent(CSpotEventType::NEXT);
+        sendEvent(CSpotEventType::NEXT);
         nextSong();
         break;
     case MessageType::kMessageTypePrev:
-		sendEvent(CSpotEventType::PREV);
+        sendEvent(CSpotEventType::PREV);
         prevSong();
         break;
     case MessageType::kMessageTypeLoad: {
@@ -182,7 +182,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
 }
 
 void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
-	sendEvent(CSpotEventType::LOAD, (int) position_ms);
+    sendEvent(CSpotEventType::LOAD, (int) position_ms);
     state->setPlaybackState(PlaybackState::Loading);
     std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
@@ -201,7 +201,7 @@ void SpircController::sendEvent(CSpotEventType eventType, std::variant<TrackInfo
     if (eventHandler != nullptr) {
         CSpotEvent event = {
             .eventType = eventType,
-			.data = data,
+            .data = data,
         };
 
         eventHandler(event);
@@ -217,8 +217,8 @@ void SpircController::setEventHandler(cspotEventHandler callback) {
             info.artist = track.artist;
             info.imageUrl = track.imageUrl;
             info.name = track.name;
-			info.duration = track.duration;
-			this->sendEvent(CSpotEventType::TRACK_INFO, info);
+            info.duration = track.duration;
+            this->sendEvent(CSpotEventType::TRACK_INFO, info);
     });
 }
 

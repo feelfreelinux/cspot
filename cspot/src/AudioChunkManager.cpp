@@ -46,7 +46,7 @@ void AudioChunkManager::close() {
 
 void AudioChunkManager::runTask() {
     std::scoped_lock lock(this->runningMutex);
-	this->isRunning = true;
+    this->isRunning = true;
     while (isRunning) {
         std::pair<std::vector<uint8_t>, bool> audioPair;
         if (this->audioChunkDataQueue.wtpop(audioPair, 100)) {
