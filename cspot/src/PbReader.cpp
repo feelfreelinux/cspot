@@ -36,6 +36,7 @@ template int64_t PbReader::decodeFixed();
 
 template uint32_t PbReader::decodeVarInt();
 template int64_t PbReader::decodeVarInt();
+template int32_t PbReader::decodeVarInt();
 template bool PbReader::decodeVarInt();
 
 void PbReader::resetMaxPosition()
