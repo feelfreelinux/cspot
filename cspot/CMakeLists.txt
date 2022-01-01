@@ -14,13 +14,13 @@ file(GLOB SOURCES "src/*.cpp" "src/*.c")
 # Use externally specified bell library or the submodule
 if(CSPOT_EXTERNAL_BELL)
     list(APPEND EXTRA_LIBS ${CSPOT_EXTERNAL_BELL})
+    bell_add_proto("proto/*.proto") # gather cspot protos to build later
 else()
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell)
     list(APPEND EXTRA_LIBS bell)
+    bell_add_proto("proto/*.proto") # gather cspot protos to build below
+    bell_build_proto()
 endif()
-# Use protobuf library
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/proto)
-list(APPEND EXTRA_LIBS proto)
 
 # Add Apple Bonjour compatibility library for Linux
 if(UNIX AND NOT APPLE)
