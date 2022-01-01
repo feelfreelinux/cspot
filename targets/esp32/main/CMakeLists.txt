@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
 
 # Main target sources
-file(GLOB SOURCES "*.cpp" "*.c" "sinks/*.cpp" "sinks/*.c")
+file(GLOB SOURCES "*.cpp" "*.c")
 
 # Configure the target
 idf_component_register(
     SRCS ${SOURCES}
-    INCLUDE_DIRS "." "sinks"
+    INCLUDE_DIRS "."
 )
 
 # Build static library, do not build test executables
