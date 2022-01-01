@@ -49,7 +49,7 @@
 #include <ES9018AudioSink.h>
 #endif
 #ifdef ES8388
-#include <ES388AudioSink.h>
+#include <ES8388AudioSink.h>
 #endif
 #ifdef PCM5102
 #include <PCM5102AudioSink.h>
