@@ -66,7 +66,7 @@ static void spdif_buf_init(void)
     }
 }
 
-SPDIFAudioSink::SPDIFAudioSink()
+SPDIFAudioSink::SPDIFAudioSink(uint8_t spdifPin)
 {
     // initialize S/PDIF buffer
     spdif_buf_init();
@@ -81,7 +81,7 @@ SPDIFAudioSink::SPDIFAudioSink()
     	.sample_rate = sample_rate,
         .bits_per_sample = (i2s_bits_per_sample_t)32,
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_I2S,
+        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .intr_alloc_flags = 0,
         .dma_buf_count = 8,
         .dma_buf_len = 512,
@@ -92,7 +92,7 @@ SPDIFAudioSink::SPDIFAudioSink()
     i2s_pin_config_t pin_config = {
         .bck_io_num = -1,
         .ws_io_num = -1,
-        .data_out_num = 26,
+        .data_out_num = spdifPin,
         .data_in_num = -1,
     };
     i2s_driver_install((i2s_port_t)0, &i2s_config, 0, NULL);
