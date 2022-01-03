@@ -43,7 +43,7 @@ private:
     std::shared_ptr<ConfigJSON> config;
 
     cspotEventHandler eventHandler;
-    void sendCmd(MessageType2 typ);
+    void sendCmd(MessageType typ);
     void notify();
 	void sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data = 0);
     void handleFrame(std::vector<uint8_t> &data);

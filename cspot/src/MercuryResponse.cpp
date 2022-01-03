@@ -3,13 +3,13 @@
 MercuryResponse::MercuryResponse(std::vector<uint8_t> &data)
 {
     // this->mercuryHeader = std::make_unique<Header>();
-    this->mercuryHeader = Header2_init_default;
+    this->mercuryHeader = Header_init_default;
     this->parts = mercuryParts(0);
     this->parseResponse(data);
 }
 
 MercuryResponse::~MercuryResponse() {
-    pbFree(Header2_fields, &mercuryHeader);
+    pbFree(Header_fields, &mercuryHeader);
 }
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
@@ -34,5 +34,5 @@ void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
         pos += 2 + partSize;
     }
 
-    pbDecode(this->mercuryHeader, Header2_fields, headerBytes);
+    pbDecode(this->mercuryHeader, Header_fields, headerBytes);
 }

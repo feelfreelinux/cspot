@@ -28,10 +28,10 @@
 class Session
 {
 private:
-    ClientResponseEncrypted2 authRequest;
-    ClientResponsePlaintext2 clientResPlaintext;
-    ClientHello2 clientHello;
-    APResponseMessage2 apResponse;
+    ClientResponseEncrypted authRequest;
+    ClientResponsePlaintext clientResPlaintext;
+    ClientHello clientHello;
+    APResponseMessage apResponse;
 
     std::shared_ptr<PlainConnection> conn;
     std::unique_ptr<Crypto> crypto;

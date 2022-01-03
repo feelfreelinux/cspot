@@ -15,10 +15,10 @@ private:
     std::vector<uint8_t> base62Decode(std::string uri);
 
 public:
-    TrackReference(TrackRef2 *ref);
+    TrackReference(TrackRef *ref);
     ~TrackReference();
 
-    TrackRef2* ref;
+    TrackRef* ref;
 
     std::vector<uint8_t> gid;
 

@@ -1,6 +1,6 @@
-LoginCryptoDiffieHellmanHello2.gc max_size:96, fixed_length:true
-LoginCryptoDiffieHellmanChallenge2.gs max_size:96, fixed_length:true
-LoginCryptoDiffieHellmanResponse2.hmac max_size:20, fixed_length:true
-ClientHello2.cryptosuites_supported max_count:1, fixed_count:true
-ClientHello2.client_nonce max_size:16, fixed_length:true
-ClientHello2.padding max_size:1, fixed_length:true
+LoginCryptoDiffieHellmanHello.gc max_size:96, fixed_length:true
+LoginCryptoDiffieHellmanChallenge.gs max_size:96, fixed_length:true
+LoginCryptoDiffieHellmanResponse.hmac max_size:20, fixed_length:true
+ClientHello.cryptosuites_supported max_count:1, fixed_count:true
+ClientHello.client_nonce max_size:16, fixed_length:true
+ClientHello.padding max_size:1, fixed_length:true

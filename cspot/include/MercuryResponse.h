@@ -21,7 +21,7 @@ public:
     MercuryResponse(std::vector<uint8_t> &data);
     ~MercuryResponse();
     void decodeHeader();
-    Header2 mercuryHeader;
+    Header mercuryHeader;
     uint8_t flags;
     mercuryParts parts;
     uint64_t sequenceId;

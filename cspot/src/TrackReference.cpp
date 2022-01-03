@@ -1,13 +1,13 @@
 #include "TrackReference.h"
 #include "Logger.h"
 
-TrackReference::TrackReference(TrackRef2 *ref)
+TrackReference::TrackReference(TrackRef *ref)
 {
-    if (ref->gid->size > 0)
+    if (ref->gid != nullptr)
     {
         gid = pbArrayToVector(ref->gid);
     }
-    else if (ref->has_uri)
+    else if (ref->uri != nullptr)
     {
         auto uri = std::string(ref->uri);
         auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
@@ -19,6 +19,7 @@ TrackReference::TrackReference(TrackRef2 *ref)
 
 TrackReference::~TrackReference()
 {
+    pbFree(TrackRef_fields, &ref);
 }
 
 std::vector<uint8_t> TrackReference::base62Decode(std::string uri)

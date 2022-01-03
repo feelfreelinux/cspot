@@ -12,7 +12,7 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     innerFrame.state.has_position_ms = true;
     innerFrame.state.position_ms = 0;
 
-    innerFrame.state.status = PlayStatus2_kPlayStatusStop;
+    innerFrame.state.status = PlayStatus_kPlayStatusStop;
     innerFrame.state.has_status = true;
 
     innerFrame.state.position_measured_at = 0;
@@ -38,23 +38,23 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     innerFrame.device_state.name = (char*) configMan->deviceName.c_str();
 
     // Prepare player's capabilities
-    addCapability(CapabilityType2_kCanBePlayer, 1);
-    addCapability(CapabilityType2_kDeviceType, 4);
-    addCapability(CapabilityType2_kGaiaEqConnectId, 1);
-    addCapability(CapabilityType2_kSupportsLogout, 0);
-    addCapability(CapabilityType2_kIsObservable, 1);
-    addCapability(CapabilityType2_kVolumeSteps, 64);
-    addCapability(CapabilityType2_kSupportedContexts, -1,
+    addCapability(CapabilityType_kCanBePlayer, 1);
+    addCapability(CapabilityType_kDeviceType, 4);
+    addCapability(CapabilityType_kGaiaEqConnectId, 1);
+    addCapability(CapabilityType_kSupportsLogout, 0);
+    addCapability(CapabilityType_kIsObservable, 1);
+    addCapability(CapabilityType_kVolumeSteps, 64);
+    addCapability(CapabilityType_kSupportedContexts, -1,
                   std::vector<std::string>({"album", "playlist", "search", "inbox",
                                             "toplist", "starred", "publishedstarred", "track"}));
-    addCapability(CapabilityType2_kSupportedTypes, -1,
+    addCapability(CapabilityType_kSupportedTypes, -1,
                   std::vector<std::string>({"audio/local", "audio/track", "audio/episode", "local", "track"}));
     innerFrame.device_state.capabilities_count = 8;
 }
 
 PlayerState::~PlayerState() {
-    pbFree(Frame2_fields, &innerFrame);
-    pbFree(Frame2_fields, &remoteFrame);
+    pbFree(Frame_fields, &innerFrame);
+    pbFree(Frame_fields, &remoteFrame);
 }
 
 void PlayerState::setPlaybackState(const PlaybackState state)
@@ -63,19 +63,19 @@ void PlayerState::setPlaybackState(const PlaybackState state)
     {
     case PlaybackState::Loading:
         // Prepare the playback at position 0
-        innerFrame.state.status = PlayStatus2_kPlayStatusPause;
+        innerFrame.state.status = PlayStatus_kPlayStatusPause;
         innerFrame.state.position_ms = 0;
         innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
         break;
     case PlaybackState::Playing:
-        innerFrame.state.status = PlayStatus2_kPlayStatusPlay;
+        innerFrame.state.status = PlayStatus_kPlayStatusPlay;
         innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
         break;
     case PlaybackState::Stopped:
         break;
     case PlaybackState::Paused:
         // Update state and recalculate current song position
-        innerFrame.state.status = PlayStatus2_kPlayStatusPause;
+        innerFrame.state.status = PlayStatus_kPlayStatusPause;
         uint32_t diff = timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
         this->updatePositionMs(innerFrame.state.position_ms + diff);
         break;
@@ -193,7 +193,7 @@ std::shared_ptr<TrackReference> PlayerState::getCurrentTrack()
     return std::make_shared<TrackReference>(&innerFrame.state.track[innerFrame.state.playing_track_index]);
 }
 
-std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType2 typ)
+std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
 {
     // Prepare current frame info
     innerFrame.version = 1;
@@ -211,11 +211,11 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType2 typ)
     innerFrame.has_state_update_id = true;
 
     this->seqNum += 1;
-    return pbEncode(Frame2_fields, &innerFrame);
+    return pbEncode(Frame_fields, &innerFrame);
 }
 
 // Wraps messy nanopb setters. @TODO: find a better way to handle this
-void PlayerState::addCapability(CapabilityType2 typ, int intValue, std::vector<std::string> stringValue)
+void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<std::string> stringValue)
 {
     innerFrame.device_state.capabilities[capabilityIndex].has_typ = true;
     this->innerFrame.device_state.capabilities[capabilityIndex].typ = typ;

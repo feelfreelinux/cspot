@@ -56,7 +56,7 @@ extern std::map<MercuryType, std::string> MercuryTypeMap;
 class MercuryManager : public bell::Task
 {
 private:
-  Header2 tempMercuryHeader;
+  Header tempMercuryHeader;
   std::map<uint64_t, mercuryCallback> callbacks;
   std::mutex reconnectionMutex;
   std::mutex runningMutex;

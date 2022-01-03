@@ -29,10 +29,10 @@ private:
     std::shared_ptr<TimeProvider> timeProvider;
     std::shared_ptr<ConfigJSON> config;
 
-    void addCapability(CapabilityType2 typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
+    void addCapability(CapabilityType typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
 public:
-    Frame2 innerFrame;
-    Frame2 remoteFrame;
+    Frame innerFrame;
+    Frame remoteFrame;
 
     /**
      * @brief Player state represents the current state of player.
@@ -132,7 +132,7 @@ public:
      * @param typ message type to include in frame type
      * @return std::vector<uint8_t> binary frame data
      */
-    std::vector<uint8_t> encodeCurrentFrame(MessageType2 typ);
+    std::vector<uint8_t> encodeCurrentFrame(MessageType typ);
 };
 
 #endif

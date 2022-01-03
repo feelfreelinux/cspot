@@ -1,2 +1,2 @@
-Header2.uri type:FT_POINTER
-Header2.method type:FT_POINTER
+Header.uri type:FT_POINTER
+Header.method type:FT_POINTER

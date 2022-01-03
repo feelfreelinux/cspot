@@ -11,7 +11,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
 
 MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 6 * 1024, +1, 1)
 {
-    tempMercuryHeader = Header2_init_default;
+    tempMercuryHeader = Header_init_default;
     this->timeProvider = std::make_shared<TimeProvider>();
     this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
@@ -30,7 +30,7 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
 
 MercuryManager::~MercuryManager()
 {
-    pbFree(Header2_fields, &tempMercuryHeader);
+    pbFree(Header_fields, &tempMercuryHeader);
 }
 
 bool MercuryManager::timeoutHandler()
@@ -305,7 +305,7 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
         method = MercuryType::SEND;
     }
 
-    auto headerBytes = pbEncode(Header2_fields, &tempMercuryHeader);
+    auto headerBytes = pbEncode(Header_fields, &tempMercuryHeader);
 
     // Register a subscription when given method is called
     if (method == MercuryType::SUB)
