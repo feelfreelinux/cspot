@@ -29,7 +29,6 @@
 #include "freertos/ringbuf.h"
 #include "ConfigJSON.h"
 #include "ESPFile.h"
-#include "ProtoHelper.h"
 #include "Logger.h"
 #include <HTTPServer.h>
 #include "mdns.h"
@@ -92,11 +91,11 @@ static void cspotTask(void *pvParameters)
     configMan->deviceName = DEVICE_NAME;
 
 #if QUALITY == 320
-    configMan->format = AudioFormat::OGG_VORBIS_320;
+    configMan->format = AudioFormat_OGG_VORBIS_320;
 #elif QUALITY == 160
-    configMan->format = AudioFormat::OGG_VORBIS_160;
+    configMan->format = AudioFormat_OGG_VORBIS_160;
 #else
-    configMan->format = AudioFormat::OGG_VORBIS_96;
+    configMan->format = AudioFormat_OGG_VORBIS_96;
 #endif		
 
     auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {

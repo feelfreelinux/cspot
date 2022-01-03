@@ -1,5 +1,4 @@
 #include "CommandLineArguments.h"
-#include "ProtoHelper.h"
 
 CommandLineArguments::CommandLineArguments(std::string u, std::string p, bool shouldShowHelp) : username(u), password(p), shouldShowHelp(shouldShowHelp) {}
 
@@ -49,15 +48,15 @@ std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc, char
             i++;
             if(std::string(argv[i]) == "320")
             {
-              result->bitrate = AudioFormat::OGG_VORBIS_320;
+              result->bitrate = AudioFormat_OGG_VORBIS_320;
             }
             else if(std::string(argv[i]) == "160")
             {
-              result->bitrate = AudioFormat::OGG_VORBIS_160;
+              result->bitrate = AudioFormat_OGG_VORBIS_160;
             }
             else if(std::string(argv[i]) == "96")
             {
-              result->bitrate = AudioFormat::OGG_VORBIS_96;
+              result->bitrate = AudioFormat_OGG_VORBIS_96;
             }
             else
             {

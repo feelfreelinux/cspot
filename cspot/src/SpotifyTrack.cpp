@@ -10,6 +10,8 @@ SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_
 {
     this->manager = manager;
     this->fileId = std::vector<uint8_t>();
+    episodeInfo = Episode_init_default;
+    trackInfo = Track_init_default;
 
     mercuryCallback trackResponseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         this->trackInformationCallback(std::move(res), position_ms, isPaused);
@@ -33,6 +35,8 @@ SpotifyTrack::~SpotifyTrack()
 {
     this->manager->unregisterMercuryCallback(this->reqSeqNum);
     this->manager->freeAudioKeyCallback();
+    pbFree(Track_fields, &this->trackInfo);
+    pbFree(Episode_fields, &this->episodeInfo);
 }
 
 bool SpotifyTrack::countryListContains(std::string countryList, std::string country)
@@ -47,18 +51,18 @@ bool SpotifyTrack::countryListContains(std::string countryList, std::string coun
     return false;
 }
 
-bool SpotifyTrack::canPlayTrack(std::vector<Restriction>& restrictions)
+bool SpotifyTrack::canPlayTrack()
 {
-    for (int x = 0; x < restrictions.size(); x++)
+    for (int x = 0; x < trackInfo.restriction_count; x++)
     {
-        if (restrictions[x].countries_allowed.has_value())
+        if (trackInfo.restriction[x].countries_allowed != nullptr)
         {
-            return countryListContains(restrictions[x].countries_allowed.value(), manager->countryCode);
+            return countryListContains(std::string(trackInfo.restriction[x].countries_allowed), manager->countryCode);
         }
 
-        if (restrictions[x].countries_forbidden.has_value())
+        if (trackInfo.restriction[x].countries_forbidden != nullptr)
         {
-            return !countryListContains(restrictions[x].countries_forbidden.value(), manager->countryCode);
+            return !countryListContains(std::string(trackInfo.restriction[x].countries_forbidden), manager->countryCode);
         }
     }
 
@@ -71,48 +75,49 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         return;
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
 
-    trackInfo = decodePb<Track>(response->parts[0]);
+    pbDecode(trackInfo, Track_fields, response->parts[0]);
 
-    CSPOT_LOG(info, "Track name: %s", trackInfo.name.value().c_str());
-        CSPOT_LOG(info, "Track duration: %d", trackInfo.duration.value());
-
-    CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction.size());
+    CSPOT_LOG(info, "Track name: %s", trackInfo.name);
+    CSPOT_LOG(info, "Track duration: %d", trackInfo.duration);
+    CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction_count);
     int altIndex = 0;
-    while (!canPlayTrack(trackInfo.restriction))
+    while (!canPlayTrack())
     {
         trackInfo.restriction = trackInfo.alternative[altIndex].restriction;
+        trackInfo.restriction_count = trackInfo.alternative[altIndex].restriction_count;
         trackInfo.gid = trackInfo.alternative[altIndex].gid;
         trackInfo.file = trackInfo.alternative[altIndex].file;
         altIndex++;
         CSPOT_LOG(info, "Trying alternative %d", altIndex);
     }
-    auto trackId = trackInfo.gid.value();
+    auto trackId = pbArrayToVector(trackInfo.gid);
     this->fileId = std::vector<uint8_t>();
 
-    for (int x = 0; x < trackInfo.file.size(); x++)
+    for (int x = 0; x < trackInfo.file_count; x++)
     {
         if (trackInfo.file[x].format == configMan->format)
         {
-            this->fileId = trackInfo.file[x].file_id.value();
+            this->fileId = pbArrayToVector(trackInfo.file[x].file_id);
             break; // If file found stop searching
         }
     }
 
     if (trackInfoReceived != nullptr)
     {
+        auto imageId = pbArrayToVector(trackInfo.album.cover_group.image[0].file_id);
         TrackInfo simpleTrackInfo = {
-            .name = trackInfo.name.value(),
-            .album = trackInfo.album.value().name.value(),
-            .artist = trackInfo.artist[0].name.value(),
-            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(trackInfo.album.value().cover_group.value().image[0].file_id.value()),
-            .duration = trackInfo.duration.value(),
+            .name = std::string(trackInfo.name),
+            .album = std::string(trackInfo.album.name),
+            .artist = std::string(trackInfo.artist[0].name),
+            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId),
+            .duration = trackInfo.duration,
 
         };
 
         trackInfoReceived(simpleTrackInfo);
     }
 
-    this->requestAudioKey(this->fileId, trackId, trackInfo.duration.value(), position_ms, isPaused);
+    this->requestAudioKey(this->fileId, trackId, trackInfo.duration, position_ms, isPaused);
 }
 
 void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused)
@@ -121,23 +126,23 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         return;
     CSPOT_LOG(debug, "Got to episode");
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
-    episodeInfo = decodePb<Episode>(response->parts[0]);
+    pbDecode(episodeInfo, Episode_fields, response->parts[0]);
 
-    CSPOT_LOG(info, "--- Episode name: %s", episodeInfo.name.value().c_str());
+    CSPOT_LOG(info, "--- Episode name: %s", episodeInfo.name);
 
     this->fileId = std::vector<uint8_t>();
 
     // TODO: option to set file quality
-    for (int x = 0; x < episodeInfo.audio.size(); x++)
+    for (int x = 0; x < episodeInfo.audio_count; x++)
     {
-        if (episodeInfo.audio[x].format == AudioFormat::OGG_VORBIS_96)
+        if (episodeInfo.audio[x].format == AudioFormat_OGG_VORBIS_96)
         {
-            this->fileId = episodeInfo.audio[x].file_id.value();
+            this->fileId = pbArrayToVector(episodeInfo.audio[x].file_id);
             break; // If file found stop searching
         }
     }
 
-    this->requestAudioKey(episodeInfo.gid.value(), this->fileId, episodeInfo.duration.value(), position_ms, isPaused);
+    this->requestAudioKey(pbArrayToVector(episodeInfo.gid), this->fileId, episodeInfo.duration, position_ms, isPaused);
 }
 
 void SpotifyTrack::requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms, bool isPaused)

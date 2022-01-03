@@ -16,7 +16,9 @@
 #include "Packet.h"
 #include "ConstantParameters.h"
 #include "Crypto.h"
-#include "ProtoHelper.h"
+#include "NanoPBHelper.h"
+#include "protobuf/authentication.pb.h"
+#include "protobuf/keyexchange.pb.h"
 
 #define SPOTIFY_VERSION 0x10800000000
 #define LOGIN_REQUEST_COMMAND 0xAB
@@ -38,6 +40,7 @@ private:
 
 public:
     Session();
+    ~Session();
     std::shared_ptr<ShannonConnection> shanConn;
     std::shared_ptr<LoginBlob> authBlob;
     void connect(std::unique_ptr<PlainConnection> connection);
