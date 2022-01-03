@@ -63,4 +63,3 @@ message ClientResponseEncrypted {
     required SystemInfo system_info = 0x32; 
     optional string version_string = 0x46; 
 }
-

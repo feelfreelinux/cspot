@@ -3,7 +3,8 @@
 
 #include <vector>
 #include "Utils.h"
-#include "ProtoHelper.h"
+#include "protobuf/spirc.pb.h"
+#include <NanoPBHelper.h>
 #include <iostream>
 #include <string>
 

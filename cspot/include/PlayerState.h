@@ -4,13 +4,14 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "ProtoHelper.h"
 #include "Utils.h"
 #include "TimeProvider.h"
 #include "ConstantParameters.h"
 #include "CspotAssert.h"
 #include "TrackReference.h"
 #include "ConfigJSON.h"
+#include <NanoPBHelper.h>
+#include "protobuf/spirc.pb.h"
 
 enum class PlaybackState {
     Playing,
@@ -30,8 +31,8 @@ private:
 
     void addCapability(CapabilityType typ, int intValue = -1, std::vector<std::string> stringsValue = std::vector<std::string>());
 public:
-    Frame innerFrame = Frame();
-    Frame remoteFrame = Frame();
+    Frame innerFrame;
+    Frame remoteFrame;
 
     /**
      * @brief Player state represents the current state of player.
@@ -41,6 +42,8 @@ public:
      * @param timeProvider synced time provider
      */
     PlayerState(std::shared_ptr<TimeProvider> timeProvider);
+    
+    ~PlayerState();
 
     /**
      * @brief Updates state according to current playback state.
