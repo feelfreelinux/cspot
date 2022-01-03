@@ -1,6 +1,3 @@
-[submodule "cspot/proto/cpp-reflection"]
-	path = cspot/proto/cpp-reflection
-	url = https://github.com/alufers/cpp-reflection.git
 [submodule "cspot/bell"]
 	path = cspot/bell
 	url = https://github.com/feelfreelinux/bell
