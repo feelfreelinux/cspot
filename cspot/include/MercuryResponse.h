@@ -6,7 +6,8 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "ProtoHelper.h"
+#include <NanoPBHelper.h>
+#include "protobuf/mercury.pb.h"
 #include "Utils.h"
 
 typedef std::vector<std::vector<uint8_t>> mercuryParts;
@@ -18,8 +19,9 @@ private:
     std::vector<uint8_t> data;
 public:
     MercuryResponse(std::vector<uint8_t> &data);
+    ~MercuryResponse();
     void decodeHeader();
-    Header mercuryHeader;
+    Header2 mercuryHeader;
     uint8_t flags;
     mercuryParts parts;
     uint64_t sequenceId;

@@ -1,15 +1,15 @@
 #include "TrackReference.h"
 #include "Logger.h"
 
-TrackReference::TrackReference(TrackRef *ref)
+TrackReference::TrackReference(TrackRef2 *ref)
 {
-    if (ref->gid.has_value())
+    if (ref->gid->size > 0)
     {
-        gid = ref->gid.value();
+        gid = pbArrayToVector(ref->gid);
     }
-    else if (ref->uri.has_value())
+    else if (ref->has_uri)
     {
-        auto uri = ref->uri.value();
+        auto uri = std::string(ref->uri);
         auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
         CSPOT_LOG(debug, "idString = %s", idString.c_str());
         gid = base62Decode(idString);

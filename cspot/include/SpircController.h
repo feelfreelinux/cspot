@@ -6,7 +6,6 @@
 #include <functional>
 #include "Utils.h"
 #include "MercuryManager.h"
-#include "ProtoHelper.h"
 #include "Session.h"
 #include "PlayerState.h"
 #include "SpotifyTrack.h"
@@ -44,7 +43,7 @@ private:
     std::shared_ptr<ConfigJSON> config;
 
     cspotEventHandler eventHandler;
-    void sendCmd(MessageType typ);
+    void sendCmd(MessageType2 typ);
     void notify();
 	void sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data = 0);
     void handleFrame(std::vector<uint8_t> &data);

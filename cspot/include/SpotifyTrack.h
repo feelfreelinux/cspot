@@ -5,7 +5,6 @@
 #include <vector>
 #include <iostream>
 #include "MercuryManager.h"
-#include "ProtoHelper.h"
 #include "Utils.h"
 #include "MercuryResponse.h"
 #include <fstream>
@@ -13,6 +12,8 @@
 #include <functional>
 #include "ChunkedAudioStream.h"
 #include "TrackReference.h"
+#include "NanoPBHelper.h"
+#include "protobuf/metadata.pb.h"
 #include <cassert>
 
 struct TrackInfo {
@@ -33,7 +34,7 @@ private:
     void episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused);
     void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms, bool isPaused);
     bool countryListContains(std::string countryList, std::string country);
-    bool canPlayTrack(std::vector<Restriction> &restrictions);
+    bool canPlayTrack();
     Track trackInfo;
     Episode episodeInfo;
 

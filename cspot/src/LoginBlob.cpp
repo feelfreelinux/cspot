@@ -103,7 +103,7 @@ void LoginBlob::loadUserPass(const std::string &username, const std::string &pas
 {
     this->username = username;
     this->authData = std::vector<uint8_t>(password.begin(), password.end());
-    this->authType = static_cast<uint32_t>(AuthenticationType::AUTHENTICATION_USER_PASS);
+    this->authType = static_cast<uint32_t>(AuthenticationType2_AUTHENTICATION_USER_PASS);
 }
 
 void LoginBlob::loadJson(const std::string &json)

@@ -3,7 +3,8 @@
 
 #include <vector>
 #include "Utils.h"
-#include "ProtoHelper.h"
+#include "protobuf/spirc.pb.h"
+#include <NanoPBHelper.h>
 #include <iostream>
 #include <string>
 
@@ -14,10 +15,10 @@ private:
     std::vector<uint8_t> base62Decode(std::string uri);
 
 public:
-    TrackReference(TrackRef *ref);
+    TrackReference(TrackRef2 *ref);
     ~TrackReference();
 
-    TrackRef* ref;
+    TrackRef2* ref;
 
     std::vector<uint8_t> gid;
 

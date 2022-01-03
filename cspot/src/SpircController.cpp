@@ -25,7 +25,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
 void SpircController::subscribe() {
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));
-        sendCmd(MessageType::kMessageTypeHello);
+        sendCmd(MessageType2_kMessageTypeHello);
         CSPOT_LOG(debug, "Sent kMessageTypeHello!");
     };
     mercuryCallback subLambda = [=](std::unique_ptr<MercuryResponse> res) {
@@ -60,7 +60,7 @@ void SpircController::disconnect(void) {
 }
 
 void SpircController::playToggle() {
-    if (state->innerFrame.state->status.value() == PlayStatus::kPlayStatusPause) {
+    if (state->innerFrame.state.status == PlayStatus2_kPlayStatusPause) {
         setPause(false);
     } else {
         setPause(true);
@@ -68,8 +68,8 @@ void SpircController::playToggle() {
 }
 
 void SpircController::adjustVolume(int by) {
-    if (state->innerFrame.device_state->volume.has_value()) {
-        int volume = state->innerFrame.device_state->volume.value() + by;
+    if (state->innerFrame.device_state.has_volume) {
+        int volume = state->innerFrame.device_state.volume + by;
         if (volume < 0) volume = 0;
         else if (volume > MAX_VOLUME) volume = MAX_VOLUME;
         setVolume(volume);
@@ -103,45 +103,45 @@ void SpircController::prevSong() {
 }
 
 void SpircController::handleFrame(std::vector<uint8_t> &data) {
-    state->remoteFrame = decodePb<Frame>(data);
+    pbDecode(state->remoteFrame, Frame2_fields, data);
 
-    switch (state->remoteFrame.typ.value()) {
-    case MessageType::kMessageTypeNotify: {
+    switch (state->remoteFrame.typ) {
+    case MessageType2_kMessageTypeNotify: {
         CSPOT_LOG(debug, "Notify frame");
         // Pause the playback if another player took control
         if (state->isActive() &&
-            state->remoteFrame.device_state->is_active.value()) {
+            state->remoteFrame.device_state.is_active) {
             disconnect();
         }
         break;
     }
-    case MessageType::kMessageTypeSeek: {
+    case MessageType2_kMessageTypeSeek: {
         CSPOT_LOG(debug, "Seek command");
-        sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position.value());
-        state->updatePositionMs(state->remoteFrame.position.value());
-        this->player->seekMs(state->remoteFrame.position.value());
+        sendEvent(CSpotEventType::SEEK, (int) state->remoteFrame.position);
+        state->updatePositionMs(state->remoteFrame.position);
+        this->player->seekMs(state->remoteFrame.position);
         notify();
         break;
     }
-    case MessageType::kMessageTypeVolume:
-        sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume.value());
-        setVolume(state->remoteFrame.volume.value());
+    case MessageType2_kMessageTypeVolume:
+        sendEvent(CSpotEventType::VOLUME, (int) state->remoteFrame.volume);
+        setVolume(state->remoteFrame.volume);
         break;
-    case MessageType::kMessageTypePause:
+    case MessageType2_kMessageTypePause:
         setPause(true);
         break;
-    case MessageType::kMessageTypePlay:
+    case MessageType2_kMessageTypePlay:
         setPause(false);
         break;
-    case MessageType::kMessageTypeNext:
+    case MessageType2_kMessageTypeNext:
         sendEvent(CSpotEventType::NEXT);
         nextSong();
         break;
-    case MessageType::kMessageTypePrev:
+    case MessageType2_kMessageTypePrev:
         sendEvent(CSpotEventType::PREV);
         prevSong();
         break;
-    case MessageType::kMessageTypeLoad: {
+    case MessageType2_kMessageTypeLoad: {
         CSPOT_LOG(debug, "Load frame!");
 
         state->setActive(true);
@@ -154,25 +154,25 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
 
         // bool isPaused = (state->remoteFrame.state->status.value() ==
         // PlayStatus::kPlayStatusPlay) ? false : true;
-        loadTrack(state->remoteFrame.state->position_ms.value(), false);
-        state->updatePositionMs(state->remoteFrame.state->position_ms.value());
+        loadTrack(state->remoteFrame.state.position_ms, false);
+        state->updatePositionMs(state->remoteFrame.state.position_ms);
 
         this->notify();
         break;
     }
-    case MessageType::kMessageTypeReplace: {
+    case MessageType2_kMessageTypeReplace: {
         CSPOT_LOG(debug, "Got replace frame!");
         break;
     }
-    case MessageType::kMessageTypeShuffle: {
+    case MessageType2_kMessageTypeShuffle: {
         CSPOT_LOG(debug, "Got shuffle frame");
-        state->setShuffle(state->remoteFrame.state->shuffle.value());
+        state->setShuffle(state->remoteFrame.state.shuffle);
         this->notify();
         break;
     }
-    case MessageType::kMessageTypeRepeat: {
+    case MessageType2_kMessageTypeRepeat: {
         CSPOT_LOG(debug, "Got repeat frame");
-        state->setRepeat(state->remoteFrame.state->repeat.value());
+        state->setRepeat(state->remoteFrame.state.repeat);
         this->notify();
         break;
     }
@@ -194,7 +194,7 @@ void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
 }
 
 void SpircController::notify() {
-    this->sendCmd(MessageType::kMessageTypeNotify);
+    this->sendCmd(MessageType2_kMessageTypeNotify);
 }
 
 void SpircController::sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data) {
@@ -224,7 +224,7 @@ void SpircController::setEventHandler(cspotEventHandler callback) {
 
 void SpircController::stopPlayer() { this->player->stop(); }
 
-void SpircController::sendCmd(MessageType typ) {
+void SpircController::sendCmd(MessageType2 typ) {
     // Serialize current player state
     auto encodedFrame = state->encodeCurrentFrame(typ);
 

@@ -1,4 +1,4 @@
-enum CpuFamily {
+enum CpuFamily2 {
     CPU_UNKNOWN = 0x0;
     CPU_X86 = 0x1;
     CPU_X86_64 = 0x2;
@@ -11,7 +11,7 @@ enum CpuFamily {
     CPU_BLACKFIN = 0x9;
 }
 
-enum Os {
+enum Os2 {
     OS_UNKNOWN = 0x0;
     OS_WINDOWS = 0x1;
     OS_OSX = 0x2;
@@ -37,7 +37,7 @@ enum Os {
     OS_BCO = 0x16;
 }
 
-enum AuthenticationType {
+enum AuthenticationType2 {
     AUTHENTICATION_USER_PASS = 0x0;
     AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS = 0x1;
     AUTHENTICATION_STORED_FACEBOOK_CREDENTIALS = 0x2;
@@ -45,22 +45,21 @@ enum AuthenticationType {
     AUTHENTICATION_FACEBOOK_TOKEN = 0x4;
 }
 
-message SystemInfo {
-    required CpuFamily cpu_family = 0xa; 
-    required Os os = 0x3c;
+message SystemInfo2 {
+    required CpuFamily2 cpu_family = 0xa; 
+    required Os2 os = 0x3c;
     optional string system_information_string = 0x5a; 
     optional string device_id = 0x64;
 }
 
-message LoginCredentials {
+message LoginCredentials2 {
     optional string username = 0xa; 
-    required AuthenticationType typ = 0x14; 
+    required AuthenticationType2 typ = 0x14; 
     optional bytes auth_data = 0x1e; 
 }
 
-message ClientResponseEncrypted {
-    required LoginCredentials login_credentials = 0xa; 
-    required SystemInfo system_info = 0x32; 
+message ClientResponseEncrypted2 {
+    required LoginCredentials2 login_credentials = 0xa; 
+    required SystemInfo2 system_info = 0x32; 
     optional string version_string = 0x46; 
 }
-
