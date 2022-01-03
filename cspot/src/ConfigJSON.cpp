@@ -33,16 +33,16 @@ bool ConfigJSON::load()
           auto bitrateObject = cJSON_GetObjectItemCaseSensitive(root, "bitrate");
           switch((uint16_t)cJSON_GetNumberValue(bitrateObject)){
             case 320:
-              this->format = AudioFormat::OGG_VORBIS_320;
+              this->format = AudioFormat_OGG_VORBIS_320;
               break;
             case 160:
-              this->format = AudioFormat::OGG_VORBIS_160;
+              this->format = AudioFormat_OGG_VORBIS_160;
               break;
             case 96:
-              this->format = AudioFormat::OGG_VORBIS_96;
+              this->format = AudioFormat_OGG_VORBIS_96;
               break;
             default:
-              this->format = AudioFormat::OGG_VORBIS_320;
+              this->format = AudioFormat_OGG_VORBIS_320;
               break;
           }
         }
@@ -59,7 +59,7 @@ bool ConfigJSON::load()
          // Set default values
          this->volume = 32767;
          this->deviceName = defaultDeviceName;
-         this->format = AudioFormat::OGG_VORBIS_160;
+         this->format = AudioFormat_OGG_VORBIS_160;
       }
       return true;
     }
@@ -76,13 +76,13 @@ bool ConfigJSON::save()
     obj["volume"] = this->volume;
     obj["deviceName"] = this->deviceName;
     switch(this->format){
-        case AudioFormat::OGG_VORBIS_320:
+        case AudioFormat_OGG_VORBIS_320:
             obj["bitrate"] = 320;
             break;
-        case AudioFormat::OGG_VORBIS_160:
+        case AudioFormat_OGG_VORBIS_160:
             obj["bitrate"] = 160;
             break;
-        case AudioFormat::OGG_VORBIS_96:
+        case AudioFormat_OGG_VORBIS_96:
             obj["bitrate"] = 96;
             break;
         default:

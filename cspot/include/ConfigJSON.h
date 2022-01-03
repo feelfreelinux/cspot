@@ -4,7 +4,7 @@
 #include <memory>
 #include <iostream>
 #include "FileHelper.h"
-#include "ProtoHelper.h"
+#include "protobuf/metadata.pb.h"
 
 class ConfigJSON
 {

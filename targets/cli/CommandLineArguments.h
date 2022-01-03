@@ -3,7 +3,8 @@
 #include <string>
 #include <memory>
 #include <stdexcept>
-#include "ProtoHelper.h"
+#include <protobuf/metadata.pb.h>
+
 /**
  * Represents the command line arguments passed to the program.
  *

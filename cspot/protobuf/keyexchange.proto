@@ -24,7 +24,7 @@ message LoginCryptoHelloUnion {
 }
 
 
-enum Platform {
+enum Platform2 {
     PLATFORM_WIN32_X86 = 0x0;
     PLATFORM_OSX_X86 = 0x1;
     PLATFORM_LINUX_X86 = 0x2;
@@ -58,7 +58,7 @@ enum Cryptosuite {
 
 message BuildInfo {
     required Product product = 0xa; 
-    required Platform platform = 0x1e; 
+    required Platform2 platform = 0x1e; 
     required uint64 version = 0x28; 
 }
 

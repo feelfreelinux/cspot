@@ -2,7 +2,7 @@
 
 #ifdef CSPOT_ENABLE_ALSA_SINK
 
-ALSAAudioSink::ALSAAudioSink() : Task(0, "", 0)
+ALSAAudioSink::ALSAAudioSink() : Task("", 0, 0, 0)
 {
     /* Open the PCM device in playback mode */
     if (pcm = snd_pcm_open(&pcm_handle, PCM_DEVICE,

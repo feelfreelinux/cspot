@@ -10,7 +10,6 @@
 #include "MercuryResponse.h"
 #include "Packet.h"
 #include "Utils.h"
-#include "ProtoHelper.h"
 #include "MercuryManager.h"
 #include "AudioChunk.h"
 #include "AudioChunkManager.h"
@@ -19,7 +18,8 @@
 #include "platform/WrappedSemaphore.h"
 #include "TimeProvider.h"
 #include "Session.h"
-
+#include <NanoPBHelper.h>
+#include "protobuf/mercury.pb.h"
 #include <stdint.h>
 #include <memory>
 
@@ -56,6 +56,7 @@ extern std::map<MercuryType, std::string> MercuryTypeMap;
 class MercuryManager : public bell::Task
 {
 private:
+  Header tempMercuryHeader;
   std::map<uint64_t, mercuryCallback> callbacks;
   std::mutex reconnectionMutex;
   std::mutex runningMutex;
@@ -76,6 +77,7 @@ private:
   void runTask();
 public:
   MercuryManager(std::unique_ptr<Session> session);
+  ~MercuryManager();
   voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
   std::shared_ptr<TimeProvider> timeProvider;

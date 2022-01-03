@@ -5,6 +5,8 @@
 // #define NDEBUG
 #include <assert.h>
 
+using std::size_t;
+
 static inline uint32_t rotl(uint32_t n, unsigned int c)
 {
     const unsigned int mask = (CHAR_BIT * sizeof(n) - 1); // assumes width is a power of 2.
