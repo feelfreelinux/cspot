@@ -14,12 +14,9 @@ file(GLOB SOURCES "src/*.cpp" "src/*.c")
 # Use externally specified bell library or the submodule
 if(CSPOT_EXTERNAL_BELL)
     list(APPEND EXTRA_LIBS ${CSPOT_EXTERNAL_BELL})
-    bell_add_proto("proto/*.proto") # gather cspot protos to build later
 else()
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bell)
     list(APPEND EXTRA_LIBS bell)
-    bell_add_proto("proto/*.proto") # gather cspot protos to build below
-    bell_build_proto()
 endif()
 
 # Add Apple Bonjour compatibility library for Linux
@@ -28,7 +25,7 @@ if(UNIX AND NOT APPLE)
     # TODO: migrate from this to native linux mDNS
 endif()
 set(NANOPB_OPTIONS "-I${CMAKE_CURRENT_SOURCE_DIR}")
-set(PROTOS protobuf/authentication.proto protobuf/mercury.proto protobuf/keyexchange.proto protobuf/spirc.proto protobuf/metadata.proto)
+file(GLOB PROTOS protobuf/*.proto)
 message(${PROTOS})
 message("building protobuf")
 message(${CMAKE_CURRENT_SOURCE_DIR})
