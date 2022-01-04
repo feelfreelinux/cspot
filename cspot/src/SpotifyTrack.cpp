@@ -35,8 +35,8 @@ SpotifyTrack::~SpotifyTrack()
 {
     this->manager->unregisterMercuryCallback(this->reqSeqNum);
     this->manager->freeAudioKeyCallback();
-    pbFree(Track_fields, &this->trackInfo);
-    pbFree(Episode_fields, &this->episodeInfo);
+    pb_release(Track_fields, this->trackInfo);
+    pb_release(Episode_fields, this->episodeInfo);
 }
 
 bool SpotifyTrack::countryListContains(std::string countryList, std::string country)
@@ -140,6 +140,21 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
             this->fileId = pbArrayToVector(episodeInfo.audio[x].file_id);
             break; // If file found stop searching
         }
+    }
+
+    if (trackInfoReceived != nullptr)
+    {
+        auto imageId = pbArrayToVector(episodeInfo.covers->image[0].file_id);
+        TrackInfo simpleTrackInfo = {
+            .name = std::string(episodeInfo.name),
+            .album = "",
+            .artist = "",
+            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId),
+            .duration = trackInfo.duration,
+
+        };
+
+        trackInfoReceived(simpleTrackInfo);
     }
 
     this->requestAudioKey(pbArrayToVector(episodeInfo.gid), this->fileId, episodeInfo.duration, position_ms, isPaused);
