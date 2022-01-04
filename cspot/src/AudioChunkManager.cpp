@@ -96,10 +96,6 @@ void AudioChunkManager::runTask() {
                             break;
 
                         default:
-                            // printf("ID: %d: Got data chunk!\n", seqId);
-                            // 2 first bytes are size so we skip it
-                            // printf("(_)--- Free memory %d\n",
-                            // esp_get_free_heap_size());
                             if (chunk.get() == nullptr) {
                                 return;
                             }
