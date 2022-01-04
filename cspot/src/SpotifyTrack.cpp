@@ -142,6 +142,21 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         }
     }
 
+    if (trackInfoReceived != nullptr)
+    {
+        auto imageId = pbArrayToVector(episodeInfo.covers->image[0].file_id);
+        TrackInfo simpleTrackInfo = {
+            .name = std::string(episodeInfo.name),
+            .album = "",
+            .artist = "",
+            .imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId),
+            .duration = trackInfo.duration,
+
+        };
+
+        trackInfoReceived(simpleTrackInfo);
+    }
+
     this->requestAudioKey(pbArrayToVector(episodeInfo.gid), this->fileId, episodeInfo.duration, position_ms, isPaused);
 }
 
