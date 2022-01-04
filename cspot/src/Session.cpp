@@ -95,6 +95,8 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     CSPOT_LOG(debug, "Received AP hello response");
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
+
+    pb_release(APResponseMessage_fields, apResponse);
     pbDecode(apResponse, APResponseMessage_fields, skipSize);
 
     auto diffieKey = std::vector<uint8_t>(apResponse.challenge.login_crypto_challenge.diffie_hellman.gs, apResponse.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
