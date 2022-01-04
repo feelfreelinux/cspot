@@ -74,58 +74,49 @@ ES8388AudioSink::ES8388AudioSink()
     }
 
     /* mute DAC during setup, power up all systems, slave mode */
-    writeReg(ES8388_DACCONTROL3, 0x04);
-    writeReg(ES8388_CONTROL2, 0x50);
-    writeReg(ES8388_CHIPPOWER, 0x00);
+    writeReg(ES8388_DACCONTROL3, 0x04); //0x19 -> 25, 
+    writeReg(ES8388_CONTROL2, 0x50); // 0x01 -> 2, , Chip Power Management, resets DAC
     writeReg(ES8388_MASTERMODE, 0x00);
 
     /* power up DAC and enable LOUT1+2 / ROUT1+2, ADC sample rate = DAC sample rate */
-    writeReg(ES8388_DACPOWER, 0x3e);
-    writeReg(ES8388_CONTROL1, 0x12);
+    writeReg(ES8388_DACPOWER, 0x3c);
+    writeReg(ES8388_CONTROL1, 0x12); // 0x00 -> 0, Chip Control 1,
 
     /* DAC I2S setup: 16 bit word length, I2S format; MCLK / Fs = 256*/
-    writeReg(ES8388_DACCONTROL1, 0x18);
-    writeReg(ES8388_DACCONTROL2, 0x02);
-
-    /* DAC to output route mixer configuration: ADC MIX TO OUTPUT */
-    writeReg(ES8388_DACCONTROL16, 0x1B);
-    writeReg(ES8388_DACCONTROL17, 0x90);
-    writeReg(ES8388_DACCONTROL20, 0x90);
+    writeReg(ES8388_DACCONTROL1, 0x18); // 0x17 -> 23, 16 bit word length
+    writeReg(ES8388_DACCONTROL2, 0x02); // Fs = 256
 
     /* DAC and ADC use same LRCK, enable MCLK input; output resistance setup */
-    writeReg(ES8388_DACCONTROL21, 0x80);
-    writeReg(ES8388_DACCONTROL23, 0x00);
+    writeReg(ES8388_DACCONTROL21, 0x80); // 0x2b -> 43, DAC Control 21,  DACLRC and ADCLRC same
 
     /* DAC volume control: 0dB (maximum, unattented)  */
-    writeReg(ES8388_DACCONTROL5, 0x00);
-    writeReg(ES8388_DACCONTROL4, 0x00);
+    writeReg(ES8388_DACCONTROL4, 0x00); // 0x1a -> 26, DAC Control 4, left Digital volume control attenuates 0dB
+    writeReg(ES8388_DACCONTROL5, 0x00); // 0x1a -> 27, DAC Control 5, right Digital volume control attenuates 0dB
 
-    /* power down ADC while configuring; volume: +9dB for both channels */
-    writeReg(ES8388_ADCPOWER, 0xff);
-    writeReg(ES8388_ADCCONTROL1, 0x88); // +24db
-
-    /* select LINPUT2 / RINPUT2 as ADC input; stereo; 16 bit word length, format right-justified, MCLK / Fs = 256 */
-    writeReg(ES8388_ADCCONTROL2, 0xf0); // 50
-    writeReg(ES8388_ADCCONTROL3, 0x80); // 00
-    writeReg(ES8388_ADCCONTROL4, 0x0e);
-    writeReg(ES8388_ADCCONTROL5, 0x02);
-
-    /* set ADC volume */
-    writeReg(ES8388_ADCCONTROL8, 0x20);
-    writeReg(ES8388_ADCCONTROL9, 0x20);
+    /* power down ADC while configuring */
+    writeReg(ES8388_ADCPOWER, 0xff); // 0x03 -> 3, ADC Power Management
 
     /* set LOUT1 / ROUT1 volume: 0dB (unattenuated) */
-    writeReg(ES8388_DACCONTROL24, 0x1e);
-    writeReg(ES8388_DACCONTROL25, 0x1e);
+    writeReg(ES8388_DACCONTROL24, 0x1e); // 0x2e -> 46, LOUT1 volume - 0dB
+    writeReg(ES8388_DACCONTROL25, 0x1e); // 0x2f -> 47, ROUT1 volume - 0dB
 
     /* set LOUT2 / ROUT2 volume: 0dB (unattenuated) */
-    writeReg(ES8388_DACCONTROL26, 0x1e);
-    writeReg(ES8388_DACCONTROL27, 0x1e);
+    writeReg(ES8388_DACCONTROL26, 0x1e); // 0x30 -> 46, LOUT2 volume - 0dB
+    writeReg(ES8388_DACCONTROL27, 0x1e); // 0x31 -> 46, ROUT2 volume - 0dB
 
     /* power up and enable DAC; power up ADC (no MIC bias) */
-    writeReg(ES8388_DACPOWER, 0x3c);
-    writeReg(ES8388_DACCONTROL3, 0x00);
-    writeReg(ES8388_ADCPOWER, 0x00);
+    writeReg(ES8388_DACPOWER, 0x3c);  // 0x04 -> 4, DAC Power Management, 
+    writeReg(ES8388_DACCONTROL3, 0x00); // 0x19 -> 25,  DAC Control 3 - 0.5 dB per 4 LRCK digital volume control ramp rate
+
+    // Enable GPIO 21 to enable the amplifier
+    gpio_config_t  io_conf;
+    memset(&io_conf, 0, sizeof(io_conf));
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = BIT64(GPIO_NUM_21);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    gpio_config(&io_conf);
+    gpio_set_level(GPIO_NUM_21, 1);
 
     startI2sFeed();
 }
