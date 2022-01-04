@@ -35,8 +35,8 @@ SpotifyTrack::~SpotifyTrack()
 {
     this->manager->unregisterMercuryCallback(this->reqSeqNum);
     this->manager->freeAudioKeyCallback();
-    pbFree(Track_fields, &this->trackInfo);
-    pbFree(Episode_fields, &this->episodeInfo);
+    pb_release(Track_fields, this->trackInfo);
+    pb_release(Episode_fields, this->episodeInfo);
 }
 
 bool SpotifyTrack::countryListContains(std::string countryList, std::string country)

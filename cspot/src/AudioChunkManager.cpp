@@ -3,7 +3,7 @@
 #include "Logger.h"
 
 AudioChunkManager::AudioChunkManager()
-    : bell::Task("AudioChunkManager", 4 * 1024, +0, 0) {
+    : bell::Task("AudioChunkManager", 4 * 1024, +1, 0) {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
 }
@@ -100,7 +100,7 @@ void AudioChunkManager::runTask() {
                             // 2 first bytes are size so we skip it
                             // printf("(_)--- Free memory %d\n",
                             // esp_get_free_heap_size());
-                            if (chunk == nullptr) {
+                            if (chunk.get() == nullptr) {
                                 return;
                             }
                             auto actualData = std::vector<uint8_t>(

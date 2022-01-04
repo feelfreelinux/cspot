@@ -53,8 +53,8 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
 }
 
 PlayerState::~PlayerState() {
-    pbFree(Frame_fields, &innerFrame);
-    pbFree(Frame_fields, &remoteFrame);
+    pb_release(Frame_fields, innerFrame);
+    pb_release(Frame_fields, remoteFrame);
 }
 
 void PlayerState::setPlaybackState(const PlaybackState state)
