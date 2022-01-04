@@ -13,5 +13,6 @@ Episode.gid type:FT_POINTER
 Episode.name type:FT_POINTER
 ImageGroup.image type:FT_POINTER
 Episode.audio type:FT_POINTER
+Episode.covers type:FT_POINTER
 Restriction.countries_allowed type:FT_POINTER
 Restriction.countries_forbidden type:FT_POINTER

@@ -45,6 +45,7 @@ message Episode {
     optional string name = 2;
     optional sint32 duration = 7;
     repeated AudioFile audio = 12;
+    optional ImageGroup covers = 0x44;
 }
 
 enum AudioFormat {
