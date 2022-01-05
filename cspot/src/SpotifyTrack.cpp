@@ -75,6 +75,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         return;
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
 
+    pb_release(Track_fields, trackInfo);
     pbDecode(trackInfo, Track_fields, response->parts[0]);
 
     CSPOT_LOG(info, "Track name: %s", trackInfo.name);
@@ -126,6 +127,7 @@ void SpotifyTrack::episodeInformationCallback(std::unique_ptr<MercuryResponse> r
         return;
     CSPOT_LOG(debug, "Got to episode");
     CSPOT_ASSERT(response->parts.size() > 0, "response->parts.size() must be greater than 0");
+    pb_release(Episode_fields, episodeInfo);
     pbDecode(episodeInfo, Episode_fields, response->parts[0]);
 
     CSPOT_LOG(info, "--- Episode name: %s", episodeInfo.name);
