@@ -18,10 +18,10 @@ Session::Session()
 
 Session::~Session()
 {
-    pbFree(ClientHello_fields, &clientHello);
-    pbFree(APResponseMessage_fields, &apResponse);
-    pbFree(ClientResponseEncrypted_fields, &authRequest);
-    pbFree(ClientResponsePlaintext_fields, &clientResPlaintext);
+    pb_release(ClientHello_fields, clientHello);
+    pb_release(APResponseMessage_fields, apResponse);
+    pb_release(ClientResponseEncrypted_fields, authRequest);
+    pb_release(ClientResponsePlaintext_fields, clientResPlaintext);
 }
 
 void Session::connect(std::unique_ptr<PlainConnection> connection)
@@ -95,6 +95,8 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     CSPOT_LOG(debug, "Received AP hello response");
     // Decode the response
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
+
+    pb_release(APResponseMessage_fields, apResponse);
     pbDecode(apResponse, APResponseMessage_fields, skipSize);
 
     auto diffieKey = std::vector<uint8_t>(apResponse.challenge.login_crypto_challenge.diffie_hellman.gs, apResponse.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
