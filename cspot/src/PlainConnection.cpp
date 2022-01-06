@@ -104,6 +104,7 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
     std::vector<uint8_t> buf(size);
     unsigned int idx = 0;
     ssize_t n;
+    int retries = 0;
     // printf("START READ\n");
 
     while (idx < size)
@@ -124,7 +125,8 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
             case EINTR:
                 break;
             default:
-                throw std::runtime_error("Corn");
+                if (retries++ > 4) throw std::runtime_error("Error in read");
+
             }
         }
         idx += n;
@@ -138,6 +140,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
     unsigned int idx = 0;
     ssize_t n;
     // printf("START WRITE\n");
+    int retries = 0;
 
     while (idx < data.size())
     {
@@ -156,7 +159,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
             case EINTR:
                 break;
             default:
-                throw std::runtime_error("Corn");
+                if (retries++ > 4) throw std::runtime_error("Error in write");
             }
         }
         idx += n;

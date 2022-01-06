@@ -177,7 +177,6 @@ void MercuryManager::runTask()
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
         {
-            CSPOT_LOG(debug, "Got ping, syncing timestamp");
             this->timeProvider->syncWithPingPacket(packet->data);
 
             this->lastPingTimestamp = this->timeProvider->getSyncedTimestamp();

@@ -25,6 +25,7 @@ public:
     std::vector<uint8_t> decryptedData;
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;
+    std::atomic<bool> toDelete = false;
     pthread_mutex_t loadingMutex;
     std::mutex dataAccessMutex;
     uint32_t startPosition;
@@ -62,7 +63,7 @@ public:
      * 
      * @param data encrypted binary audio data.
      */
-    void appendData(std::vector<uint8_t> &data);
+    void appendData(const std::vector<uint8_t> &data);
 
     /**
      * @brief Performs AES CTR decryption of received data.
