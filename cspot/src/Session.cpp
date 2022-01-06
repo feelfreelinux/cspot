@@ -54,7 +54,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     authRequest.login_credentials.typ = (AuthenticationType) blob->authType;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
-    authRequest.system_info.system_information_strižng = (char *)informationString;
+    authRequest.system_info.system_information_string = (char *)informationString;
     authRequest.system_info.device_id = (char *)deviceId;
     authRequest.version_string = (char *)versionString;
 
