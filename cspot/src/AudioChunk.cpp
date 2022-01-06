@@ -10,15 +10,15 @@ AudioChunk::AudioChunk(uint16_t seqId, std::vector<uint8_t> &audioKey, uint32_t 
     this->startPosition = startPosition;
     this->endPosition = predictedEndPosition;
     this->decryptedData = std::vector<uint8_t>();
-    this->isHeaderFileSizeLoadedSemaphore = std::make_unique<WrappedSemaphore>(2);
-    this->isLoadedSemaphore = std::make_unique<WrappedSemaphore>(2);
+    this->isHeaderFileSizeLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
+    this->isLoadedSemaphore = std::make_unique<WrappedSemaphore>(5);
 }
 
 AudioChunk::~AudioChunk()
 {
 }
 
-void AudioChunk::appendData(std::vector<uint8_t> &data)
+void AudioChunk::appendData(const std::vector<uint8_t> &data)
 {
     this->decryptedData.insert(this->decryptedData.end(), data.begin(), data.end());
 }

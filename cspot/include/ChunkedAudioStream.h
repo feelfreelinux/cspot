@@ -12,6 +12,7 @@
 #include "AudioSink.h"
 #include "AudioChunk.h"
 #include "platform/WrappedMutex.h"
+#include "ChunkedByteStream.h"
 
 #define SPOTIFY_HEADER_SIZE 167
 #define BUFFER_SIZE 0x20000 * 1.5
@@ -32,10 +33,6 @@ private:
     ov_callbacks vorbisCallbacks;
     int currentSection;
 
-    // Audio chunking
-    std::vector<uint8_t> audioKey;
-    std::vector<std::shared_ptr<AudioChunk>> chunks;
-
     // Audio data
     uint32_t duration;
 
@@ -46,19 +43,12 @@ private:
     std::vector<uint8_t> fileId;
     uint32_t startPositionMs;
 
-    std::shared_ptr<AudioChunk> requestChunk(size_t chunkIndex);
-    void fetchTraillingPacket();
-    std::shared_ptr<AudioChunk> findChunkForPosition(size_t position);
-
 public:
     ChunkedAudioStream(std::vector<uint8_t> fileId, std::vector<uint8_t> audioKey, uint32_t duration, std::shared_ptr<MercuryManager> manager, uint32_t startPositionMs, bool isPaused);
     ~ChunkedAudioStream();
-    int requestedChunkIndex = 0;
+    std::shared_ptr<ChunkedByteStream> byteStream;
+
     std::function<void()> streamFinishedCallback;
-    size_t pos = SPOTIFY_HEADER_SIZE; // size of some spotify header
-    uint32_t fileSize;
-    uint32_t readBeforeSeek = 0;
-    bool loadingMeta = true;
     std::atomic<bool> isPaused = false;
     std::atomic<bool> isRunning = false;
     std::atomic<bool> finished = false;

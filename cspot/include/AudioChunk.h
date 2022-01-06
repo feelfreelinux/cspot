@@ -62,7 +62,7 @@ public:
      * 
      * @param data encrypted binary audio data.
      */
-    void appendData(std::vector<uint8_t> &data);
+    void appendData(const std::vector<uint8_t> &data);
 
     /**
      * @brief Performs AES CTR decryption of received data.

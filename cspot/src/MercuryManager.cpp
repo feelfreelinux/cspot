@@ -9,7 +9,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
     {MercuryType::UNSUB, "UNSUB"},
     });
 
-MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 6 * 1024, +1, 1)
+MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 6 * 1024, 2, 1)
 {
     tempMercuryHeader = Header_init_default;
     this->timeProvider = std::make_shared<TimeProvider>();
@@ -30,7 +30,7 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
 
 MercuryManager::~MercuryManager()
 {
-    pb_release(Header_fields, tempMercuryHeader);
+    pb_release(Header_fields, &tempMercuryHeader);
 }
 
 bool MercuryManager::timeoutHandler()
@@ -177,7 +177,6 @@ void MercuryManager::runTask()
         }
         if (static_cast<MercuryType>(packet->command) == MercuryType::PING) // @TODO: Handle time synchronization through ping
         {
-            CSPOT_LOG(debug, "Got ping, syncing timestamp");
             this->timeProvider->syncWithPingPacket(packet->data);
 
             this->lastPingTimestamp = this->timeProvider->getSyncedTimestamp();

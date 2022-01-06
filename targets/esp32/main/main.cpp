@@ -34,7 +34,7 @@
 #include "mdns.h"
 
 // Config sink
-#define PCM5102 // INTERNAL, AC101, ES8018, ES8388, PCM5102
+#define AC101 // INTERNAL, AC101, ES8018, ES8388, PCM5102
 #define QUALITY     320      // 320, 160, 96
 #define DEVICE_NAME "CSpot-ESP32"
 
