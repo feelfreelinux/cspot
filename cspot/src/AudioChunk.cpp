@@ -20,6 +20,7 @@ AudioChunk::~AudioChunk()
 
 void AudioChunk::appendData(const std::vector<uint8_t> &data)
 {
+    //if (this == nullptr) return;
     this->decryptedData.insert(this->decryptedData.end(), data.begin(), data.end());
 }
 
