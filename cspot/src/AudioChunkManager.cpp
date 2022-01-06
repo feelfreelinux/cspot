@@ -3,7 +3,7 @@
 #include "Logger.h"
 
 AudioChunkManager::AudioChunkManager()
-    : bell::Task("AudioChunkManager", 4 * 1024, 1, 0) {
+    : bell::Task("AudioChunkManager", 4 * 1024, 2, 0) {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
 }
@@ -60,7 +60,7 @@ void AudioChunkManager::runTask() {
             // Erase all chunks that are not referenced elsewhere anymore
             chunks.erase(
                 std::remove_if(chunks.begin(), chunks.end(),
-                               [](std::shared_ptr<AudioChunk> chunk) {
+                               [](std::shared_ptr<AudioChunk>& chunk) {
                                    return chunk.use_count() == 1;
                                }),
                 chunks.end());
