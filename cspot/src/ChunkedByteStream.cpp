@@ -59,7 +59,6 @@ size_t ChunkedByteStream::read(uint8_t *buf, size_t nbytes) {
     uint16_t chunkIndex = this->pos / AUDIO_CHUNK_SIZE;
     for (auto it = chunks.begin(); it != chunks.end();) {
         if (((*it)->endPosition<pos || (*it)->startPosition>(pos + 2 * AUDIO_CHUNK_SIZE)) && !(*it)->keepInMemory) {
-            (*it)->toDelete = true;
             it = chunks.erase(it);
         } else {
             it++;

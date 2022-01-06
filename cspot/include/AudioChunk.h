@@ -25,7 +25,6 @@ public:
     std::vector<uint8_t> decryptedData;
     std::vector<uint8_t> audioKey;
     bool keepInMemory = false;
-    std::atomic<bool> toDelete = false;
     pthread_mutex_t loadingMutex;
     std::mutex dataAccessMutex;
     uint32_t startPosition;
