@@ -53,6 +53,7 @@ private:
     size_t attemptRead(uint8_t *buffer, size_t bytes, std::shared_ptr<AudioChunk> chunk);
 public:
     ChunkedByteStream(std::shared_ptr<MercuryManager> manager);
+    ~ChunkedByteStream() {};
 
     /**
      * Requests first chunk from the file, and then fills file information based on its header
