@@ -68,7 +68,7 @@ void Player::feedPCM(std::vector<uint8_t>& data)
         }
     }
 
-    this->audioSink->feedPCMFrames(data);
+    this->audioSink->feedPCMFrames(data.data(), data.size());
 }
 
 void Player::runTask()

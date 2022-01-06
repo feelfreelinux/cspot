@@ -11,24 +11,19 @@ set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake Build Type")
 
 # CMake options
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Main target sources
 file(GLOB SOURCES "*.cpp")
 
 if(USE_PORTAUDIO)
     add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
-    find_package(portaudio REQUIRED)
-    list(APPEND EXTRA_INCLUDES ${PORTAUDIO_INCLUDE_DIRS})
-    list(APPEND EXTRA_LIBS ${PORTAUDIO_LIBRARIES})
+    set(BELL_USE_PORTAUDIO ON)
 endif(USE_PORTAUDIO)
 unset(USE_PORTAUDIO CACHE)
 
 if(USE_ALSA)
     add_definitions(-DCSPOT_ENABLE_ALSA_SINK)
-    find_package(ALSA REQUIRED)
-    list(APPEND EXTRA_INCLUDES ${ALSA_INCLUDE_DIRS})
-    list(APPEND EXTRA_LIBS ${ALSA_LIBRARIES})
+    set(BELL_USE_ALSA ON)
 endif(USE_ALSA)
 unset(USE_ALSA CACHE)
 

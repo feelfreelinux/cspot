@@ -34,9 +34,10 @@
 #include "mdns.h"
 
 // Config sink
-#define AC101 // INTERNAL, AC101, ES8018, ES8388, PCM5102
+#define PCM5102 // INTERNAL, AC101, ES8018, ES8388, PCM5102, TAS5711, SPDIF
 #define QUALITY     320      // 320, 160, 96
 #define DEVICE_NAME "CSpot-ESP32"
+#define SPDIF_PIN 26
 
 #ifdef INTERNAL
 #include <InternalAudioSink.h>
@@ -55,6 +56,9 @@
 #endif
 #ifdef TAS5711
 #include <TAS5711AudioSink.h>
+#endif
+#ifdef SPDIF
+#include <SPDIFAudioSink.h>
 #endif
 
 static const char *TAG = "cspot";
@@ -120,6 +124,12 @@ static void cspotTask(void *pvParameters)
 #endif
 #ifdef PCM5102
 			auto audioSink = std::make_shared<PCM5102AudioSink>();
+#endif
+#ifdef TAS5711
+			auto audioSink = std::make_shared<TAS5711AudioSink>();
+#endif
+#ifdef SPDIF
+			auto audioSink = std::make_shared<SPDIFAudioSink>(SPDIF_PIN);
 #endif
 
             // @TODO Actually store this token somewhere
