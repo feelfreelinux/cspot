@@ -5,6 +5,7 @@
 #include "BellLogger.h"
 #include <memory>
 #include "MercuryManager.h"
+#include "stdint.h"
 
 class ChunkedByteStream : public bell::ByteStream {
 private:
