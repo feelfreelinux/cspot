@@ -9,7 +9,7 @@ MercuryResponse::MercuryResponse(std::vector<uint8_t> &data)
 }
 
 MercuryResponse::~MercuryResponse() {
-    pb_release(Header_fields, mercuryHeader);
+    pb_release(Header_fields, &mercuryHeader);
 }
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data)

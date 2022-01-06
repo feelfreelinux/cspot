@@ -30,7 +30,7 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
 
 MercuryManager::~MercuryManager()
 {
-    pb_release(Header_fields, tempMercuryHeader);
+    pb_release(Header_fields, &tempMercuryHeader);
 }
 
 bool MercuryManager::timeoutHandler()
