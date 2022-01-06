@@ -6,10 +6,10 @@ using random_bytes_engine = std::independent_bits_engine<std::default_random_eng
 
 Session::Session()
 {
-    this->clientHello = ClientHello_init_zero;
-    this->apResponse = APResponseMessage_init_zero;
-    this->authRequest = ClientResponseEncrypted_init_zero;
-    this->clientResPlaintext = APResponseMessage_init_zero;
+    this->clientHello = ClientHello_init_default;
+    this->apResponse = APResponseMessage_init_default;
+    this->authRequest = ClientResponseEncrypted_init_default;
+    this->clientResPlaintext = APResponseMessage_init_default;
 
     // Generates the public and priv key
     this->crypto = std::make_unique<Crypto>();
@@ -97,7 +97,6 @@ void Session::processAPHelloResponse(std::vector<uint8_t> &helloPacket)
     auto skipSize = std::vector<uint8_t>(data.begin() + 4, data.end());
 
     pb_release(APResponseMessage_fields, &apResponse);
-    apResponse = APResponseMessage_init_zero;
     pbDecode(apResponse, APResponseMessage_fields, skipSize);
 
     auto diffieKey = std::vector<uint8_t>(apResponse.challenge.login_crypto_challenge.diffie_hellman.gs, apResponse.challenge.login_crypto_challenge.diffie_hellman.gs + 96);
