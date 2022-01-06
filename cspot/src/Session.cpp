@@ -6,10 +6,10 @@ using random_bytes_engine = std::independent_bits_engine<std::default_random_eng
 
 Session::Session()
 {
-    this->clientHello = ClientHello_init_default;
-    this->apResponse = APResponseMessage_init_default;
-    this->authRequest = ClientResponseEncrypted_init_default;
-    this->clientResPlaintext = APResponseMessage_init_default;
+    this->clientHello = {};
+    this->apResponse = {};
+    this->authRequest = {};
+    this->clientResPlaintext = {};
 
     // Generates the public and priv key
     this->crypto = std::make_unique<Crypto>();
