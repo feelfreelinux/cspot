@@ -21,6 +21,7 @@ public:
     AudioChunkManager();
     std::atomic<bool> isRunning = false;
     std::mutex runningMutex;
+    std::mutex chunkMutex;
     /**
      * @brief Registers a new audio chunk request.
      * 

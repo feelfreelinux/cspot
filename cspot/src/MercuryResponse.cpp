@@ -9,7 +9,7 @@ MercuryResponse::MercuryResponse(std::vector<uint8_t> &data)
 }
 
 MercuryResponse::~MercuryResponse() {
-    pb_release(Header_fields, mercuryHeader);
+    pb_release(Header_fields, &mercuryHeader);
 }
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
@@ -34,6 +34,6 @@ void MercuryResponse::parseResponse(std::vector<uint8_t> &data)
         pos += 2 + partSize;
     }
 
-    pb_release(Header_fields, this->mercuryHeader);
+    pb_release(Header_fields, &this->mercuryHeader);
     pbDecode(this->mercuryHeader, Header_fields, headerBytes);
 }

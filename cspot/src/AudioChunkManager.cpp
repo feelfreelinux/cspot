@@ -12,6 +12,7 @@ std::shared_ptr<AudioChunk>
 AudioChunkManager::registerNewChunk(uint16_t seqId,
                                     std::vector<uint8_t> &audioKey,
                                     uint32_t startPos, uint32_t endPos) {
+    std::scoped_lock lock(chunkMutex);
     auto chunk =
         std::make_shared<AudioChunk>(seqId, audioKey, startPos * 4, endPos * 4);
     this->chunks.push_back(chunk);
@@ -26,6 +27,7 @@ void AudioChunkManager::handleChunkData(std::vector<uint8_t> &data,
 }
 
 void AudioChunkManager::failAllChunks() {
+    std::scoped_lock lock(chunkMutex);
     // Enumerate all the chunks and mark em all failed
     for (auto const &chunk : this->chunks) {
         if (!chunk->isLoaded) {
@@ -47,9 +49,10 @@ void AudioChunkManager::close() {
 void AudioChunkManager::runTask() {
     std::scoped_lock lock(this->runningMutex);
     this->isRunning = true;
+    std::pair<std::vector<uint8_t>, bool> audioPair;
     while (isRunning) {
-        std::pair<std::vector<uint8_t>, bool> audioPair;
         if (this->audioChunkDataQueue.wtpop(audioPair, 100)) {
+            std::scoped_lock lock(this->chunkMutex);
             auto data = audioPair.first;
             auto failed = audioPair.second;
             uint16_t seqId = ntohs(extract<uint16_t>(data, 0));
@@ -57,7 +60,7 @@ void AudioChunkManager::runTask() {
             // Erase all chunks that are not referenced elsewhere anymore
             chunks.erase(
                 std::remove_if(chunks.begin(), chunks.end(),
-                               [](const std::shared_ptr<AudioChunk> &chunk) {
+                               [](std::shared_ptr<AudioChunk> chunk) {
                                    return chunk.use_count() == 1;
                                }),
                 chunks.end());
@@ -67,7 +70,7 @@ void AudioChunkManager::runTask() {
                     // Found the right chunk
                     if (chunk != nullptr && chunk->seqId == seqId) {
                         if (failed) {
-                            // chunk->isFailed = true;
+                            chunk->isFailed = true;
                             chunk->startPosition = 0;
                             chunk->endPosition = 0;
                             chunk->isHeaderFileSizeLoadedSemaphore->give();
@@ -96,9 +99,6 @@ void AudioChunkManager::runTask() {
                             break;
 
                         default:
-                            if (chunk.get() == nullptr) {
-                                return;
-                            }
                             auto actualData = std::vector<uint8_t>(
                                 data.begin() + 2, data.end());
                             chunk->appendData(actualData);
@@ -109,8 +109,6 @@ void AudioChunkManager::runTask() {
 
             } catch (...) {
             }
-        } else {
-            usleep(100);
         }
     }
 
