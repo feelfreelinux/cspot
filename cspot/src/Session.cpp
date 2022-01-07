@@ -20,7 +20,6 @@ Session::~Session()
 {
     pb_release(ClientHello_fields, &clientHello);
     pb_release(APResponseMessage_fields, &apResponse);
-    pb_release(ClientResponseEncrypted_fields, &authRequest);
     pb_release(ClientResponsePlaintext_fields, &clientResPlaintext);
 }
 
@@ -60,6 +59,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     authRequest.version_string = (char *)versionString;
 
     auto data = pbEncode(ClientResponseEncrypted_fields, &authRequest);
+    free(authRequest.login_credentials.auth_data);
 
     // Send login request
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);

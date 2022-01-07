@@ -24,11 +24,10 @@ if(UNIX AND NOT APPLE)
     list(APPEND EXTRA_LIBS dns_sd)
     # TODO: migrate from this to native linux mDNS
 endif()
+
+# Build protobuf code
 set(NANOPB_OPTIONS "-I${CMAKE_CURRENT_SOURCE_DIR}")
-set(PROTOS protobuf/authentication.proto protobuf/mercury.proto protobuf/keyexchange.proto protobuf/spirc.proto protobuf/metadata.proto)
-message(${PROTOS})
-message("building protobuf")
-message(${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB PROTOS protobuf/*.proto)
 nanopb_generate_cpp(PROTO_SRCS PROTO_HDRS RELPATH ${CMAKE_CURRENT_SOURCE_DIR} ${PROTOS})
 add_custom_target(generate_proto_sources DEPENDS ${PROTO_SRCS} ${PROTO_HDRS})
 set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS}

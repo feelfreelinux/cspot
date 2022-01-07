@@ -12,12 +12,17 @@
 #include <ApResolve.h>
 #include "ZeroconfAuthenticator.h"
 #include "SpotifyTrack.h"
-#include "NamedPipeAudioSink.h"
 #include "LoginBlob.h"
-#include "PortAudioSink.h"
-#include "ALSAAudioSink.h"
 #include "CommandLineArguments.h"
 #include "HTTPServer.h"
+
+#ifdef CSPOT_ENABLE_ALSA_SINK
+#include "ALSAAudioSink.h"
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+#include "PortAudioSink.h"
+#else
+#include "NamedPipeAudioSink.h"
+#endif
 
 #include "ConfigJSON.h"
 #include "CliFile.h"
