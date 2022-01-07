@@ -1,3 +1,0 @@
-/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/ninja -DCMAKE_C_COMPILER=/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang -DCMAKE_CXX_COMPILER=/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang++ -D -G Ninja /Users/cspot/Documents/clones/cspot/cspot
-CMake Error: -D must be followed with VAR=VALUE.
-CMake Error: Run 'cmake --help' for all supported options.
