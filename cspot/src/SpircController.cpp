@@ -103,7 +103,7 @@ void SpircController::prevSong() {
 }
 
 void SpircController::handleFrame(std::vector<uint8_t> &data) {
-    //pb_release(Frame_fields, &state->remoteFrame);
+    pb_release(Frame_fields, &state->remoteFrame);
     pbDecode(state->remoteFrame, Frame_fields, data);
 
     switch (state->remoteFrame.typ) {
