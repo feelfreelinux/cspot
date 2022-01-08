@@ -74,7 +74,19 @@ static void cspotTask(void *pvParameters)
 
     mdns_init();
     mdns_hostname_set("cspot");
+
+#ifdef INTERNAL
+    auto audioSink = std::make_shared<InternalAudioSink>();
+#endif
+#ifdef AC101
     auto audioSink = std::make_shared<AC101AudioSink>();
+#endif
+#ifdef ES8018
+    auto audioSink = std::make_shared<ES8018AudioSink>();
+#endif
+#ifdef PCM5102
+    auto audioSink = std::make_shared<PCM5102AudioSink>();
+#endif
 
     // Config file
     file = std::make_shared<ESPFile>();

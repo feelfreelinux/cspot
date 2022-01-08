@@ -71,6 +71,33 @@ $ make
 ```
 See running the CLI for information on how to run cspot on a desktop computer.
 
+### Building for ESP32
+
+The ESP32 target is built using the esp-idf toolchain
+
+```shell
+# navigate to the targets/esp32 directory
+$ cd targets/esp32
+```
+
+Configure the `main/main.cpp` to match your DAC
+```c++
+// Config sink
+#define AC101 // INTERNAL, AC101, ES8018, PCM5102
+#define QUALITY     320      // 320, 160, 96
+#define DEVICE_NAME "CSpot-ESP32"
+```
+
+Build and upload the firmware
+```shell
+# compile
+$ idf.py build
+
+# upload
+$ idf.py flash
+```
+The ESP32 will restart and begin running cspot. You can monitor it using a serial console.
+
 ## Running
 
 ## The CLI version
