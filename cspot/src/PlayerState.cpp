@@ -137,7 +137,7 @@ void PlayerState::updatePositionMs(uint32_t position)
 void PlayerState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
-    //innerFrame.state.context_uri = remoteFrame.state.context_uri == nullptr ? nullptr : strdup(remoteFrame.state.context_uri);
+    innerFrame.state.context_uri = remoteFrame.state.context_uri == nullptr ? nullptr : strdup(remoteFrame.state.context_uri);
     std::copy(std::begin(remoteFrame.state.track), std::end(remoteFrame.state.track), std::begin(innerFrame.state.track));
     innerFrame.state.track_count = remoteFrame.state.track_count;
     innerFrame.state.has_playing_track_index = true;
