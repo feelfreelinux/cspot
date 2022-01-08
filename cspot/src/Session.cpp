@@ -8,7 +8,7 @@ Session::Session()
 {
     this->clientHello = {};
     this->apResponse = {};
-    this->authRequest = ClientResponseEncrypted_init_zero;
+    this->authRequest = {};
     this->clientResPlaintext = {};
 
     // Generates the public and priv key
