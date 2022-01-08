@@ -89,7 +89,7 @@ size_t ChunkedByteStream::read(uint8_t *buf, size_t nbytes) {
         pos += read;
 
         auto nextChunkPos = ((chunkIndex + 1) * AUDIO_CHUNK_SIZE) + 1;
-        if (loadAheadEnabled && nextChunkPos + AUDIO_CHUNK_SIZE < fileSize) {
+        if (loadAheadEnabled && nextChunkPos  < fileSize) {
             auto nextChunk = getChunkForPosition(nextChunkPos);
 
             if (nextChunk == nullptr) {
@@ -121,7 +121,6 @@ size_t ChunkedByteStream::attemptRead(uint8_t *buffer, size_t bytes, std::shared
 
 void ChunkedByteStream::seek(size_t nbytes) {
     std::scoped_lock lock(this->readMutex);
-    BELL_LOG(info, "cspot", "seeking to %d", nbytes);
     pos = nbytes;
 
 

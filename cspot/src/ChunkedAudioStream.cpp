@@ -156,7 +156,6 @@ void ChunkedAudioStream::startPlaybackLoop()
 
 void ChunkedAudioStream::seek(size_t dpos, Whence whence)
 {
-    BELL_LOG(info, "cspot", "%d", dpos);
     auto seekPos = 0;
     switch (whence)
     {
