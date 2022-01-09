@@ -8,15 +8,12 @@ jobs:
       with:
         submodules: recursive
         
-    - name: Cache build
-      id: cache-build
-      uses: actions/cache@v2
       with:
         path: |
           ${{github.workspace}}/targets/esp32/build
         key: ${{ runner.os }}-esp32-build
     - name: Build the firmware
       run: |
-        docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.4 /bin/bash -c "python3 -m pip install --upgrade pip setuptools wheel && \
+        docker run --rm -v $PWD:/project --env IDF_CCACHE_ENABLE=0 -w /project espressif/idf:release-v4.4 /bin/bash -c "python3 -m pip install --upgrade pip setuptools wheel && \
           pip3 install grpcio-tools && cd targets/esp32 && idf.py build"
         ls -la targets/esp32/build
