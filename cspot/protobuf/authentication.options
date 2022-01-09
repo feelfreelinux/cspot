@@ -1,6 +1,5 @@
-LoginCredentials.username type:FT_POINTER
-LoginCredentials.auth_data type:FT_POINTER
-LoginCredentials.auth_data type:FT_POINTER
-SystemInfo.system_information_string type:FT_POINTER
-SystemInfo.device_id type:FT_POINTER
-ClientResponseEncrypted.version_string type:FT_POINTER
+LoginCredentials.username max_size:30, fixed_length:false
+LoginCredentials.auth_data max_size:512, fixed_length:false
+SystemInfo.system_information_string max_size:16, fixed_length:false
+SystemInfo.device_id max_size:50, fixed_length:false
+ClientResponseEncrypted.version_string max_size:32, fixed_length:false

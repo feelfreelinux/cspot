@@ -49,17 +49,26 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
     authBlob = blob;
 
     // prepare authentication request proto
-    authRequest.login_credentials.username = (char *)(blob->username.c_str());
-    authRequest.login_credentials.auth_data = vectorToPbArray(blob->authData);
+    pbPutString(blob->username, authRequest.login_credentials.username);
+
+    std::copy(blob->authData.begin(), blob->authData.end(), authRequest.login_credentials.auth_data.bytes);
+    authRequest.login_credentials.auth_data.size = blob->authData.size();
+
     authRequest.login_credentials.typ = (AuthenticationType) blob->authType;
     authRequest.system_info.cpu_family = CpuFamily_CPU_UNKNOWN;
     authRequest.system_info.os = Os_OS_UNKNOWN;
-    authRequest.system_info.system_information_string = (char *)informationString;
-    authRequest.system_info.device_id = (char *)deviceId;
-    authRequest.version_string = (char *)versionString;
+
+    auto infoStr = std::string(informationString);
+    pbPutString(infoStr, authRequest.system_info.system_information_string);
+
+    auto deviceIdStr = std::string(deviceId);
+    pbPutString(deviceId, authRequest.system_info.device_id);
+
+    auto versionStr = std::string(versionString);
+    pbPutString(versionStr, authRequest.version_string);
+    authRequest.has_version_string = true;
 
     auto data = pbEncode(ClientResponseEncrypted_fields, &authRequest);
-    free(authRequest.login_credentials.auth_data);
 
     // Send login request
     this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);
