@@ -8,10 +8,6 @@ jobs:
       with:
         submodules: recursive
         
-      with:
-        path: |
-          ${{github.workspace}}/targets/esp32/build
-        key: ${{ runner.os }}-esp32-build
     - name: Build the firmware
       run: |
         docker run --rm -v $PWD:/project --env IDF_CCACHE_ENABLE=0 -w /project espressif/idf:release-v4.4 /bin/bash -c "python3 -m pip install --upgrade pip setuptools wheel && \
