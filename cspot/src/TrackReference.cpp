@@ -3,11 +3,11 @@
 
 TrackReference::TrackReference(TrackRef *ref)
 {
-    if (ref->gid != nullptr)
+    if (ref->gid.size > 0)
     {
-        gid = pbArrayToVector(ref->gid);
+        gid = std::vector(ref->gid.bytes, ref->gid.bytes + ref->gid.size);
     }
-    else if (ref->uri != nullptr)
+    else if (strlen(ref->uri) > 0)
     {
         auto uri = std::string(ref->uri);
         auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());

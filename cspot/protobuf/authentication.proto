@@ -48,14 +48,14 @@ enum AuthenticationType {
 message SystemInfo {
     required CpuFamily cpu_family = 0xa; 
     required Os os = 0x3c;
-    optional string system_information_string = 0x5a; 
-    optional string device_id = 0x64;
+    required string system_information_string = 0x5a;
+    required string device_id = 0x64;
 }
 
 message LoginCredentials {
-    optional string username = 0xa; 
+    required string username = 0xa;
     required AuthenticationType typ = 0x14; 
-    optional bytes auth_data = 0x1e; 
+    required bytes auth_data = 0x1e;
 }
 
 message ClientResponseEncrypted {

@@ -3,13 +3,12 @@
 MercuryResponse::MercuryResponse(std::vector<uint8_t> &data)
 {
     // this->mercuryHeader = std::make_unique<Header>();
-    this->mercuryHeader = Header_init_default;
+    this->mercuryHeader = {};
     this->parts = mercuryParts(0);
     this->parseResponse(data);
 }
 
 MercuryResponse::~MercuryResponse() {
-    pb_release(Header_fields, &mercuryHeader);
 }
 
 void MercuryResponse::parseResponse(std::vector<uint8_t> &data)

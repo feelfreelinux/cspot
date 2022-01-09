@@ -11,7 +11,7 @@ std::map<MercuryType, std::string> MercuryTypeMap({
 
 MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("mercuryManager", 6 * 1024, 2, 1)
 {
-    tempMercuryHeader = Header_init_default;
+    tempMercuryHeader = {};
     this->timeProvider = std::make_shared<TimeProvider>();
     this->callbacks = std::map<uint64_t, mercuryCallback>();
     this->subscriptions = std::map<std::string, mercuryCallback>();
@@ -294,8 +294,11 @@ uint64_t MercuryManager::execute(MercuryType method, std::string uri, mercuryCal
     // Construct mercury header
 
     CSPOT_LOG(debug, "executing MercuryType %s", MercuryTypeMap[method].c_str());
-    tempMercuryHeader.uri = (char *)(uri.c_str());
-    tempMercuryHeader.method = (char *)(MercuryTypeMap[method].c_str());
+    pbPutString(uri, tempMercuryHeader.uri);
+    pbPutString(MercuryTypeMap[method], tempMercuryHeader.method);
+
+    tempMercuryHeader.has_method = true;
+    tempMercuryHeader.has_uri = true;
 
     // GET and SEND are actually the same. Therefore the override
     // The difference between them is only in header's method
