@@ -24,20 +24,18 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     innerFrame.state.repeat = false;
     innerFrame.state.has_repeat = true;
 
-    innerFrame.device_state.has_sw_version = true;
-    pbPutCharArray(swVersion, innerFrame.device_state.sw_version);
+    innerFrame.device_state.sw_version = strdup(swVersion);
 
     innerFrame.device_state.is_active = false;
     innerFrame.device_state.has_is_active = true;
-    
+
     innerFrame.device_state.can_play = true;
     innerFrame.device_state.has_can_play = true;
 
     innerFrame.device_state.volume = configMan->volume;
     innerFrame.device_state.has_volume = true;
 
-    innerFrame.device_state.has_name = true;
-    pbPutString(configMan->deviceName, innerFrame.device_state.name);
+    innerFrame.device_state.name = strdup(configMan->deviceName.c_str());
 
     // Prepare player's capabilities
     addCapability(CapabilityType_kCanBePlayer, 1);
@@ -55,33 +53,32 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
 }
 
 PlayerState::~PlayerState() {
+    pb_release(Frame_fields, &innerFrame);
     pb_release(Frame_fields, &remoteFrame);
-    // do not destruct inner frame as it is never allocated
-//    pb_release(Frame_fields, &innerFrame);
 }
 
 void PlayerState::setPlaybackState(const PlaybackState state)
 {
     switch (state)
     {
-    case PlaybackState::Loading:
-        // Prepare the playback at position 0
-        innerFrame.state.status = PlayStatus_kPlayStatusPause;
-        innerFrame.state.position_ms = 0;
-        innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
-        break;
-    case PlaybackState::Playing:
-        innerFrame.state.status = PlayStatus_kPlayStatusPlay;
-        innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
-        break;
-    case PlaybackState::Stopped:
-        break;
-    case PlaybackState::Paused:
-        // Update state and recalculate current song position
-        innerFrame.state.status = PlayStatus_kPlayStatusPause;
-        uint32_t diff = timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
-        this->updatePositionMs(innerFrame.state.position_ms + diff);
-        break;
+        case PlaybackState::Loading:
+            // Prepare the playback at position 0
+            innerFrame.state.status = PlayStatus_kPlayStatusPause;
+            innerFrame.state.position_ms = 0;
+            innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
+            break;
+        case PlaybackState::Playing:
+            innerFrame.state.status = PlayStatus_kPlayStatusPlay;
+            innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
+            break;
+        case PlaybackState::Stopped:
+            break;
+        case PlaybackState::Paused:
+            // Update state and recalculate current song position
+            innerFrame.state.status = PlayStatus_kPlayStatusPause;
+            uint32_t diff = timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
+            this->updatePositionMs(innerFrame.state.position_ms + diff);
+            break;
     }
 }
 
@@ -139,9 +136,8 @@ void PlayerState::updatePositionMs(uint32_t position)
 void PlayerState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
-    strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
-
-    std::copy(std::begin(remoteFrame.state.track), std::end(remoteFrame.state.track), std::begin(innerFrame.state.track));
+    std::swap(innerFrame.state.context_uri, remoteFrame.state.context_uri);
+    std::swap(innerFrame.state.track, remoteFrame.state.track);
     innerFrame.state.track_count = remoteFrame.state.track_count;
     innerFrame.state.has_playing_track_index = true;
     innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
@@ -170,17 +166,13 @@ void PlayerState::setShuffle(bool shuffle)
     if (shuffle)
     {
         // Put current song at the begining
-        auto tmp = innerFrame.state.track[0];
-        innerFrame.state.track[0] = innerFrame.state.track[innerFrame.state.playing_track_index];
-        innerFrame.state.track[innerFrame.state.playing_track_index] = tmp;
+        std::swap(innerFrame.state.track[0], innerFrame.state.track[innerFrame.state.playing_track_index]);
 
         // Shuffle current tracks
         for (int x = 1; x < innerFrame.state.track_count - 1; x++)
         {
             auto j = x + (std::rand() % (innerFrame.state.track_count - x));
-            tmp = innerFrame.state.track[j];
-            innerFrame.state.track[j] = innerFrame.state.track[x];
-            innerFrame.state.track[x] = tmp;
+            std::swap(innerFrame.state.track[j], innerFrame.state.track[x]);
         }
         innerFrame.state.playing_track_index = 0;
     }
@@ -199,16 +191,14 @@ std::shared_ptr<TrackReference> PlayerState::getCurrentTrack()
 
 std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
 {
+    free(innerFrame.ident);
+    free(innerFrame.protocol_version);
+
     // Prepare current frame info
     innerFrame.version = 1;
-
-    pbPutCharArray(deviceId, innerFrame.ident);
-    innerFrame.has_ident = true;
-
+    innerFrame.ident = strdup(deviceId);
     innerFrame.seq_nr = this->seqNum;
-    pbPutCharArray(protocolVersion, innerFrame.protocol_version);
-    innerFrame.has_protocol_version = true;
-
+    innerFrame.protocol_version = strdup(protocolVersion);
     innerFrame.typ = typ;
     innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
     innerFrame.has_version = true;
@@ -241,8 +231,7 @@ void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<st
 
     for (int x = 0; x < stringValue.size(); x++)
     {
-        stringValue[x].copy(this->innerFrame.device_state.capabilities[capabilityIndex].stringValue[x], stringValue[x].size());
-        this->innerFrame.device_state.capabilities[capabilityIndex].stringValue[x][stringValue[x].size()] = '\0';
+        pbPutString(stringValue[x], this->innerFrame.device_state.capabilities[capabilityIndex].stringValue[x]);
     }
 
     this->innerFrame.device_state.capabilities[capabilityIndex].stringValue_count = stringValue.size();

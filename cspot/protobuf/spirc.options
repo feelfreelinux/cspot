@@ -1,12 +1,13 @@
-Frame.ident max_size: 64, fixed_length:false
-Frame.protocol_version max_size: 64, fixed_length:false
-Frame.recipient max_count: 64, max_size: 64
+Frame.ident type:FT_POINTER
+Frame.protocol_version type:FT_POINTER
+Frame.recipient type:FT_POINTER
 Capability.stringValue max_count:50, max_size: 50
 Capability.intValue max_count:50
-DeviceState.sw_version max_size: 64, fixed_length:false
-DeviceState.name max_size: 64, fixed_length:false
+DeviceState.sw_version type:FT_POINTER
+DeviceState.name type:FT_POINTER
 DeviceState.capabilities max_count:17, fixed_count:false
-State.context_uri max_size: 256, fixed_length:false
-State.track max_count:100, fixed_count:false
-TrackRef.gid max_size: 128, fixed_length:false
-TrackRef.uri max_size: 256 fixed_length:false
+State.context_uri type:FT_POINTER
+State.track type:FT_POINTER
+TrackRef.gid type:FT_POINTER
+TrackRef.uri type:FT_POINTER
+TrackRef.context type:FT_POINTER

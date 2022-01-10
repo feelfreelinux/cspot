@@ -56,7 +56,7 @@ void SpircController::disconnect(void) {
     state->setActive(false);
     notify();
     // Send the event at the end at it might be a last gasp
-    sendEvent(CSpotEventType::DISC);    
+    sendEvent(CSpotEventType::DISC);
 }
 
 void SpircController::playToggle() {
@@ -103,6 +103,7 @@ void SpircController::prevSong() {
 }
 
 void SpircController::handleFrame(std::vector<uint8_t> &data) {
+    pb_release(Frame_fields, &state->remoteFrame);
     pbDecode(state->remoteFrame, Frame_fields, data);
 
     switch (state->remoteFrame.typ) {
