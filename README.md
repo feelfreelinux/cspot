@@ -83,7 +83,7 @@ $ cd targets/esp32
 Configure the `main/main.cpp` to match your DAC
 ```c++
 // Config sink
-#define AC101 // INTERNAL, AC101, ES8018, PCM5102
+#define AC101 // INTERNAL, AC101, ES8018, ES8388, PCM5102
 #define QUALITY     320      // 320, 160, 96
 #define DEVICE_NAME "CSpot-ESP32"
 ```
