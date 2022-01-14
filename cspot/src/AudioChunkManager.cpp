@@ -3,7 +3,7 @@
 #include "Logger.h"
 
 AudioChunkManager::AudioChunkManager()
-    : bell::Task("AudioChunkManager", 4 * 1024, 2, 0) {
+    : bell::Task("AudioChunkManager", 4 * 1024, -1, 0) {
     this->chunks = std::vector<std::shared_ptr<AudioChunk>>();
     startTask();
 }
