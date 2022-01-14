@@ -13,7 +13,7 @@ public:
     void stream(std::vector<uint8_t> &buf);  /* stream cipher */
     void maconly(std::vector<uint8_t> &buf); /* accumulate MAC */
     void encrypt(std::vector<uint8_t> &buf); /* encrypt + MAC */
-    void decrypt(std::vector<uint8_t> &buf); /* decrypt + MAC */
+    void decrypt(std::vector<uint8_t> &buf); /* finalize + MAC */
     void finish(std::vector<uint8_t> &buf);  /* finalise MAC */
 
 private:

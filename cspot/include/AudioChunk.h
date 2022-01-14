@@ -14,11 +14,14 @@ class AudioChunk {
 private:
     /**
      * @brief Calculates a correct IV by performing bignum addition.
-     * 
+     *
      * @param num Number to add to IV.
-     * @return std::vector<uint8_t> 
+     * @return std::vector<uint8_t>
      */
     std::vector<uint8_t> getIVSum(uint32_t num);
+
+    size_t decryptedCount = 0;
+    size_t oldStartPos;
 
 public:
     std::unique_ptr<Crypto> crypto;
@@ -41,14 +44,21 @@ public:
     std::unique_ptr<WrappedSemaphore> isLoadedSemaphore;
 
     /**
-     * @brief 
+     * @brief
      */
     std::unique_ptr<WrappedSemaphore> isHeaderFileSizeLoadedSemaphore;
 
+    /**
+     * Decrypts data and writes it to the target buffer
+     * @param target data buffer to write to
+     * @param offset data offset
+     * @param nbytes number of bytes to read
+     */
+    void readData(uint8_t *target, size_t offset, size_t nbytes);
 
     /**
      * @brief AudioChunk handles all audiochunk related operations.
-     * 
+     *
      * @param seqId Sequence id of requested chunk
      * @param audioKey Audio key used for decryption of audio data
      * @param startPosition Start position of current chunk in audio file
@@ -59,16 +69,16 @@ public:
 
     /**
      * @brief Appends incoming chunked data to local cache.
-     * 
+     *
      * @param data encrypted binary audio data.
      */
     void appendData(const std::vector<uint8_t> &data);
 
     /**
-     * @brief Performs AES CTR decryption of received data.
-     * 
+     * @brief Sets loaded status on the chunk
+     *
      */
-    void decrypt();
+    void finalize();
 };
 
 #endif

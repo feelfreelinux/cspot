@@ -113,9 +113,7 @@ size_t ChunkedByteStream::attemptRead(uint8_t *buffer, size_t bytes, std::shared
         toRead = chunk->decryptedData.size() - offset;
     }
 
-    // Copy data
-    memcpy(buffer, chunk->decryptedData.data() + offset, toRead);
-
+    chunk->readData(buffer, offset, toRead);
     return toRead;
 }
 

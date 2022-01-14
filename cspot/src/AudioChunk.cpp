@@ -24,13 +24,28 @@ void AudioChunk::appendData(const std::vector<uint8_t> &data)
     this->decryptedData.insert(this->decryptedData.end(), data.begin(), data.end());
 }
 
-void AudioChunk::decrypt()
+void AudioChunk::readData(uint8_t *target, size_t offset, size_t nbytes) {
+    auto readPos = offset + nbytes;
+    auto modulo = (readPos % 16);
+    auto ivReadPos = readPos;
+    if (modulo != 0) {
+        ivReadPos += (16 - modulo);
+    }
+    if (ivReadPos > decryptedCount) {
+        // calculate the IV for right position
+        auto calculatedIV = this->getIVSum((oldStartPos + decryptedCount) / 16);
+
+        crypto->aesCTRXcrypt(this->audioKey, calculatedIV, decryptedData.data() + decryptedCount,  ivReadPos - decryptedCount);
+
+        decryptedCount = ivReadPos;
+    }
+    memcpy(target, this->decryptedData.data() + offset, nbytes);
+
+}
+
+void AudioChunk::finalize()
 {
-    // calculate the IV for right position
-    auto calculatedIV = this->getIVSum(startPosition / 16);
-
-    crypto->aesCTRXcrypt(this->audioKey, calculatedIV, decryptedData);
-
+    this->oldStartPos = this->startPosition;
     this->startPosition = this->endPosition - this->decryptedData.size();
     this->isLoaded = true;
 }

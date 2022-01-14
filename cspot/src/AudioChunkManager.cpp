@@ -80,7 +80,7 @@ void AudioChunkManager::runTask() {
 
                         switch (data.size()) {
                         case DATA_SIZE_HEADER: {
-                            CSPOT_LOG(debug, "ID: %d: header decrypt!", seqId);
+                            CSPOT_LOG(debug, "ID: %d: header finalize!", seqId);
                             auto headerSize = ntohs(extract<uint16_t>(data, 2));
                             // Got file size!
                             chunk->headerFileSize =
@@ -92,9 +92,9 @@ void AudioChunkManager::runTask() {
                             if (chunk->endPosition > chunk->headerFileSize) {
                                 chunk->endPosition = chunk->headerFileSize;
                             }
-                            CSPOT_LOG(debug, "ID: %d: Starting decrypt!",
+                            CSPOT_LOG(debug, "ID: %d: finalize chunk!",
                                       seqId);
-                            chunk->decrypt();
+                                chunk->finalize();
                             chunk->isLoadedSemaphore->give();
                             break;
 
