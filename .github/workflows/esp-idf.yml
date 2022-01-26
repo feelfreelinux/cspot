@@ -13,3 +13,13 @@ jobs:
         docker run --rm -v $PWD:/project --env IDF_CCACHE_ENABLE=0 -w /project espressif/idf:release-v4.4 /bin/bash -c "python3 -m pip install --upgrade pip setuptools wheel && \
           pip3 install grpcio-tools && cd targets/esp32 && idf.py build"
         ls -la targets/esp32/build
+        
+        
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Firmware
+        path: |
+          targets/esp32/build/bootloader/bootloader.bin
+          targets/esp32/build/partition_table/partition-table.bin
+          targets/esp32/build/cspot-esp32.bin
