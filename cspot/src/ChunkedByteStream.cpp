@@ -79,6 +79,7 @@ size_t ChunkedByteStream::read(uint8_t *buf, size_t nbytes) {
     if (chunk != nullptr) {
         // Wait for chunk if not loaded yet
         if (!chunk->isLoaded && !chunk->isFailed) {
+            BELL_LOG(info, "cspot", "Chunk not loaded, waiting for %d", chunkIndex);
             chunk->isLoadedSemaphore->wait();
         }
 
