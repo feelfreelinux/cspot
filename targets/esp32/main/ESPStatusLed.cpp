@@ -33,7 +33,6 @@ ESPStatusLed::ESPStatusLed() {
 
 #ifdef CONFIG_CSPOT_STATUS_LED_TYPE_NONE
     ESP_LOGI(TAG, "Status LED is disabled");
-    return;
 #endif
 
 #ifdef CONFIG_CSPOT_STATUS_LED_TYPE_GPIO
@@ -48,6 +47,7 @@ ESPStatusLed::ESPStatusLed() {
     pStrip_a->clear(pStrip_a, 50);
 #endif
 
+#if defined(CONFIG_CSPOT_STATUS_LED_TYPE_GPIO) || defined(CONFIG_CSPOT_STATUS_LED_TYPE_RMT)
     xTaskCreate([](void* _self) {
         ESPStatusLed* self = (ESPStatusLed*)_self;
         
@@ -73,7 +73,7 @@ ESPStatusLed::ESPStatusLed() {
             vTaskDelay(StatusLedBlinkTimings[(int)self->status][1] / portTICK_PERIOD_MS);
         }
     }, "statusled", 2 * 1024, (void*)this, 6, NULL);
-
+#endif
 }
 
 void ESPStatusLed::setStatus(StatusLed newStatus)
