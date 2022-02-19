@@ -89,8 +89,13 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         std::swap(trackInfo.file, trackInfo.alternative[altIndex].file);
         std::swap(trackInfo.file_count, trackInfo.alternative[altIndex].file_count);
         std::swap(trackInfo.gid, trackInfo.alternative[altIndex].gid);
-
         CSPOT_LOG(info, "Trying alternative %d", altIndex);
+        altIndex++;
+    
+        if(altIndex > trackInfo.alternative_count) {
+            // no alternatives for song
+            return;
+        }
     }
 
     auto trackId = pbArrayToVector(trackInfo.gid);
