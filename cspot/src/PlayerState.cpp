@@ -170,7 +170,7 @@ void PlayerState::updateTracks()
     }
 
     innerFrame.state.context_uri = (char *) realloc(innerFrame.state.context_uri,
-                                            strlen(remoteFrame.state.context_uri));
+                                            strlen(remoteFrame.state.context_uri) + 1);
     strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
 
     innerFrame.state.track_count = remoteFrame.state.track_count;
