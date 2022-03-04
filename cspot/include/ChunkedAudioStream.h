@@ -16,7 +16,7 @@
 
 #define SPOTIFY_HEADER_SIZE 167
 #define BUFFER_SIZE 0x20000 * 1.5
-typedef std::function<void(std::vector<uint8_t>&)> pcmDataCallback;
+typedef std::function<void(uint8_t *, size_t)> pcmDataCallback;
 
 enum class Whence
 {
@@ -59,7 +59,7 @@ public:
     std::vector<uint8_t> read(size_t bytes);
     void seekMs(uint32_t positionMs);
     void seek(size_t pos, Whence whence);
-    void startPlaybackLoop();
+    void startPlaybackLoop(uint8_t *pcmOut, size_t pcmOut_len);
 };
 
 #endif

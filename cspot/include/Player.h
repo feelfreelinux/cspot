@@ -41,7 +41,7 @@ public:
     void pause();
     void cancelCurrentTrack();
     void seekMs(size_t positionMs);
-    void feedPCM(std::vector<uint8_t> &data);
+    void feedPCM(uint8_t *data, size_t len);
     void play();
     void stop();
 

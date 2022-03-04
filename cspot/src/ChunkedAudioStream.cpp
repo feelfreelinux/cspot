@@ -77,7 +77,7 @@ void ChunkedAudioStream::seekMs(uint32_t positionMs)
     CSPOT_LOG(debug, "--- Finished seeking!");
 }
 
-void ChunkedAudioStream::startPlaybackLoop()
+void ChunkedAudioStream::startPlaybackLoop(uint8_t *pcmOut, size_t pcmOut_len)
 {
 
     isRunning = true;
@@ -91,7 +91,6 @@ void ChunkedAudioStream::startPlaybackLoop()
     }
 
     bool eof = false;
-    std::vector<uint8_t> pcmOut(4096 / 4);
     byteStream->setEnableLoadAhead(true);
 
     while (!eof && isRunning)
@@ -100,7 +99,7 @@ void ChunkedAudioStream::startPlaybackLoop()
         {
 
             this->seekMutex.lock();
-            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], 4096 / 4, &currentSection);
+            long ret = ov_read(&vorbisFile, (char *)&pcmOut[0], pcmOut_len, &currentSection);
             this->seekMutex.unlock();
             if (ret == 0)
             {
@@ -117,8 +116,7 @@ void ChunkedAudioStream::startPlaybackLoop()
             else
             {
                 // Write the actual data
-                auto data = std::vector<uint8_t>(pcmOut.begin(), pcmOut.begin() + ret);
-                pcmCallback(data);
+                pcmCallback(pcmOut, ret);
                 // audioSink->feedPCMFrames(data);
             }
         }
