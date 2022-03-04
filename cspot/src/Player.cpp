@@ -43,7 +43,7 @@ void Player::seekMs(size_t positionMs)
     // VALGRIND_DO_LEAK_CHECK;
 }
 
-void Player::feedPCM(std::vector<uint8_t>& data)
+void Player::feedPCM(uint8_t *data, size_t len)
 {
     // Simple digital volume control alg
     // @TODO actually extract it somewhere
@@ -68,17 +68,19 @@ void Player::feedPCM(std::vector<uint8_t>& data)
         }
     }
 
-    this->audioSink->feedPCMFrames(data.data(), data.size());
+    this->audioSink->feedPCMFrames(data, len);
 }
 
 void Player::runTask()
 {
+    uint8_t *pcmOut = (uint8_t *) malloc(4096 / 4);
     std::scoped_lock lock(this->runningMutex);
     this->isRunning = true;
     while (isRunning)
     {
         if (this->trackQueue.wpop(currentTrack)) {
             currentTrack->audioStream->startPlaybackLoop();
+            currentTrack->audioStream->startPlaybackLoop(pcmOut, 4096 / 4);
             currentTrack->loadedTrackCallback = nullptr;
             currentTrack->audioStream->streamFinishedCallback = nullptr;
             currentTrack->audioStream->audioSink = nullptr;
@@ -87,6 +89,7 @@ void Player::runTask()
             usleep(100);
         }
     }
+    free(pcmOut);
 }
 
 void Player::stop() {
@@ -115,9 +118,9 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
     std::lock_guard<std::mutex> guard(loadTrackMutex);
     cancelCurrentTrack();
 
-    pcmDataCallback framesCallback = [=](std::vector<uint8_t>& frames) {
-        this->feedPCM(frames);
-    };
+    pcmDataCallback framesCallback = [=](uint8_t *frames, size_t len) {
+        this->feedPCM(frames, len);
+     };
 
     auto loadedLambda = trackLoadedCallback;
 
