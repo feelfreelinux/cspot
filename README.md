@@ -72,22 +72,40 @@ See running the CLI for information on how to run cspot on a desktop computer.
 
 ### Building for ESP32
 
-The ESP32 target is built using the esp-idf toolchain
+The ESP32 target is built using the [esp-idf](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) toolchain
 
 ```shell
+# update submodules after each code pull to avoid build errors
+$ git submodule update
 # navigate to the targets/esp32 directory
 $ cd targets/esp32
+# run once after pulling the repo
+$ idf.py set-target esp32
 ```
 
-Configure the `main/main.cpp` to match your DAC
-```c++
-// Config sink
-#define AC101 // INTERNAL, AC101, ES8018, ES8388, PCM5102
-#define QUALITY     320      // 320, 160, 96
-#define DEVICE_NAME "CSpot-ESP32"
+Configure CSPOT according to your hardware
+
+```shell
+# run visual config editor, when done press Q to save and exit
+$ idf.py menuconfig
 ```
+
+Navigate to `Example Connection Configuration` and provide wifi connection details
+
+![idf-menuconfig](/targets/esp32/doc/img/idf-menuconfig-2.png)
+
+Navigate to `CSPOT Configuration`, you may configure device name, output device and audio quality.
+
+![idf-menuconfig](/targets/esp32/doc/img/idf-menuconfig-1.png)
+
+#### Status LED
+
+By default LED indication is disabled, but you can use either standard GPIO or addressable LED to indicate cspot current status. It will use different blinking patterns (and colors in case of addressable LEDs) to indicate Wifi connectivity and presense of connected Spotify client.
+
+#### Building and flashing
 
 Build and upload the firmware
+
 ```shell
 # compile
 $ idf.py build
@@ -96,6 +114,13 @@ $ idf.py build
 $ idf.py flash
 ```
 The ESP32 will restart and begin running cspot. You can monitor it using a serial console.
+
+Optionally run as single command
+
+```shell
+# compile, flash and attach monitor
+$ idf.py build flash monitor
+```
 
 ## Running
 
