@@ -51,8 +51,8 @@ void Player::feedPCM(uint8_t *data, size_t len)
     {
         int16_t* psample;
         uint32_t pmax;
-        psample = (int16_t*)(data.data());
-        for (int32_t i = 0; i < (data.size() / 2); i++)
+        psample = (int16_t*)(data);
+        for (int32_t i = 0; i < (len / 2); i++)
         {
             int32_t temp;
             // Offset data for unsigned sinks
@@ -79,7 +79,6 @@ void Player::runTask()
     while (isRunning)
     {
         if (this->trackQueue.wpop(currentTrack)) {
-            currentTrack->audioStream->startPlaybackLoop();
             currentTrack->audioStream->startPlaybackLoop(pcmOut, 4096 / 4);
             currentTrack->loadedTrackCallback = nullptr;
             currentTrack->audioStream->streamFinishedCallback = nullptr;
