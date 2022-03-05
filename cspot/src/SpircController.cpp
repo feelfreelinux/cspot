@@ -22,6 +22,9 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
     subscribe();
 }
 
+SpircController::~SpircController() {
+}
+
 void SpircController::subscribe() {
     mercuryCallback responseLambda = [=](std::unique_ptr<MercuryResponse> res) {
         // this->trackInformationCallback(std::move(res));

@@ -32,29 +32,33 @@
 #include "Logger.h"
 #include <HTTPServer.h>
 #include "BellUtils.h"
+#include "ESPStatusLed.h"
 
 
+#define DEVICE_NAME CONFIG_CSPOT_DEVICE_NAME
 
-// Config sink
-#define AC101 // INTERNAL, AC101, ES8018, ES8388, PCM5102
-#define QUALITY     320      // 320, 160, 96
-#define DEVICE_NAME "CSpot-ESP32"
-
-#ifdef INTERNAL
+#ifdef CONFIG_CSPOT_SINK_INTERNAL
 #include <InternalAudioSink.h>
 #endif
-#ifdef AC101
+#ifdef CONFIG_CSPOT_SINK_AC101
 #include <AC101AudioSink.h>
 #endif
-#ifdef ES8018
+#ifdef CONFIG_CSPOT_SINK_ES8388
+#include <ES8388AudioSink.h>
+#endif
+#ifdef CONFIG_CSPOT_SINK_ES9018
 #include <ES9018AudioSink.h>
 #endif
-#ifdef PCM5102
+#ifdef CONFIG_CSPOT_SINK_PCM5102
 #include <PCM5102AudioSink.h>
 #endif
+#ifdef CONFIG_CSPOT_SINK_TAS5711
+#include <TAS5711AudioSink.h>
+#endif
 
-static const char *TAG = "cspot";
+static const char* TAG = "cspot";
 
+std::shared_ptr<ESPStatusLed> statusLed;
 std::shared_ptr<ESPFile> file;
 std::shared_ptr<MercuryManager> mercuryManager;
 std::shared_ptr<SpircController> spircController;
@@ -64,10 +68,10 @@ bool createdFromZeroconf = false;
 
 extern "C"
 {
-void app_main(void);
+    void app_main(void);
 }
 
-static void cspotTask(void *pvParameters)
+static void cspotTask(void* pvParameters)
 {
 
     bell::setDefaultLogger();
@@ -75,39 +79,51 @@ static void cspotTask(void *pvParameters)
     mdns_init();
     mdns_hostname_set("cspot");
 
-#ifdef INTERNAL
+#ifdef CONFIG_CSPOT_SINK_INTERNAL
     auto audioSink = std::make_shared<InternalAudioSink>();
 #endif
-#ifdef AC101
+#ifdef CONFIG_CSPOT_SINK_AC101
     auto audioSink = std::make_shared<AC101AudioSink>();
 #endif
-#ifdef ES8018
-    auto audioSink = std::make_shared<ES8018AudioSink>();
+#ifdef CONFIG_CSPOT_SINK_ES8388
+    auto audioSink = std::make_shared<ES8388AudioSink>();
 #endif
-#ifdef PCM5102
+#ifdef CONFIG_CSPOT_SINK_ES9018
+    auto audioSink = std::make_shared<ES9018AudioSink>();
+#endif
+#ifdef CONFIG_CSPOT_SINK_PCM5102
     auto audioSink = std::make_shared<PCM5102AudioSink>();
+#endif
+#ifdef CONFIG_CSPOT_SINK_TAS5711
+    auto audioSink = std::make_shared<TAS5711AudioSink>();
 #endif
 
     // Config file
     file = std::make_shared<ESPFile>();
     configMan = std::make_shared<ConfigJSON>("/spiffs/config.json", file);
 
-    if(!configMan->load()) {
+    if (!configMan->load()) {
         CSPOT_LOG(error, "Config error");
     }
 
     configMan->deviceName = DEVICE_NAME;
+    #ifdef CONFIG_CSPOT_QUALITY_96
+    configMan->format = AudioFormat_OGG_VORBIS_96;
+    #endif
+    #ifdef CONFIG_CSPOT_QUALITY_160
     configMan->format = AudioFormat_OGG_VORBIS_160;
+    #endif
+    #ifdef CONFIG_CSPOT_QUALITY_320
+    configMan->format = AudioFormat_OGG_VORBIS_320;
+    #endif
 
     auto createPlayerCallback = [audioSink](std::shared_ptr<LoginBlob> blob) {
 
-
-
-//        heap_trace_start(HEAP_TRACE_LEAKS);
-//        esp_dump_per_task_heap_info();
-
+        //        heap_trace_start(HEAP_TRACE_LEAKS);
+        //        esp_dump_per_task_heap_info();
 
         CSPOT_LOG(info, "Creating player");
+        statusLed->setStatus(StatusLed::SPOT_INITIALIZING);
 
         auto session = std::make_unique<Session>();
         session->connectWithRandomAp();
@@ -119,39 +135,40 @@ static void cspotTask(void *pvParameters)
             if (createdFromZeroconf) {
                 file->writeFile(credentialsFileName, blob->toJson());
             }
-
+            
+            statusLed->setStatus(StatusLed::SPOT_READY);
 
             mercuryManager = std::make_shared<MercuryManager>(std::move(session));
             mercuryManager->startTask();
 
             spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
 
-            spircController->setEventHandler([](CSpotEvent &event) {
+            spircController->setEventHandler([](CSpotEvent& event) {
                 switch (event.eventType) {
-                    case CSpotEventType::TRACK_INFO:
-                        CSPOT_LOG(info, "Track Info");
-                        break;
-                    case CSpotEventType::PLAY_PAUSE:
-                        CSPOT_LOG(info, "Track Pause");
-                        break;
-                    case CSpotEventType::SEEK:
-                        CSPOT_LOG(info, "Track Seek");
-                        break;
-                    case CSpotEventType::DISC:
-                        CSPOT_LOG(info, "Disconnect");
-                        spircController->stopPlayer();
-                        mercuryManager->stop();
-                        break;
-                    case CSpotEventType::PREV:
-                        CSPOT_LOG(info, "Track Previous");
-                        break;
-                    case CSpotEventType::NEXT:
-                        CSPOT_LOG(info, "Track Next");
-                        break;
-                    default:
-                        break;
+                case CSpotEventType::TRACK_INFO:
+                    CSPOT_LOG(info, "Track Info");
+                    break;
+                case CSpotEventType::PLAY_PAUSE:
+                    CSPOT_LOG(info, "Track Pause");
+                    break;
+                case CSpotEventType::SEEK:
+                    CSPOT_LOG(info, "Track Seek");
+                    break;
+                case CSpotEventType::DISC:
+                    CSPOT_LOG(info, "Disconnect");
+                    spircController->stopPlayer();
+                    mercuryManager->stop();
+                    break;
+                case CSpotEventType::PREV:
+                    CSPOT_LOG(info, "Track Previous");
+                    break;
+                case CSpotEventType::NEXT:
+                    CSPOT_LOG(info, "Track Next");
+                    break;
+                default:
+                    break;
                 }
-            });
+                });
 
             mercuryManager->reconnectedCallback = []() {
                 return spircController->subscribe();
@@ -164,8 +181,8 @@ static void cspotTask(void *pvParameters)
         }
 
         BELL_SLEEP_MS(10000);
-//        heap_trace_stop();
-//        heap_trace_dump();
+        //        heap_trace_stop();
+        //        heap_trace_dump();
         ESP_LOGI(TAG, "Player exited");
         auto memUsage = heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
         auto memUsage2 = heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
@@ -223,9 +240,11 @@ void init_spiffs()
     }
 }
 
-
 void app_main(void)
 {
+    statusLed = std::make_shared<ESPStatusLed>();
+    statusLed->setStatus(StatusLed::IDLE);
+
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
@@ -236,12 +255,16 @@ void app_main(void)
 
     init_spiffs();
 
+    statusLed->setStatus(StatusLed::WIFI_CONNECTING);
+
     esp_wifi_set_ps(WIFI_PS_NONE);
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
 
+    statusLed->setStatus(StatusLed::WIFI_CONNECTED);
+
     ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
     //auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 12*1024, NULL, 5, NULL, 1);
-    auto taskHandle = xTaskCreate(&cspotTask, "cspot", 12*1024, NULL, 5, NULL);
+    /*auto taskHandle = */xTaskCreate(&cspotTask, "cspot", 12 * 1024, NULL, 5, NULL);
 }

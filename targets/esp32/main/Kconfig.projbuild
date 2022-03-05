@@ -1,0 +1,75 @@
+menu "CSPOT Configuration"
+
+    config CSPOT_DEVICE_NAME
+        string "CSpot Device Name"
+        default "CSpot-ESP32"
+        help
+            Define the name of the cspot device (will be visible to the client).
+
+    choice CSPOT_SINK
+        prompt "Sink Device"
+        default CSPOT_SINK_AC101
+        help
+            Select audio sink device
+        
+        config CSPOT_SINK_INTERNAL
+            bool "Built-in DAC"
+        config CSPOT_SINK_AC101
+            bool "AC101"
+        config CSPOT_SINK_ES8388
+            bool "ES8388"
+        config CSPOT_SINK_ES9018
+            bool "ES8018"
+        config CSPOT_SINK_PCM5102
+            bool "PCM5102"
+        config CSPOT_SINK_TAS5711
+            bool "TAS5711"
+    endchoice
+
+    choice CSPOT_QUALITY
+        prompt "Audio Quality (BPS)"
+        default CSPOT_QUALITY_320
+        help
+            Audio quality (not used currently)
+        config CSPOT_QUALITY_320
+            bool "320 bps"
+        config CSPOT_QUALITY_160
+            bool "160 bps"
+        config CSPOT_QUALITY_96
+            bool "96 bps"
+    endchoice
+
+    choice CSPOT_STATUS_LED_TYPE
+        prompt "Status LED type"
+        default CSPOT_STATUS_LED_TYPE_NONE
+        help
+            Defines the default peripheral for status led
+
+        config CSPOT_STATUS_LED_TYPE_NONE
+            bool "No status LED"
+        config CSPOT_STATUS_LED_TYPE_GPIO
+            bool "GPIO"
+        config CSPOT_STATUS_LED_TYPE_RMT
+            bool "RMT - Addressable LED"
+    endchoice
+
+    config CSPOT_STATUS_LED_GPIO
+        int "Status LED GPIO number"
+        range 0 48
+        default 5
+        help
+            Status GPIO number (IOxx) to blink or the RMT signal for the addressable LED.
+
+    config CSPOT_STATUS_LED_RMT_CHANNEL
+        depends on CSPOT_STATUS_LED_TYPE_RMT
+        int "Status LED RMT Channel"
+        range 0 7
+        default 0
+        help
+            Set the RMT peripheral channel.
+            ESP32 RMT channel from 0 to 7
+            ESP32-S2 RMT channel from 0 to 3
+            ESP32-S3 RMT channel from 0 to 3
+            ESP32-C3 RMT channel from 0 to 1
+
+endmenu
