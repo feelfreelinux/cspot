@@ -148,25 +148,47 @@ void PlayerState::updateTracks()
             free(innerFrame.state.track[i].gid);
         }
     }
-
+    
     // reallocate memory for new tracks
     innerFrame.state.track = (TrackRef *) realloc(innerFrame.state.track, sizeof(TrackRef) * remoteFrame.state.track_count);
 
     for(uint16_t i = 0; i < remoteFrame.state.track_count; ++i)
     {
-        uint16_t gid_size = remoteFrame.state.track[i].gid->size;
-        // allocate if need more tracks
-        if(i >= innerFrame.state.track_count)
+        if(remoteFrame.state.track[i].gid != NULL)
         {
-            innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
+            uint16_t gid_size = remoteFrame.state.track[i].gid->size;
+            // allocate if need more tracks
+            if(i >= innerFrame.state.track_count)
+            {
+                innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
+            }
+            memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
+            innerFrame.state.track[i].gid->size = gid_size;
         }
-        memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
-        innerFrame.state.track[i].gid->size = gid_size;
+        else
+        {
+            innerFrame.state.track[i].gid = NULL;
+        }
         innerFrame.state.track[i].has_queued = remoteFrame.state.track[i].has_queued;
         innerFrame.state.track[i].queued = remoteFrame.state.track[i].queued;
-        // not used?
-        innerFrame.state.track[i].uri = NULL;
-        innerFrame.state.track[i].context = NULL;
+
+        if(remoteFrame.state.track[i].uri != NULL)
+        {
+            innerFrame.state.track[i].uri = strdup(remoteFrame.state.track[i].uri);
+        }
+        else
+        {
+            innerFrame.state.track[i].uri = NULL;
+        }
+
+        if(remoteFrame.state.track[i].context != NULL)
+        {
+            innerFrame.state.track[i].context = strdup(remoteFrame.state.track[i].context);
+        }
+        else
+        {
+            innerFrame.state.track[i].context = NULL;
+        }
     }
 
     innerFrame.state.context_uri = (char *) realloc(innerFrame.state.context_uri,
