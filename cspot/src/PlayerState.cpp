@@ -136,6 +136,9 @@ void PlayerState::updatePositionMs(uint32_t position)
     innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
 }
 
+#define FREE(ptr) if(ptr != NULL) { free(ptr); } // free null pointer safe
+#define STRDUP(dst, src) if(src != NULL) { dst = strdup(src); } else { dst = NULL; } // strdup null pointer safe
+
 void PlayerState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
@@ -145,18 +148,9 @@ void PlayerState::updateTracks()
     {
         for(uint16_t i = remoteFrame.state.track_count; i < innerFrame.state.track_count; ++i)
         {
-            if(innerFrame.state.track[i].gid != NULL)
-            {
-                free(innerFrame.state.track[i].gid);
-            }
-            if(remoteFrame.state.track[i].uri != NULL)
-            {
-                free(remoteFrame.state.track[i].uri);
-            }
-            if(remoteFrame.state.track[i].context != NULL)
-            {
-                free(remoteFrame.state.track[i].context);
-            }
+            FREE(innerFrame.state.track[i].gid);
+            FREE(remoteFrame.state.track[i].uri);
+            FREE(remoteFrame.state.track[i].context);
         }
     }
     
@@ -183,23 +177,8 @@ void PlayerState::updateTracks()
         innerFrame.state.track[i].has_queued = remoteFrame.state.track[i].has_queued;
         innerFrame.state.track[i].queued = remoteFrame.state.track[i].queued;
 
-        if(remoteFrame.state.track[i].uri != NULL)
-        {
-            innerFrame.state.track[i].uri = strdup(remoteFrame.state.track[i].uri);
-        }
-        else
-        {
-            innerFrame.state.track[i].uri = NULL;
-        }
-
-        if(remoteFrame.state.track[i].context != NULL)
-        {
-            innerFrame.state.track[i].context = strdup(remoteFrame.state.track[i].context);
-        }
-        else
-        {
-            innerFrame.state.track[i].context = NULL;
-        }
+        STRDUP(innerFrame.state.track[i].uri, remoteFrame.state.track[i].uri);
+        STRDUP(innerFrame.state.track[i].context, remoteFrame.state.track[i].context);
     }
 
     innerFrame.state.context_uri = (char *) realloc(innerFrame.state.context_uri,
