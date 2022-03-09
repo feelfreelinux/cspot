@@ -16,6 +16,8 @@
 #include "Logger.h"
 #include <cJSON.h>
 #include <ConfigJSON.h>
+#include <random>
+#include <iostream>
 
 ApResolve::ApResolve() {}
 
@@ -84,23 +86,19 @@ std::string ApResolve::getApList()
 
 std::string ApResolve::fetchFirstApAddress()
 {
+    if (configMan->apOverride != "")
+    {
+        return configMan->apOverride;
+    }
+
     // Fetch json body
     auto jsonData = getApList();
 
     // Use cJSON to get first ap address
     auto root = cJSON_Parse(jsonData.c_str());
     auto apList = cJSON_GetObjectItemCaseSensitive(root, "ap_list");
-    auto items = cJSON_GetArraySize(apList);
 
-    // get random number between 0 and items
-    auto random = rand() % items;
-
-    if (!configMan->useRandomAp)
-    {
-        random = 0;
-    }
-
-    auto firstAp = cJSON_GetArrayItem(apList, random);
+    auto firstAp = cJSON_GetArrayItem(apList, 0);
     auto data = std::string(firstAp->valuestring);
 
     // release cjson memory

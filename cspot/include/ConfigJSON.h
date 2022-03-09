@@ -18,7 +18,7 @@ public:
 
     uint16_t volume;
     std::string deviceName;
-    bool useRandomAp = false;
+    std::string apOverride;
     AudioFormat format;
 };
 
