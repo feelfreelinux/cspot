@@ -145,7 +145,18 @@ void PlayerState::updateTracks()
     {
         for(uint16_t i = remoteFrame.state.track_count; i < innerFrame.state.track_count; ++i)
         {
-            free(innerFrame.state.track[i].gid);
+            if(innerFrame.state.track[i].gid != NULL)
+            {
+                free(innerFrame.state.track[i].gid);
+            }
+            if(remoteFrame.state.track[i].uri != NULL)
+            {
+                free(remoteFrame.state.track[i].uri);
+            }
+            if(remoteFrame.state.track[i].context != NULL)
+            {
+                free(remoteFrame.state.track[i].context);
+            }
         }
     }
     
