@@ -34,7 +34,7 @@ private:
     void episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused);
     void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms, bool isPaused);
     bool countryListContains(std::string countryList, std::string country);
-    bool canPlayTrack();
+    bool canPlayTrack(Track trackInfox, int altIndex);
     Track trackInfo;
     Episode episodeInfo;
 
