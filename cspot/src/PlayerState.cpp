@@ -149,8 +149,8 @@ void PlayerState::updateTracks()
         for(uint16_t i = remoteFrame.state.track_count; i < innerFrame.state.track_count; ++i)
         {
             FREE(innerFrame.state.track[i].gid);
-            FREE(remoteFrame.state.track[i].uri);
-            FREE(remoteFrame.state.track[i].context);
+            FREE(innerFrame.state.track[i].uri);
+            FREE(innerFrame.state.track[i].context);
         }
     }
     
