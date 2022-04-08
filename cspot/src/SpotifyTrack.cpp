@@ -51,20 +51,20 @@ bool SpotifyTrack::countryListContains(std::string countryList, std::string coun
     return false;
 }
 
-bool SpotifyTrack::canPlayTrack(Track trackInfox, int altIndex)
+bool SpotifyTrack::canPlayTrack(int altIndex)
 {
     if(altIndex < 0)
     {
-        for (int x = 0; x < trackInfox.restriction_count; x++)
+        for (int x = 0; x < trackInfo.restriction_count; x++)
         {
-            if (trackInfox.restriction[x].countries_allowed != nullptr)
+            if (trackInfo.restriction[x].countries_allowed != nullptr)
             {
-                return countryListContains(std::string(trackInfox.restriction[x].countries_allowed), manager->countryCode);
+                return countryListContains(std::string(trackInfo.restriction[x].countries_allowed), manager->countryCode);
             }
 
-            if (trackInfox.restriction[x].countries_forbidden != nullptr)
+            if (trackInfo.restriction[x].countries_forbidden != nullptr)
             {
-                return !countryListContains(std::string(trackInfox.restriction[x].countries_forbidden), manager->countryCode);
+                return !countryListContains(std::string(trackInfo.restriction[x].countries_forbidden), manager->countryCode);
             }
         }
     }
@@ -72,14 +72,14 @@ bool SpotifyTrack::canPlayTrack(Track trackInfox, int altIndex)
     {
         for (int x = 0; x < trackInfo.alternative[altIndex].restriction_count; x++)
         {
-            if (trackInfox.alternative[altIndex].restriction[x].countries_allowed != nullptr)
+            if (trackInfo.alternative[altIndex].restriction[x].countries_allowed != nullptr)
             {
-                return countryListContains(std::string(trackInfox.alternative[altIndex].restriction[x].countries_allowed), manager->countryCode);
+                return countryListContains(std::string(trackInfo.alternative[altIndex].restriction[x].countries_allowed), manager->countryCode);
             }
 
-            if (trackInfox.alternative[altIndex].restriction[x].countries_forbidden != nullptr)
+            if (trackInfo.alternative[altIndex].restriction[x].countries_forbidden != nullptr)
             {
-                return !countryListContains(std::string(trackInfox.alternative[altIndex].restriction[x].countries_forbidden), manager->countryCode);
+                return !countryListContains(std::string(trackInfo.alternative[altIndex].restriction[x].countries_forbidden), manager->countryCode);
             }
         }
     }
@@ -100,7 +100,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction_count);
 
     int altIndex = -1;
-    while (!canPlayTrack(trackInfo, altIndex))
+    while (!canPlayTrack(altIndex))
     {
         altIndex++;
         CSPOT_LOG(info, "Trying alternative %d", altIndex);
