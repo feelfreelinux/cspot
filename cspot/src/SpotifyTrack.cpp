@@ -51,24 +51,6 @@ bool SpotifyTrack::countryListContains(std::string countryList, std::string coun
     return false;
 }
 
-// bool SpotifyTrack::canPlayTrack()
-// {
-//     for (int x = 0; x < trackInfo.restriction_count; x++)
-//     {
-//         if (trackInfo.restriction[x].countries_allowed != nullptr)
-//         {
-//             return countryListContains(std::string(trackInfo.restriction[x].countries_allowed), manager->countryCode);
-//         }
-//
-//         if (trackInfo.restriction[x].countries_forbidden != nullptr)
-//         {
-//             return !countryListContains(std::string(trackInfo.restriction[x].countries_forbidden), manager->countryCode);
-//         }
-//     }
-//
-//     return true;
-// }
-
 bool SpotifyTrack::canPlayTrack(Track trackInfox, int altIndex)
 {
     if(altIndex < 0)
