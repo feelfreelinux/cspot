@@ -81,7 +81,7 @@ public:
   voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
   std::shared_ptr<TimeProvider> timeProvider;
-  std::string countryCode;
+  char countryCode[2];
 
   bool timeoutHandler();
   uint64_t execute(MercuryType method, std::string uri, mercuryCallback &callback, mercuryCallback &subscription, mercuryParts &payload);
