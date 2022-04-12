@@ -41,7 +41,8 @@ SpotifyTrack::~SpotifyTrack()
 
 bool SpotifyTrack::countryListContains(char *countryList, char *country)
 {
-    for (int x = 0; x < countryList.size(); x += 2)
+    uint16_t countryList_length = strlen(countryList);
+    for (int x = 0; x < countryList_length; x += 2)
     {
         if (countryList[x] == country[0] && countryList[x + 1] == country[1])
         {
