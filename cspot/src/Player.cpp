@@ -12,12 +12,24 @@ Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSin
 
 void Player::pause()
 {
-    this->currentTrack->audioStream->isPaused = true;
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->isPaused = true;
+        }
+    }
 }
 
 void Player::play()
 {
-    this->currentTrack->audioStream->isPaused = false;
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->isPaused = false;
+        }
+    }
 }
 
 void Player::setVolume(uint32_t volume)
@@ -39,7 +51,13 @@ void Player::setVolume(uint32_t volume)
 
 void Player::seekMs(size_t positionMs)
 {
-    this->currentTrack->audioStream->seekMs(positionMs);
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->seekMs(positionMs);
+        }
+    }
     // VALGRIND_DO_LEAK_CHECK;
 }
 
@@ -50,10 +68,11 @@ void Player::feedPCM(uint8_t *data, size_t len)
     if (this->audioSink->softwareVolumeControl)
     {
         int16_t* psample;
+        int32_t temp;
         psample = (int16_t*)(data);
-        for (int32_t i = 0; i < (len / 2); i++)
+        size_t half_len = len / 2;
+        for (uint32_t i = 0; i < half_len; i++)
         {
-            int32_t temp;
             // Offset data for unsigned sinks
             if (this->audioSink->usign)
             {

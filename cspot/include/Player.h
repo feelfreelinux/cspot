@@ -25,7 +25,6 @@ private:
     std::mutex loadTrackMutex;
     WrappedMutex nextTrackMutex;
     WrappedMutex currentTrackMutex;
-    // @TODO: Use some actual structure here
     void runTask();
 
 public:
