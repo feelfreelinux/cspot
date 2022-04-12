@@ -15,6 +15,7 @@
 #include "NanoPBHelper.h"
 #include "protobuf/metadata.pb.h"
 #include <cassert>
+#include <atomic>
 
 struct TrackInfo {
     std::string name;
@@ -33,7 +34,7 @@ private:
     void trackInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused);
     void episodeInformationCallback(std::unique_ptr<MercuryResponse> response, uint32_t position_ms, bool isPaused);
     void requestAudioKey(std::vector<uint8_t> fileId, std::vector<uint8_t> trackId, int32_t trackDuration, uint32_t position_ms, bool isPaused);
-    bool countryListContains(std::string countryList, std::string country);
+    bool countryListContains(char *countryList, char *country);
     bool canPlayTrack(int altIndex);
     Track trackInfo;
     Episode episodeInfo;
@@ -45,6 +46,7 @@ public:
     SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackRef, uint32_t position_ms, bool isPaused);
     ~SpotifyTrack();
     uint64_t reqSeqNum = -1;
+    std::atomic<bool> loaded = false;
     std::function<void()> loadedTrackCallback;
     std::unique_ptr<ChunkedAudioStream> audioStream;
     trackChangedCallback trackInfoReceived;

@@ -14,17 +14,17 @@
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
 #include <mutex>
-#include "Queue.h"
 #include "Task.h"
 
 class Player : public bell::Task {
 private:
     std::shared_ptr<MercuryManager> manager;
-    std::shared_ptr<SpotifyTrack> currentTrack = nullptr;
+    SpotifyTrack *currentTrack = nullptr;
+    SpotifyTrack *nextTrack = nullptr;
     std::shared_ptr<AudioSink> audioSink;
     std::mutex loadTrackMutex;
-    // @TODO: Use some actual structure here
-    bell::Queue<std::shared_ptr<SpotifyTrack>> trackQueue;
+    WrappedMutex nextTrackMutex;
+    WrappedMutex currentTrackMutex;
     void runTask();
 
 public:

@@ -39,11 +39,12 @@ SpotifyTrack::~SpotifyTrack()
     pb_release(Episode_fields, &this->episodeInfo);
 }
 
-bool SpotifyTrack::countryListContains(std::string countryList, std::string country)
+bool SpotifyTrack::countryListContains(char *countryList, char *country)
 {
-    for (int x = 0; x < countryList.size(); x += 2)
+    uint16_t countryList_length = strlen(countryList);
+    for (int x = 0; x < countryList_length; x += 2)
     {
-        if (countryList.substr(x, 2) == country)
+        if (countryList[x] == country[0] && countryList[x + 1] == country[1])
         {
             return true;
         }
@@ -59,12 +60,12 @@ bool SpotifyTrack::canPlayTrack(int altIndex)
         {
             if (trackInfo.restriction[x].countries_allowed != nullptr)
             {
-                return countryListContains(std::string(trackInfo.restriction[x].countries_allowed), manager->countryCode);
+                return countryListContains(trackInfo.restriction[x].countries_allowed, manager->countryCode);
             }
 
             if (trackInfo.restriction[x].countries_forbidden != nullptr)
             {
-                return !countryListContains(std::string(trackInfo.restriction[x].countries_forbidden), manager->countryCode);
+                return !countryListContains(trackInfo.restriction[x].countries_forbidden, manager->countryCode);
             }
         }
     }
@@ -74,12 +75,12 @@ bool SpotifyTrack::canPlayTrack(int altIndex)
         {
             if (trackInfo.alternative[altIndex].restriction[x].countries_allowed != nullptr)
             {
-                return countryListContains(std::string(trackInfo.alternative[altIndex].restriction[x].countries_allowed), manager->countryCode);
+                return countryListContains(trackInfo.alternative[altIndex].restriction[x].countries_allowed, manager->countryCode);
             }
 
             if (trackInfo.alternative[altIndex].restriction[x].countries_forbidden != nullptr)
             {
-                return !countryListContains(std::string(trackInfo.alternative[altIndex].restriction[x].countries_forbidden), manager->countryCode);
+                return !countryListContains(trackInfo.alternative[altIndex].restriction[x].countries_forbidden, manager->countryCode);
             }
         }
     }
