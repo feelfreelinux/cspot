@@ -24,6 +24,7 @@ enum class CSpotEventType {
     PREV,
     SEEK,
 	LOAD,
+    PLAYBACK_START
 };
 
 struct CSpotEvent {

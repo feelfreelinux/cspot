@@ -142,6 +142,7 @@ void PlayerState::updatePositionMs(uint32_t position)
 void PlayerState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
+    CSPOT_LOG(info, "---- Inner track count %d", innerFrame.state.track_count);
 
     // free unused tracks
     if(innerFrame.state.track_count > remoteFrame.state.track_count)
@@ -167,6 +168,11 @@ void PlayerState::updateTracks()
             {
                 innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
             }
+
+            if (innerFrame.state.track[i].gid == NULL) {
+                innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
+            }
+            
             memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
             innerFrame.state.track[i].gid->size = gid_size;
         }

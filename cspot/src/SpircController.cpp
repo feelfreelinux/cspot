@@ -193,6 +193,7 @@ void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
     std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
         setPause(isPaused, false);
+        sendEvent(CSpotEventType::PLAYBACK_START);
     };
 
     player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms,
