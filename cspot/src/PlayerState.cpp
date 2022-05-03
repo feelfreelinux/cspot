@@ -136,8 +136,8 @@ void PlayerState::updatePositionMs(uint32_t position)
     innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
 }
 
-#define FREE(ptr) if(ptr != NULL) { free(ptr); } // free null pointer safe
-#define STRDUP(dst, src) if(src != NULL) { dst = strdup(src); } else { dst = NULL; } // strdup null pointer safe
+#define FREE(ptr) { free(ptr); ptr = NULL; }
+#define STRDUP(dst, src) if(src != NULL) { dst = strdup(src); } else { FREE(dst); } // strdup null pointer safe
 
 void PlayerState::updateTracks()
 {
@@ -160,25 +160,19 @@ void PlayerState::updateTracks()
 
     for(uint16_t i = 0; i < remoteFrame.state.track_count; ++i)
     {
+        if(i >= innerFrame.state.track_count) {
+            innerFrame.state.track[i].gid = NULL;
+            innerFrame.state.track[i].uri = NULL;
+            innerFrame.state.track[i].context = NULL;
+        }
+
         if(remoteFrame.state.track[i].gid != NULL)
         {
             uint16_t gid_size = remoteFrame.state.track[i].gid->size;
-            // allocate if need more tracks
-            if(i >= innerFrame.state.track_count)
-            {
-                innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
-            }
-
-            if (innerFrame.state.track[i].gid == NULL) {
-                innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
-            }
+            innerFrame.state.track[i].gid = (pb_bytes_array_t *) realloc(innerFrame.state.track[i].gid, PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
             
             memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
             innerFrame.state.track[i].gid->size = gid_size;
-        }
-        else
-        {
-            innerFrame.state.track[i].gid = NULL;
         }
         innerFrame.state.track[i].has_queued = remoteFrame.state.track[i].has_queued;
         innerFrame.state.track[i].queued = remoteFrame.state.track[i].queued;
