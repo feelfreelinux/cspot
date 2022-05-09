@@ -69,7 +69,6 @@ private:
   std::unique_ptr<WrappedSemaphore> queueSemaphore;
   unsigned long long lastRequestTimestamp = -1;
   unsigned long long lastPingTimestamp = -1;
-  std::atomic<bool> isRunning = false;
   uint64_t sequenceId;
   uint32_t audioKeySequence;
   audioKeyCallback keyCallback;
@@ -78,6 +77,7 @@ private:
 public:
   MercuryManager(std::unique_ptr<Session> session);
   ~MercuryManager();
+  std::atomic<bool> isRunning = false;
   voidCallback reconnectedCallback;
   uint16_t audioChunkSequence;
   std::shared_ptr<TimeProvider> timeProvider;

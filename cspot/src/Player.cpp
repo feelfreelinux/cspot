@@ -122,6 +122,9 @@ void Player::runTask()
 }
 
 void Player::stop() {
+    CSPOT_LOG(info, "Trying to stop");
+    this->isRunning = false;
+    cancelCurrentTrack();
     std::scoped_lock lock(this->runningMutex);
     if(this->nextTrack != nullptr)
     {
