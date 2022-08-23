@@ -15,6 +15,8 @@
 #include <fstream>
 #include "Logger.h"
 #include <cJSON.h>
+#include <ConfigJSON.h>
+#include <random>
 
 ApResolve::ApResolve() {}
 
@@ -76,19 +78,25 @@ std::string ApResolve::getApList()
         jsonData += cur;
     }
 
-	close(sockFd);
+    close(sockFd);
 
     return jsonData;
 }
 
 std::string ApResolve::fetchFirstApAddress()
 {
+    if (configMan->apOverride != "")
+    {
+        return configMan->apOverride;
+    }
+
     // Fetch json body
     auto jsonData = getApList();
 
     // Use cJSON to get first ap address
     auto root = cJSON_Parse(jsonData.c_str());
     auto apList = cJSON_GetObjectItemCaseSensitive(root, "ap_list");
+
     auto firstAp = cJSON_GetArrayItem(apList, 0);
     auto data = std::string(firstAp->valuestring);
 

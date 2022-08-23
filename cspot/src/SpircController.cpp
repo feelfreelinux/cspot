@@ -166,6 +166,8 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
     }
     case MessageType_kMessageTypeReplace: {
         CSPOT_LOG(debug, "Got replace frame!");
+        state->updateTracks();
+        this->notify();
         break;
     }
     case MessageType_kMessageTypeShuffle: {
@@ -191,6 +193,7 @@ void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
     std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
         setPause(isPaused, false);
+        sendEvent(CSpotEventType::PLAYBACK_START);
     };
 
     player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms,

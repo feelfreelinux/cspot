@@ -39,11 +39,12 @@ SpotifyTrack::~SpotifyTrack()
     pb_release(Episode_fields, &this->episodeInfo);
 }
 
-bool SpotifyTrack::countryListContains(std::string countryList, std::string country)
+bool SpotifyTrack::countryListContains(char *countryList, char *country)
 {
-    for (int x = 0; x < countryList.size(); x += 2)
+    uint16_t countryList_length = strlen(countryList);
+    for (int x = 0; x < countryList_length; x += 2)
     {
-        if (countryList.substr(x, 2) == country)
+        if (countryList[x] == country[0] && countryList[x + 1] == country[1])
         {
             return true;
         }
@@ -51,21 +52,38 @@ bool SpotifyTrack::countryListContains(std::string countryList, std::string coun
     return false;
 }
 
-bool SpotifyTrack::canPlayTrack()
+bool SpotifyTrack::canPlayTrack(int altIndex)
 {
-    for (int x = 0; x < trackInfo.restriction_count; x++)
+    if(altIndex < 0)
     {
-        if (trackInfo.restriction[x].countries_allowed != nullptr)
+        for (int x = 0; x < trackInfo.restriction_count; x++)
         {
-            return countryListContains(std::string(trackInfo.restriction[x].countries_allowed), manager->countryCode);
-        }
+            if (trackInfo.restriction[x].countries_allowed != nullptr)
+            {
+                return countryListContains(trackInfo.restriction[x].countries_allowed, manager->countryCode);
+            }
 
-        if (trackInfo.restriction[x].countries_forbidden != nullptr)
-        {
-            return !countryListContains(std::string(trackInfo.restriction[x].countries_forbidden), manager->countryCode);
+            if (trackInfo.restriction[x].countries_forbidden != nullptr)
+            {
+                return !countryListContains(trackInfo.restriction[x].countries_forbidden, manager->countryCode);
+            }
         }
     }
+    else
+    {
+        for (int x = 0; x < trackInfo.alternative[altIndex].restriction_count; x++)
+        {
+            if (trackInfo.alternative[altIndex].restriction[x].countries_allowed != nullptr)
+            {
+                return countryListContains(trackInfo.alternative[altIndex].restriction[x].countries_allowed, manager->countryCode);
+            }
 
+            if (trackInfo.alternative[altIndex].restriction[x].countries_forbidden != nullptr)
+            {
+                return !countryListContains(trackInfo.alternative[altIndex].restriction[x].countries_forbidden, manager->countryCode);
+            }
+        }
+    }
     return true;
 }
 
@@ -81,16 +99,12 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
     CSPOT_LOG(info, "Track name: %s", trackInfo.name);
     CSPOT_LOG(info, "Track duration: %d", trackInfo.duration);
     CSPOT_LOG(debug, "trackInfo.restriction.size() = %d", trackInfo.restriction_count);
-    int altIndex = 0;
-    while (!canPlayTrack())
+
+    int altIndex = -1;
+    while (!canPlayTrack(altIndex))
     {
-        std::swap(trackInfo.restriction, trackInfo.alternative[altIndex].restriction);
-        std::swap(trackInfo.restriction_count, trackInfo.alternative[altIndex].restriction_count);
-        std::swap(trackInfo.file, trackInfo.alternative[altIndex].file);
-        std::swap(trackInfo.file_count, trackInfo.alternative[altIndex].file_count);
-        std::swap(trackInfo.gid, trackInfo.alternative[altIndex].gid);
-        CSPOT_LOG(info, "Trying alternative %d", altIndex);
         altIndex++;
+        CSPOT_LOG(info, "Trying alternative %d", altIndex);
     
         if(altIndex > trackInfo.alternative_count) {
             // no alternatives for song
@@ -98,15 +112,31 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         }
     }
 
-    auto trackId = pbArrayToVector(trackInfo.gid);
+    std::vector<uint8_t> trackId;
     this->fileId = std::vector<uint8_t>();
 
-    for (int x = 0; x < trackInfo.file_count; x++)
+    if(altIndex < 0)
     {
-        if (trackInfo.file[x].format == configMan->format)
+        trackId = pbArrayToVector(trackInfo.gid);
+        for (int x = 0; x < trackInfo.file_count; x++)
         {
-            this->fileId = pbArrayToVector(trackInfo.file[x].file_id);
-            break; // If file found stop searching
+            if (trackInfo.file[x].format == configMan->format)
+            {
+                this->fileId = pbArrayToVector(trackInfo.file[x].file_id);
+                break; // If file found stop searching
+            }
+        }
+    }
+    else
+    {
+        trackId = pbArrayToVector(trackInfo.alternative[altIndex].gid);
+        for (int x = 0; x < trackInfo.alternative[altIndex].file_count; x++)
+        {
+            if (trackInfo.alternative[altIndex].file[x].format == configMan->format)
+            {
+                this->fileId = pbArrayToVector(trackInfo.alternative[altIndex].file[x].file_id);
+                break; // If file found stop searching
+            }
         }
     }
 

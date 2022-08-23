@@ -136,37 +136,49 @@ void PlayerState::updatePositionMs(uint32_t position)
     innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
 }
 
+#define FREE(ptr) { free(ptr); ptr = NULL; }
+#define STRDUP(dst, src) if(src != NULL) { dst = strdup(src); } else { FREE(dst); } // strdup null pointer safe
+
 void PlayerState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
+    CSPOT_LOG(info, "---- Inner track count %d", innerFrame.state.track_count);
 
     // free unused tracks
     if(innerFrame.state.track_count > remoteFrame.state.track_count)
     {
         for(uint16_t i = remoteFrame.state.track_count; i < innerFrame.state.track_count; ++i)
         {
-            free(innerFrame.state.track[i].gid);
+            FREE(innerFrame.state.track[i].gid);
+            FREE(innerFrame.state.track[i].uri);
+            FREE(innerFrame.state.track[i].context);
         }
     }
-
+    
     // reallocate memory for new tracks
     innerFrame.state.track = (TrackRef *) realloc(innerFrame.state.track, sizeof(TrackRef) * remoteFrame.state.track_count);
 
     for(uint16_t i = 0; i < remoteFrame.state.track_count; ++i)
     {
-        uint16_t gid_size = remoteFrame.state.track[i].gid->size;
-        // allocate if need more tracks
-        if(i >= innerFrame.state.track_count)
-        {
-            innerFrame.state.track[i].gid = (pb_bytes_array_t *) malloc(PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
+        if(i >= innerFrame.state.track_count) {
+            innerFrame.state.track[i].gid = NULL;
+            innerFrame.state.track[i].uri = NULL;
+            innerFrame.state.track[i].context = NULL;
         }
-        memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
-        innerFrame.state.track[i].gid->size = gid_size;
+
+        if(remoteFrame.state.track[i].gid != NULL)
+        {
+            uint16_t gid_size = remoteFrame.state.track[i].gid->size;
+            innerFrame.state.track[i].gid = (pb_bytes_array_t *) realloc(innerFrame.state.track[i].gid, PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
+            
+            memcpy(innerFrame.state.track[i].gid->bytes, remoteFrame.state.track[i].gid->bytes, gid_size);
+            innerFrame.state.track[i].gid->size = gid_size;
+        }
         innerFrame.state.track[i].has_queued = remoteFrame.state.track[i].has_queued;
         innerFrame.state.track[i].queued = remoteFrame.state.track[i].queued;
-        // not used?
-        innerFrame.state.track[i].uri = NULL;
-        innerFrame.state.track[i].context = NULL;
+
+        STRDUP(innerFrame.state.track[i].uri, remoteFrame.state.track[i].uri);
+        STRDUP(innerFrame.state.track[i].context, remoteFrame.state.track[i].context);
     }
 
     innerFrame.state.context_uri = (char *) realloc(innerFrame.state.context_uri,

@@ -12,12 +12,24 @@ Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSin
 
 void Player::pause()
 {
-    this->currentTrack->audioStream->isPaused = true;
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->isPaused = true;
+        }
+    }
 }
 
 void Player::play()
 {
-    this->currentTrack->audioStream->isPaused = false;
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->isPaused = false;
+        }
+    }
 }
 
 void Player::setVolume(uint32_t volume)
@@ -39,7 +51,13 @@ void Player::setVolume(uint32_t volume)
 
 void Player::seekMs(size_t positionMs)
 {
-    this->currentTrack->audioStream->seekMs(positionMs);
+    if (currentTrack != nullptr)
+    {
+        if (currentTrack->audioStream != nullptr)
+        {
+            this->currentTrack->audioStream->seekMs(positionMs);
+        }
+    }
     // VALGRIND_DO_LEAK_CHECK;
 }
 
@@ -50,11 +68,11 @@ void Player::feedPCM(uint8_t *data, size_t len)
     if (this->audioSink->softwareVolumeControl)
     {
         int16_t* psample;
-        uint32_t pmax;
+        int32_t temp;
         psample = (int16_t*)(data);
-        for (int32_t i = 0; i < (len / 2); i++)
+        size_t half_len = len / 2;
+        for (uint32_t i = 0; i < half_len; i++)
         {
-            int32_t temp;
             // Offset data for unsigned sinks
             if (this->audioSink->usign)
             {
@@ -78,27 +96,44 @@ void Player::runTask()
     this->isRunning = true;
     while (isRunning)
     {
-        if (this->trackQueue.wpop(currentTrack)) {
+        if(nextTrack != nullptr && nextTrack->loaded)
+        {
+            this->nextTrackMutex.lock();
+            currentTrack = this->nextTrack;
+            this->nextTrack = nullptr;
+            this->nextTrackMutex.unlock();
+
             currentTrack->audioStream->startPlaybackLoop(pcmOut, 4096 / 4);
             currentTrack->loadedTrackCallback = nullptr;
             currentTrack->audioStream->streamFinishedCallback = nullptr;
             currentTrack->audioStream->audioSink = nullptr;
             currentTrack->audioStream->pcmCallback = nullptr;
-        } else {
-            usleep(100);
+
+            delete currentTrack;
+            currentTrack = nullptr;
         }
+        else
+        {
+            usleep(10000);
+        }
+
     }
     free(pcmOut);
 }
 
 void Player::stop() {
+    CSPOT_LOG(info, "Trying to stop");
     this->isRunning = false;
-    CSPOT_LOG(info, "Stopping player");
-    this->trackQueue.clear();
     cancelCurrentTrack();
-    CSPOT_LOG(info, "Track cancelled");
     std::scoped_lock lock(this->runningMutex);
-    CSPOT_LOG(info, "Done");
+    if(this->nextTrack != nullptr)
+    {
+        delete this->nextTrack;
+    }
+    this->isRunning = false;
+    CSPOT_LOG(info, "Track cancelled");
+    cancelCurrentTrack();
+    CSPOT_LOG(info, "Stopping player");
 }
 
 void Player::cancelCurrentTrack()
@@ -115,21 +150,32 @@ void Player::cancelCurrentTrack()
 void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()>& trackLoadedCallback, uint32_t position_ms, bool isPaused)
 {
     std::lock_guard<std::mutex> guard(loadTrackMutex);
-    cancelCurrentTrack();
 
     pcmDataCallback framesCallback = [=](uint8_t *frames, size_t len) {
         this->feedPCM(frames, len);
      };
 
-    auto loadedLambda = trackLoadedCallback;
+    this->nextTrackMutex.lock();
+    if(this->nextTrack != nullptr)
+    {
+        delete this->nextTrack;
+        this->nextTrack = nullptr;
+    }
 
-    auto track = std::make_shared<SpotifyTrack>(this->manager, trackReference, position_ms, isPaused);
-    track->trackInfoReceived = this->trackChanged;
-    track->loadedTrackCallback = [this, track, framesCallback, loadedLambda]() {
-        loadedLambda();
-        track->audioStream->streamFinishedCallback = this->endOfFileCallback;
-        track->audioStream->audioSink = this->audioSink;
-        track->audioStream->pcmCallback = framesCallback;
-        this->trackQueue.push(track);
+    this->nextTrack = new SpotifyTrack(this->manager, trackReference, position_ms, isPaused);
+
+    this->nextTrack->trackInfoReceived = this->trackChanged;
+    this->nextTrack->loadedTrackCallback = [this, framesCallback, trackLoadedCallback]() {
+        trackLoadedCallback();
+
+        this->nextTrackMutex.lock();
+        this->nextTrack->audioStream->streamFinishedCallback = this->endOfFileCallback;
+        this->nextTrack->audioStream->audioSink = this->audioSink;
+        this->nextTrack->audioStream->pcmCallback = framesCallback;
+        this->nextTrack->loaded = true;
+        this->nextTrackMutex.unlock();
+
+        cancelCurrentTrack();
     };
+    this->nextTrackMutex.unlock();
 }

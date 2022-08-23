@@ -18,8 +18,6 @@ public:
     TrackReference(TrackRef *ref);
     ~TrackReference();
 
-    TrackRef* ref;
-
     std::vector<uint8_t> gid;
 
     bool isEpisode = false;

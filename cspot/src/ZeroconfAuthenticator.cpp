@@ -8,7 +8,7 @@
 #include "ConfigJSON.h"
 
 // provide weak deviceId (see ConstantParameters.h)
-char deviceId[] __attribute__((weak)) = "162137fd329622137a14901634264e6f332e2422";
+char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
 
 ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer) {
     this->gotBlobCallback = callback;
