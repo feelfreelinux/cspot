@@ -37,7 +37,7 @@ public:
     std::mutex runningMutex;
 
     void setVolume(uint32_t volume);
-    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
+    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void(bool)> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
     void pause();
     void cancelCurrentTrack();
     void seekMs(size_t positionMs);

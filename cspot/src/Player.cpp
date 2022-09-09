@@ -147,7 +147,7 @@ void Player::cancelCurrentTrack()
     }
 }
 
-void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void()>& trackLoadedCallback, uint32_t position_ms, bool isPaused)
+void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::function<void(bool)>& trackLoadedCallback, uint32_t position_ms, bool isPaused)
 {
     std::lock_guard<std::mutex> guard(loadTrackMutex);
 
@@ -166,7 +166,8 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
 
     this->nextTrack->trackInfoReceived = this->trackChanged;
     this->nextTrack->loadedTrackCallback = [this, framesCallback, trackLoadedCallback]() {
-        trackLoadedCallback();
+		bool needFlush = currentTrack != nullptr && currentTrack->audioStream != nullptr && currentTrack->audioStream->isRunning;
+        trackLoadedCallback(needFlush);
 
         this->nextTrackMutex.lock();
         this->nextTrack->audioStream->streamFinishedCallback = this->endOfFileCallback;
