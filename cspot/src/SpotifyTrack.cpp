@@ -106,7 +106,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         altIndex++;
         CSPOT_LOG(info, "Trying alternative %d", altIndex);
     
-        if(altIndex > trackInfo.alternative_count) {
+        if(altIndex >= trackInfo.alternative_count) {
             // no alternatives for song
             return;
         }

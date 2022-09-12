@@ -114,7 +114,7 @@ void Player::runTask()
         }
         else
         {
-            usleep(10000);
+            usleep(20000);
         }
 
     }
@@ -167,6 +167,7 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
     this->nextTrack->trackInfoReceived = this->trackChanged;
     this->nextTrack->loadedTrackCallback = [this, framesCallback, trackLoadedCallback]() {
 		bool needFlush = currentTrack != nullptr && currentTrack->audioStream != nullptr && currentTrack->audioStream->isRunning;
+		cancelCurrentTrack();		
         trackLoadedCallback(needFlush);
 
         this->nextTrackMutex.lock();
@@ -176,7 +177,6 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
         this->nextTrack->loaded = true;
         this->nextTrackMutex.unlock();
 
-        cancelCurrentTrack();
     };
     this->nextTrackMutex.unlock();
 }

@@ -32,6 +32,7 @@ public:
     std::function<void()> endOfFileCallback;
     int volume = 255;
     uint32_t logVolume;
+	bool needFlush = false;	
     std::atomic<bool> isRunning = false;
     trackChangedCallback trackChanged;
     std::mutex runningMutex;
@@ -44,7 +45,6 @@ public:
     void feedPCM(uint8_t *data, size_t len);
     void play();
     void stop();
-
 };
 
 #endif
