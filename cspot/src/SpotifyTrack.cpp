@@ -1,5 +1,7 @@
 #include "SpotifyTrack.h"
+#ifndef _WIN32
 #include "unistd.h"
+#endif
 #include "MercuryManager.h"
 #include <cassert>
 #include "CspotAssert.h"
@@ -106,7 +108,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         altIndex++;
         CSPOT_LOG(info, "Trying alternative %d", altIndex);
     
-        if(altIndex > trackInfo.alternative_count) {
+        if(altIndex >= trackInfo.alternative_count) {
             // no alternatives for song
             return;
         }

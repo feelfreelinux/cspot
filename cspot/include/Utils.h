@@ -1,11 +1,16 @@
 #ifndef UTILS_H
 #define UTILS_H
-
-#include <unistd.h>
 #include <vector>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include "win32shim.h"
+#else
+#include <unistd.h>
 #include "sys/socket.h"
-#include <cstdint>
 #include <netdb.h>
+#endif
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <chrono>

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <math.h>
 #include <functional>
 #include <atomic>
 #include <mutex>
@@ -14,7 +15,7 @@
 #include "SpotifyTrack.h"
 #include "AudioSink.h"
 #include <mutex>
-#include "Task.h"
+#include "BellTask.h"
 
 class Player : public bell::Task {
 private:
@@ -32,19 +33,19 @@ public:
     std::function<void()> endOfFileCallback;
     int volume = 255;
     uint32_t logVolume;
+	bool needFlush = false;	
     std::atomic<bool> isRunning = false;
     trackChangedCallback trackChanged;
     std::mutex runningMutex;
 
     void setVolume(uint32_t volume);
-    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
+    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void(bool)> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
     void pause();
     void cancelCurrentTrack();
     void seekMs(size_t positionMs);
     void feedPCM(uint8_t *data, size_t len);
     void play();
     void stop();
-
 };
 
 #endif

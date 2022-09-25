@@ -1,9 +1,25 @@
 
 #include "PlainConnection.h"
 #include <cstring>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
 #include <netinet/tcp.h>
+#endif
 #include <errno.h>
 #include "Logger.h"
+
+static int getErrno() 
+{
+#ifdef _WIN32
+    int code = WSAGetLastError();
+    if (code == WSAETIMEDOUT) return ETIMEDOUT;
+    if (code == WSAEINTR) return EINTR;
+    return code;
+#else
+    return errno;
+#endif
+}
 
 PlainConnection::PlainConnection()
 {
@@ -46,11 +62,15 @@ void PlainConnection::connectToAp(std::string apAddress)
                     (struct sockaddr *)ai->ai_addr,
                     ai->ai_addrlen) != -1)
         {
+#ifdef _WIN32
+            uint32_t tv = 3000;
+#else
             struct timeval tv;
             tv.tv_sec = 3;
             tv.tv_usec = 0;
-            setsockopt(this->apSock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
-            setsockopt(this->apSock, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
+#endif
+            setsockopt(this->apSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+            setsockopt(this->apSock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
             int flag = 1;
             setsockopt(this->apSock,  /* socket affected */
@@ -75,7 +95,6 @@ std::vector<uint8_t> PlainConnection::recvPacket()
     // Read packet size
     auto sizeData = readBlock(4);
     uint32_t packetSize = ntohl(extract<uint32_t>(sizeData, 0));
-
     // Read actual data
     auto data = readBlock(packetSize - 4);
     sizeData.insert(sizeData.end(), data.begin(), data.end());
@@ -110,9 +129,9 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
     while (idx < size)
     {
     READ:
-        if ((n = recv(this->apSock, &buf[idx], size - idx, 0)) <= 0)
+        if ((n = recv(this->apSock, (char*) &buf[idx], size - idx, 0)) <= 0)
         {
-            switch (errno)
+            switch (getErrno())
             {
             case EAGAIN:
             case ETIMEDOUT:
@@ -126,7 +145,7 @@ std::vector<uint8_t> PlainConnection::readBlock(size_t size)
                 break;
             default:
                 if (retries++ > 4) throw std::runtime_error("Error in read");
-
+                goto READ;
             }
         }
         idx += n;
@@ -145,9 +164,9 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
     while (idx < data.size())
     {
     WRITE:
-        if ((n = send(this->apSock, &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
+        if ((n = send(this->apSock, (char*) &data[idx], data.size() - idx < 64 ? data.size() - idx : 64, 0)) <= 0)
         {
-            switch (errno)
+            switch (getErrno())
             {
             case EAGAIN:
             case ETIMEDOUT:

@@ -1,14 +1,24 @@
 #include "ZeroconfAuthenticator.h"
 #include "JSONObject.h"
 #include <sstream>
+#ifndef _WIN32
 #include <sys/select.h>
+#else
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "Logger.h"
+#include "CspotAssert.h"
 #include "ConfigJSON.h"
 
 // provide weak deviceId (see ConstantParameters.h)
+#if _MSC_VER
+char deviceId[] = "142137fd329622137a14901634264e6f332e2411";
+#else
 char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
+#endif
 
 ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer) {
     this->gotBlobCallback = callback;
@@ -17,15 +27,43 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
     this->crypto = std::make_unique<Crypto>();
     this->crypto->dhInit();
     this->server = httpServer;
+
+#ifdef _WIN32
+    char hostname[128];
+    gethostname(hostname, sizeof(hostname));
+
+    struct sockaddr_in* host = NULL;
+    ULONG size = sizeof(IP_ADAPTER_ADDRESSES) * 32;
+    IP_ADAPTER_ADDRESSES* adapters = (IP_ADAPTER_ADDRESSES*) malloc(size);
+    int ret = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_GATEWAYS | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST, 0, adapters, &size);
+
+    for (PIP_ADAPTER_ADDRESSES adapter = adapters; adapter && !host; adapter = adapter->Next) {
+        if (adapter->TunnelType == TUNNEL_TYPE_TEREDO) continue;
+        if (adapter->OperStatus != IfOperStatusUp) continue;
+
+        for (IP_ADAPTER_UNICAST_ADDRESS* unicast = adapter->FirstUnicastAddress; unicast;
+            unicast = unicast->Next) {
+            if (adapter->FirstGatewayAddress && unicast->Address.lpSockaddr->sa_family == AF_INET) {
+                host = (struct sockaddr_in*)unicast->Address.lpSockaddr;
+                BELL_LOG(info, "mdns", "mDNS on interface %s", inet_ntoa(host->sin_addr));
+                this->service = mdnsd_start(host->sin_addr, false);
+                break;
+            }
+        }
+    }
+
+	CSPOT_ASSERT(this->service, "can't start mDNS service");
+    mdnsd_set_hostname(this->service, hostname, host->sin_addr);
+#endif
 }
 
 void ZeroconfAuthenticator::registerHandlers() {
     // Make it discoverable for spoti clients
     registerZeroconf();
-    auto getInfoHandler = [this](bell::HTTPRequest& request) {
+    auto getInfoHandler = [this](std::unique_ptr<bell::HTTPRequest> request) {
         CSPOT_LOG(info, "Got request for info");
         bell::HTTPResponse response = {
-            .connectionFd = request.connection,
+            .connectionFd = request->connection,
             .status = 200,
             .body = this->buildJsonInfo(),
             .contentType = "application/json",
@@ -33,7 +71,7 @@ void ZeroconfAuthenticator::registerHandlers() {
         server->respond(response);
     };
 
-    auto addUserHandler = [this](bell::HTTPRequest& request) {
+    auto addUserHandler = [this](std::unique_ptr<bell::HTTPRequest> request) {
         BELL_LOG(info, "http", "Got request for adding user");
         bell::JSONObject obj;
         obj["status"] = 101;
@@ -41,15 +79,15 @@ void ZeroconfAuthenticator::registerHandlers() {
         obj["statusString"] = "ERROR-OK";
 
         bell::HTTPResponse response = {
-            .connectionFd = request.connection,
+            .connectionFd = request->connection,
             .status = 200,
             .body = obj.toString(),
             .contentType = "application/json",
         };
         server->respond(response);
 
-        auto correctBlob = this->getParameterFromUrlEncoded(request.body, "blob");
-        this->handleAddUser(request.queryParams);
+        auto correctBlob = this->getParameterFromUrlEncoded(request->body, "blob");
+        this->handleAddUser(request->queryParams);
     };
 
     BELL_LOG(info, "cspot", "Zeroconf registering handlers");
@@ -62,12 +100,18 @@ void ZeroconfAuthenticator::registerZeroconf()
     const char* service = "_spotify-connect._tcp";
 
 #ifdef ESP_PLATFORM
-    mdns_txt_item_t serviceTxtData[3] = {
-        {"VERSION", "1.0"},
-        {"CPath", "/spotify_info"},
-        {"Stack", "SP"} };
-    mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
-
+	mdns_txt_item_t serviceTxtData[3] = {
+		{"VERSION", "1.0"},
+		{"CPath", "/spotify_info"},
+		{"Stack", "SP"} };
+	mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
+#elif _WIN32
+	const char *serviceTxtData[] = {
+		"VERSION=1.0",
+		"CPath=/spotify_info",
+		"Stack=SP",
+		NULL };
+    mdnsd_register_svc(this->service, "cspot", "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
 #else
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;

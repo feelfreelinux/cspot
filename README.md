@@ -30,9 +30,11 @@ Summary:
 - protoc
 - on Linux you will additionally need:
     - `libasound` and `libavahi-compat-libdnssd`
-
+- mbedtls
 
 This project utilizes submodules, please make sure you are cloning with the `--recursive` flag or use `git submodule update --init --recursive`.
+
+MBedTLS is now the sole option, so you can get it from [there](https://github.com/Mbed-TLS/mbedtls) and rebuild it or have it installed system-wide using your favorite package manager. See below how to use a local version.
 
 This library uses nanopb to generate c files from protobuf definitions. Nanopb itself is included via submodules, but it requires a few external python libraries to run the generators.
 
@@ -50,10 +52,17 @@ To install avahi and asound dependencies on Linux you can use:
 $ sudo apt-get install libavahi-compat-libdnssd-dev libasound2-dev
 ```
 
-
-### Building for macOS/Linux
+### Building for macOS/Linux & Windows
 
 The cli target is used mainly for testing and development purposes, as of now it has the same features as the esp32 target.
+
+As MbedTLS is now use instead of OpenSSL, you need to install it or your system or have a local build. If you have a system-wide install of MbedTLS, ignore what's below
+
+To use a local build, you have to specify the BELL_EXTERNAL_MBEDTLS and potentially MBEDTLS_RELEASE. The first one points to the "./cmake" subdir of the MbedTLS's build directory, the second optionally defines the name of the MbedTLS build (it's by default set to 'RELEASE' for Windows and 'NOCONFIG' for others). 
+
+See running the CLI for information on how to run cspot on a desktop computer.
+
+#### macOS/Linux
 
 ```shell
 # navigate to the targets/cli directory
@@ -63,12 +72,28 @@ $ cd targets/cli
 $ mkdir -p build && cd build
 
 # use cmake to generate build files, and select an audio sink
-$ cmake .. -DUSE_PORTAUDIO=ON
+$ cmake .. -DUSE_PORTAUDIO=ON [-DBELL_EXTERNAL_MBEDTLS=<mbedtls_build_dir>/cmake>] [-DMBEDTLS_RELEASE=<release_name>]
 
 # compile
 $ make 
 ```
-See running the CLI for information on how to run cspot on a desktop computer.
+
+#### Windows
+
+```shell
+# navigate to the targets/cli directory
+$ cd targets/cli
+
+# create a build directory and navigate to it
+$ mkdir -p build && cd build
+
+# use cmake to generate build files, and select an audio sink
+$ cmake .. -A Win32|x64 -DUSE_PORTAUDIO=ON [-DBELL_EXTERNAL_MBEDTLS=<mbedtls_build_dir>/cmake>] [-DMBEDTLS_RELEASE=<release_name>]
+```
+
+Go to `build` and use `cspotcli.sln` under VisualStudio or use `msbuild` from command line.
+
+Note that for now, only the Win32 build has been tested, not the x64 version. Under some VS releases, the protobuf might not be rebuilt automatically, just go to the project "generate_proto_sources" and do a C^F7 on each `*.pb.rule`
 
 ### Building for ESP32
 

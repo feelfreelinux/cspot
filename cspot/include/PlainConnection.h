@@ -1,13 +1,18 @@
 #ifndef PLAINCONNECTION_H
 #define PLAINCONNECTION_H
-
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include "win32shim.h"
+#else
 #include "sys/socket.h"
+#include <netdb.h>
+#include <unistd.h>
+#endif
 #include <functional>
 #include <vector>
 #include <string>
 #include <cstdint>
-#include <netdb.h>
-#include <unistd.h>
 #include "Packet.h"
 #include "Utils.h"
 

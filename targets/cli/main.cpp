@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 #include <string>
 #include <streambuf>
 #include <SpircController.h>
@@ -39,6 +42,13 @@ bool createdFromZeroconf = false;
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+    WSADATA wsaData;
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    int WSerr = WSAStartup(wVersionRequested, &wsaData);
+    if (WSerr != 0) exit(1);
+#endif
+
     try
     {
         bell::setDefaultLogger();

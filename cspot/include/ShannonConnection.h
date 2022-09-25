@@ -2,11 +2,17 @@
 #define SHANNONCONNECTION_H
 
 #include <vector>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include "win32shim.h"
+#else
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <string>
 #include <netdb.h>
+#endif
+#include <sys/types.h>
+#include <string>
 #include <memory>
 #include <cstdint>
 #include "platform/WrappedMutex.h"

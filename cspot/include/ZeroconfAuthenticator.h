@@ -2,19 +2,23 @@
 #define ZEROCONFAUTHENTICATOR_H
 
 #include <vector>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <string>
 #include <BaseHTTPServer.h>
 #include <cstdlib>
 #include "Utils.h"
 #include "LoginBlob.h"
 #include "Crypto.h"
-#include "Task.h"
+#include "BellTask.h"
 #include "ConstantParameters.h"
 
 
 #ifdef ESP_PLATFORM
 #include "mdns.h"
+#elif defined(_WIN32)
+#include "mdnssvc.h"
 #else
 #include "dns_sd.h"
 #include <unistd.h>
@@ -31,6 +35,9 @@ typedef std::function<void(std::shared_ptr<LoginBlob>)> authCallback;
 
 class ZeroconfAuthenticator {
 private:
+#ifdef _WIN32
+	struct mdnsd* service;
+#endif
     int serverPort;
     bool authorized = false;
     std::unique_ptr<Crypto> crypto;

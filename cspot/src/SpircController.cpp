@@ -190,10 +190,10 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
 void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
     sendEvent(CSpotEventType::LOAD, (int) position_ms);
     state->setPlaybackState(PlaybackState::Loading);
-    std::function<void()> loadedLambda = [=]() {
+    std::function<void(bool)> loadedLambda = [=](bool needFlush) {
         // Loading finished, notify that playback started
         setPause(isPaused, false);
-        sendEvent(CSpotEventType::PLAYBACK_START);
+        sendEvent(CSpotEventType::PLAYBACK_START, needFlush);
     };
 
     player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms,
