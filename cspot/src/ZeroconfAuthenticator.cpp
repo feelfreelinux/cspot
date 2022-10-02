@@ -22,10 +22,10 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
 void ZeroconfAuthenticator::registerHandlers() {
     // Make it discoverable for spoti clients
     registerZeroconf();
-    auto getInfoHandler = [this](bell::HTTPRequest& request) {
+    auto getInfoHandler = [this](std::unique_ptr<bell::HTTPRequest> request) {
         CSPOT_LOG(info, "Got request for info");
         bell::HTTPResponse response = {
-            .connectionFd = request.connection,
+            .connectionFd = request->connection,
             .status = 200,
             .body = this->buildJsonInfo(),
             .contentType = "application/json",
@@ -33,7 +33,7 @@ void ZeroconfAuthenticator::registerHandlers() {
         server->respond(response);
     };
 
-    auto addUserHandler = [this](bell::HTTPRequest& request) {
+    auto addUserHandler = [this](std::unique_ptr<bell::HTTPRequest> request) {
         BELL_LOG(info, "http", "Got request for adding user");
         bell::JSONObject obj;
         obj["status"] = 101;
@@ -41,15 +41,15 @@ void ZeroconfAuthenticator::registerHandlers() {
         obj["statusString"] = "ERROR-OK";
 
         bell::HTTPResponse response = {
-            .connectionFd = request.connection,
+            .connectionFd = request->connection,
             .status = 200,
             .body = obj.toString(),
             .contentType = "application/json",
         };
         server->respond(response);
 
-        auto correctBlob = this->getParameterFromUrlEncoded(request.body, "blob");
-        this->handleAddUser(request.queryParams);
+        auto correctBlob = this->getParameterFromUrlEncoded(request->body, "blob");
+        this->handleAddUser(request->queryParams);
     };
 
     BELL_LOG(info, "cspot", "Zeroconf registering handlers");
