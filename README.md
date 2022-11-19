@@ -51,7 +51,7 @@ $ sudo apt-get install libavahi-compat-libdnssd-dev libasound2-dev
 ```
 
 
-### Building for macOS/Linux
+### Building for macOS
 
 The cli target is used mainly for testing and development purposes, as of now it has the same features as the esp32 target.
 
@@ -64,6 +64,25 @@ $ mkdir -p build && cd build
 
 # use cmake to generate build files, and select an audio sink
 $ cmake .. -DUSE_PORTAUDIO=ON
+
+# compile
+$ make 
+```
+See running the CLI for information on how to run cspot on a desktop computer.
+
+### Building for Linux
+
+The cli target is used mainly for testing and development purposes, as of now it has the same features as the esp32 target.
+
+```shell
+# navigate to the targets/cli directory
+$ cd targets/cli
+
+# create a build directory and navigate to it
+$ mkdir -p build && cd build
+
+# use cmake to generate build files, and select an audio sink
+$ cmake .. -DUSE_ALSA=ON
 
 # compile
 $ make 
