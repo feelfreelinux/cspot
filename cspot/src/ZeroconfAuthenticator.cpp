@@ -20,7 +20,11 @@ char deviceId[] = "142137fd329622137a14901634264e6f332e2411";
 char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
 #endif
 
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer) {
+#ifdef _WIN32
+struct mdnsd* ZeroconfAuthenticator::service = NULL;
+#endif
+
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, void *mdnsService) {
     this->gotBlobCallback = callback;
     srand((unsigned int)time(NULL));
 
@@ -29,6 +33,11 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
     this->server = httpServer;
 
 #ifdef _WIN32
+    if (ZeroconfAuthenticator::service || mdnsService) {
+        if (mdnsService) ZeroconfAuthenticator::service = (struct mdnsd*) mdnsService;
+        return;
+    }
+
     char hostname[128];
     gethostname(hostname, sizeof(hostname));
 
@@ -46,14 +55,15 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
             if (adapter->FirstGatewayAddress && unicast->Address.lpSockaddr->sa_family == AF_INET) {
                 host = (struct sockaddr_in*)unicast->Address.lpSockaddr;
                 BELL_LOG(info, "mdns", "mDNS on interface %s", inet_ntoa(host->sin_addr));
-                this->service = mdnsd_start(host->sin_addr, false);
+                mdnsService = mdnsd_start(host->sin_addr, false);
                 break;
             }
         }
     }
 
-	CSPOT_ASSERT(this->service, "can't start mDNS service");
-    mdnsd_set_hostname(this->service, hostname, host->sin_addr);
+    ZeroconfAuthenticator::service = (struct mdnsd*) mdnsService;
+	CSPOT_ASSERT(ZeroconfAuthenticator::service, "can't start mDNS service");
+    mdnsd_set_hostname(ZeroconfAuthenticator::service, hostname, host->sin_addr);
 #endif
 }
 
@@ -111,7 +121,7 @@ void ZeroconfAuthenticator::registerZeroconf()
 		"CPath=/spotify_info",
 		"Stack=SP",
 		NULL };
-    mdnsd_register_svc(this->service, "cspot", "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
+    mdnsd_register_svc(ZeroconfAuthenticator::service, "cspot", "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
 #else
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;

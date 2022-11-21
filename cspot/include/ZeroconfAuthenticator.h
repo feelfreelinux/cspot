@@ -36,7 +36,7 @@ typedef std::function<void(std::shared_ptr<LoginBlob>)> authCallback;
 class ZeroconfAuthenticator {
 private:
 #ifdef _WIN32
-	struct mdnsd* service;
+	static struct mdnsd* service;
 #endif
     int serverPort;
     bool authorized = false;
@@ -49,7 +49,7 @@ private:
     void registerZeroconf();
     std::string getParameterFromUrlEncoded(std::string data, std::string param);
 public:
-    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer);
+    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, void *mdnsService = NULL);
     void registerHandlers();
 };
 
