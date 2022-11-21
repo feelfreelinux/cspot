@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 
 
         std::ifstream blobFile(credentialsFileName);
-        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
+        auto httpServer = std::make_shared<bell::HTTPServer>(0);
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)
@@ -146,8 +146,13 @@ int main(int argc, char** argv)
         {
             createdFromZeroconf = true;
             auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
-            authenticator->registerHandlers();
-            httpServer->listen();
+            if (httpServer->serverPort) {
+                authenticator->registerHandlers();
+            } else {
+                httpServer->listen([&authenticator]() {
+                    authenticator->registerHandlers();
+                });
+            }
         }
 
         while (true);
