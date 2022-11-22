@@ -51,6 +51,7 @@ bool ConfigJSON::load()
           auto volumeObject = cJSON_GetObjectItemCaseSensitive(root, "volume");
           this->volume = cJSON_GetNumberValue(volumeObject);
         }
+        if (this->deviceId.empty()) this->deviceId = ::deviceId;
         cJSON_Delete(root);
       }
       else
