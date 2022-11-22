@@ -60,6 +60,7 @@ bool ConfigJSON::load()
          this->volume = 32767;
          this->deviceName = defaultDeviceName;
          this->format = AudioFormat_OGG_VORBIS_160;
+         this->deviceId = ::deviceId;
       }
       return true;
     }

@@ -243,7 +243,7 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
 
     // Prepare current frame info
     innerFrame.version = 1;
-    innerFrame.ident = strdup(deviceId);
+    innerFrame.ident = strdup(config->deviceId.c_str());
     innerFrame.seq_nr = this->seqNum;
     innerFrame.protocol_version = strdup(protocolVersion);
     innerFrame.typ = typ;

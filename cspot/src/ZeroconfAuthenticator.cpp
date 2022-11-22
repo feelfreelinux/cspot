@@ -107,29 +107,28 @@ void ZeroconfAuthenticator::registerHandlers() {
 
 void ZeroconfAuthenticator::registerZeroconf()
 {
-    const char* service = "_spotify-connect._tcp";
-
 #ifdef ESP_PLATFORM
 	mdns_txt_item_t serviceTxtData[3] = {
 		{"VERSION", "1.0"},
 		{"CPath", "/spotify_info"},
 		{"Stack", "SP"} };
-	mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
+	mdns_service_add(this->name.c_str(), "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
 #elif _WIN32
 	const char *serviceTxtData[] = {
 		"VERSION=1.0",
 		"CPath=/spotify_info",
 		"Stack=SP",
 		NULL };
-    mdnsd_register_svc(ZeroconfAuthenticator::service, "cspot", "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
+    mdnsd_register_svc(ZeroconfAuthenticator::service, this->name.c_str(), "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
 #else
+    const char* service = "_spotify-connect._tcp";
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, NULL);
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
     TXTRecordSetValue(&txtRecord, "CPath", 13, "/spotify_info");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char*)informationString, service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
+    DNSServiceRegister(&ref, 0, 0, this->name.c_str(), service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
 #endif
 }

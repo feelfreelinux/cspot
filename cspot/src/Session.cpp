@@ -61,9 +61,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 
     auto infoStr = std::string(informationString);
     pbPutString(infoStr, authRequest.system_info.system_information_string);
-
-    auto deviceIdStr = std::string(deviceId);
-    pbPutString(deviceId, authRequest.system_info.device_id);
+    pbPutString(configMan->deviceId, authRequest.system_info.device_id);
 
     auto versionStr = std::string(versionString);
     pbPutString(versionStr, authRequest.version_string);
