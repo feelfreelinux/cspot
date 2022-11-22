@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include "Logger.h"
 #include "CspotAssert.h"
-#include "ConfigJSON.h"
 
 // provide weak deviceId (see ConstantParameters.h)
 #if _MSC_VER
@@ -24,13 +23,14 @@ char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e241
 struct mdnsd* ZeroconfAuthenticator::service = NULL;
 #endif
 
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, void *mdnsService) {
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, void *mdnsService) {
     this->gotBlobCallback = callback;
     srand((unsigned int)time(NULL));
 
     this->crypto = std::make_unique<Crypto>();
     this->crypto->dhInit();
     this->server = httpServer;
+    this->name = name;
 
 #ifdef _WIN32
     if (ZeroconfAuthenticator::service || mdnsService) {
@@ -177,7 +177,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["libraryVersion"] = swVersion;
     obj["accountReq"] = "PREMIUM";
     obj["brandDisplayName"] = brandName;
-    obj["modelDisplayName"] = configMan->deviceName.c_str();
+    obj["modelDisplayName"] = name.c_str();
     obj["voiceSupport"] = "NO";
     obj["availability"] = "";
     obj["productID"] = 0;
@@ -187,7 +187,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["scope"] = "streaming,client-authorization-universal";
     obj["activeUser"] = "";
     obj["deviceID"] = deviceId;
-    obj["remoteName"] = configMan->deviceName.c_str();
+    obj["remoteName"] = name.c_str();
     obj["publicKey"] = encodedKey;
     obj["deviceType"] = "SPEAKER";
     return obj.toString();

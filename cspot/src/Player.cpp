@@ -3,10 +3,11 @@
 
 // #include <valgrind/memcheck.h>
 
-Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink): bell::Task("player", 10 * 1024, -2, 1)
+Player::Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink, std::shared_ptr<ConfigJSON> config): bell::Task("player", 10 * 1024, -2, 1)
 {
     this->audioSink = audioSink;
     this->manager = manager;
+    this->config = config;
     startTask();
 }
 
@@ -162,7 +163,7 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
         this->nextTrack = nullptr;
     }
 
-    this->nextTrack = new SpotifyTrack(this->manager, trackReference, position_ms, isPaused);
+    this->nextTrack = new SpotifyTrack(this->manager, trackReference, config->format, position_ms, isPaused);
 
     this->nextTrack->trackInfoReceived = this->trackChanged;
     this->nextTrack->loadedTrackCallback = [this, framesCallback, trackLoadedCallback]() {

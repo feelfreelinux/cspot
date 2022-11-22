@@ -51,7 +51,7 @@ private:
     void handleFrame(std::vector<uint8_t> &data);
     void loadTrack(uint32_t position_ms = 0, bool isPaused = 0);
 public:
-    SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink);
+    SpircController(std::shared_ptr<MercuryManager> manager, std::string username, std::shared_ptr<AudioSink> audioSink, std::shared_ptr<ConfigJSON> config);
     ~SpircController();
     void subscribe();
 

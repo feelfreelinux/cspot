@@ -1,10 +1,10 @@
 #include "PlayerState.h"
 #include "Logger.h"
-#include "ConfigJSON.h"
 
-PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
+PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared_ptr<ConfigJSON> config)
 {
     this->timeProvider = timeProvider;
+    this->config = config;
     innerFrame = {};
     remoteFrame = {};
 
@@ -32,10 +32,10 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider)
     innerFrame.device_state.can_play = true;
     innerFrame.device_state.has_can_play = true;
 
-    innerFrame.device_state.volume = configMan->volume;
+    innerFrame.device_state.volume = config->volume;
     innerFrame.device_state.has_volume = true;
 
-    innerFrame.device_state.name = strdup(configMan->deviceName.c_str());
+    innerFrame.device_state.name = strdup(config->deviceName.c_str());
 
     innerFrame.state.track_count = 0;
 
@@ -203,8 +203,8 @@ void PlayerState::updateTracks()
 void PlayerState::setVolume(uint32_t volume)
 {
     innerFrame.device_state.volume = volume;
-    configMan->volume = volume;
-    configMan->save();
+    config->volume = volume;
+    config->save();
 }
 
 void PlayerState::setShuffle(bool shuffle)

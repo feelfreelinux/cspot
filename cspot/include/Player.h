@@ -10,6 +10,7 @@
 
 #include "Utils.h"
 #include "MercuryManager.h"
+#include <ConfigJSON.h>
 #include "TrackReference.h"
 #include "Session.h"
 #include "SpotifyTrack.h"
@@ -23,13 +24,14 @@ private:
     SpotifyTrack *currentTrack = nullptr;
     SpotifyTrack *nextTrack = nullptr;
     std::shared_ptr<AudioSink> audioSink;
+    std::shared_ptr<ConfigJSON> config;
     std::mutex loadTrackMutex;
     WrappedMutex nextTrackMutex;
     WrappedMutex currentTrackMutex;
     void runTask();
 
 public:
-    Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink);
+    Player(std::shared_ptr<MercuryManager> manager, std::shared_ptr<AudioSink> audioSink, std::shared_ptr<ConfigJSON> config);
     std::function<void()> endOfFileCallback;
     int volume = 255;
     uint32_t logVolume;

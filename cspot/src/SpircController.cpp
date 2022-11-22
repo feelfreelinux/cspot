@@ -5,11 +5,13 @@
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
                                  std::string username,
-                                 std::shared_ptr<AudioSink> audioSink) {
+                                 std::shared_ptr<AudioSink> audioSink,
+                                 std::shared_ptr<ConfigJSON> config) {
 
     this->manager = manager;
-    this->player = std::make_unique<Player>(manager, audioSink);
-    this->state = std::make_unique<PlayerState>(manager->timeProvider);
+    this->config = config;
+    this->player = std::make_unique<Player>(manager, audioSink, config);
+    this->state = std::make_unique<PlayerState>(manager->timeProvider, config);
     this->username = username;
 
     player->endOfFileCallback = [=]() {
@@ -18,7 +20,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
         }
     };
 
-    player->setVolume(configMan->volume);
+    player->setVolume(config->volume);
     subscribe();
 }
 
@@ -82,7 +84,7 @@ void SpircController::adjustVolume(int by) {
 void SpircController::setVolume(int volume) {
     setRemoteVolume(volume);
     player->setVolume(volume);
-    configMan->save();
+    config->save();
 }
 
 void SpircController::setRemoteVolume(int volume) {

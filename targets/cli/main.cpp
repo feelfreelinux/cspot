@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
         auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {
             CSPOT_LOG(info, "Creating player");
-            auto session = std::make_unique<Session>();
+            auto session = std::make_unique<Session>(configMan);
             session->connectWithRandomAp();
             auto token = session->authenticate(blob);
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 
                 mercuryManager->startTask();
 
-                spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+                spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, configMan);
                 mercuryManager->reconnectedCallback = []() {
                     return spircController->subscribe();
                 };
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
         else
         {
             createdFromZeroconf = true;
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer, configMan->deviceName);
             httpServer->listen([&authenticator]() {
                authenticator->registerHandlers();
             });

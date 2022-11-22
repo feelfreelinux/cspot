@@ -138,7 +138,7 @@ RECONNECT:
         {
             this->lastAuthBlob = this->session->authBlob;
         }
-        this->session = std::make_unique<Session>();
+        this->session = std::make_unique<Session>(this->session->configMan);
         this->session->connectWithRandomAp();
         this->session->authenticate(this->lastAuthBlob);
         this->session->shanConn->conn->timeoutHandler = [this]() {

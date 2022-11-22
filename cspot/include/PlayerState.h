@@ -41,7 +41,7 @@ public:
      *
      * @param timeProvider synced time provider
      */
-    PlayerState(std::shared_ptr<TimeProvider> timeProvider);
+    PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared_ptr<ConfigJSON> config);
     
     ~PlayerState();
 

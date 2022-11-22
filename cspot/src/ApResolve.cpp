@@ -21,10 +21,12 @@
 #include <fstream>
 #include "Logger.h"
 #include <cJSON.h>
-#include <ConfigJSON.h>
 #include <random>
 
-ApResolve::ApResolve() {}
+ApResolve::ApResolve(std::string apOverride) 
+{ 
+    this->apOverride = apOverride;
+}
 
 std::string ApResolve::getApList()
 {
@@ -91,9 +93,9 @@ std::string ApResolve::getApList()
 
 std::string ApResolve::fetchFirstApAddress()
 {
-    if (configMan->apOverride != "")
+    if (apOverride != "")
     {
-        return configMan->apOverride;
+        return apOverride;
     }
 
     // Fetch json body

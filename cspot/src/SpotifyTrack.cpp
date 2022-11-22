@@ -6,12 +6,12 @@
 #include <cassert>
 #include "CspotAssert.h"
 #include "Logger.h"
-#include "ConfigJSON.h"
 
-SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference, uint32_t position_ms, bool isPaused)
+SpotifyTrack::SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackReference, AudioFormat format, uint32_t position_ms, bool isPaused)
 {
     this->manager = manager;
     this->fileId = std::vector<uint8_t>();
+    this->format = format;
     episodeInfo = {};
     trackInfo = {};
 
@@ -122,7 +122,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         trackId = pbArrayToVector(trackInfo.gid);
         for (int x = 0; x < trackInfo.file_count; x++)
         {
-            if (trackInfo.file[x].format == configMan->format)
+            if (trackInfo.file[x].format == format)
             {
                 this->fileId = pbArrayToVector(trackInfo.file[x].file_id);
                 break; // If file found stop searching
@@ -134,7 +134,7 @@ void SpotifyTrack::trackInformationCallback(std::unique_ptr<MercuryResponse> res
         trackId = pbArrayToVector(trackInfo.alternative[altIndex].gid);
         for (int x = 0; x < trackInfo.alternative[altIndex].file_count; x++)
         {
-            if (trackInfo.alternative[altIndex].file[x].format == configMan->format)
+            if (trackInfo.alternative[altIndex].file[x].format == format)
             {
                 this->fileId = pbArrayToVector(trackInfo.alternative[altIndex].file[x].file_id);
                 break; // If file found stop searching

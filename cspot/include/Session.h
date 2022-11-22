@@ -11,6 +11,7 @@
 #include "stdlib.h"
 #include "ShannonConnection.h"
 #include "LoginBlob.h"
+#include "ConfigJSON.h"
 #include "ApResolve.h"
 #include "PlainConnection.h"
 #include "Packet.h"
@@ -39,10 +40,11 @@ private:
     void processAPHelloResponse(std::vector<uint8_t> &helloPacket);
 
 public:
-    Session();
+    Session(std::shared_ptr<ConfigJSON> config);
     ~Session();
     std::shared_ptr<ShannonConnection> shanConn;
     std::shared_ptr<LoginBlob> authBlob;
+    std::shared_ptr<ConfigJSON> configMan;
     void connect(std::unique_ptr<PlainConnection> connection);
     void connectWithRandomAp();
     void close();
