@@ -44,13 +44,13 @@ private:
     std::shared_ptr<bell::BaseHTTPServer> server;
     authCallback gotBlobCallback;
     void startServer();
-    std::string name;
+    std::string name, deviceId;
     std::string buildJsonInfo();
     void handleAddUser(std::map<std::string, std::string>& queryMap);
     void registerZeroconf();
     std::string getParameterFromUrlEncoded(std::string data, std::string param);
 public:
-    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, void *mdnsService = NULL);
+    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, std::string deviceId, void *mdnsService = NULL);
     void registerHandlers();
 };
 

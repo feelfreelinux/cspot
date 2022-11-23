@@ -12,18 +12,11 @@
 #include "Logger.h"
 #include "CspotAssert.h"
 
-// provide weak deviceId (see ConstantParameters.h)
-#if _MSC_VER
-char deviceId[] = "142137fd329622137a14901634264e6f332e2411";
-#else
-char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
-#endif
-
 #ifdef _WIN32
 struct mdnsd* ZeroconfAuthenticator::service = NULL;
 #endif
 
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, void *mdnsService) {
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, std::string deviceId, void *mdnsService) {
     this->gotBlobCallback = callback;
     srand((unsigned int)time(NULL));
 
@@ -31,6 +24,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
     this->crypto->dhInit();
     this->server = httpServer;
     this->name = name;
+    this->deviceId = deviceId;
 
 #ifdef _WIN32
     if (ZeroconfAuthenticator::service || mdnsService) {

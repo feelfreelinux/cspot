@@ -3,6 +3,12 @@
 #include "Logger.h"
 #include "ConstantParameters.h"
 
+// provide weak deviceId (see ConstantParameters.h)
+#if _MSC_VER
+char deviceId[] = "142137fd329622137a14901634264e6f332e2411";
+#else
+char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
+#endif
 
 ConfigJSON::ConfigJSON(std::string jsonFileName, std::shared_ptr<FileHelper> file)
 {

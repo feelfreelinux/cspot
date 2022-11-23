@@ -145,7 +145,7 @@ int main(int argc, char** argv)
         else
         {
             createdFromZeroconf = true;
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer, configMan->deviceName);
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer, configMan->deviceName, configMan->deviceId);
             httpServer->listen([&authenticator]() {
                authenticator->registerHandlers();
             });
