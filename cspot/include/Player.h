@@ -35,13 +35,13 @@ public:
     std::function<void()> endOfFileCallback;
     int volume = 255;
     uint32_t logVolume;
-	bool needFlush = false;	
     std::atomic<bool> isRunning = false;
     trackChangedCallback trackChanged;
     std::mutex runningMutex;
 
+    bool hasTrack(void) { return currentTrack != nullptr; }
     void setVolume(uint32_t volume);
-    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void(bool)> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
+    void handleLoad(std::shared_ptr<TrackReference> track, std::function<void()> &trackLoadedCallback, uint32_t position_ms, bool isPaused);
     void pause();
     void cancelCurrentTrack();
     void seekMs(size_t positionMs);

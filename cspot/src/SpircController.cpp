@@ -16,7 +16,7 @@ SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
 
     player->endOfFileCallback = [=]() {
         if (state->nextTrack()) {
-            loadTrack();
+            loadTrack(false);
         }
     };
 
@@ -94,7 +94,7 @@ void SpircController::setRemoteVolume(int volume) {
 
 void SpircController::nextSong() {
     if (state->nextTrack()) {
-        loadTrack();
+        loadTrack(true);
     } else {
         player->cancelCurrentTrack();
     }
@@ -103,7 +103,7 @@ void SpircController::nextSong() {
 
 void SpircController::prevSong() {
     state->prevTrack();
-    loadTrack();
+    loadTrack(true);
     notify();
 }
 
@@ -160,7 +160,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
 
         // bool isPaused = (state->remoteFrame.state->status.value() ==
         // PlayStatus::kPlayStatusPlay) ? false : true;
-        loadTrack(state->remoteFrame.state.position_ms, false);
+        loadTrack(player->hasTrack(), state->remoteFrame.state.position_ms, false);
         state->updatePositionMs(state->remoteFrame.state.position_ms);
 
         this->notify();
@@ -189,13 +189,16 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
     }
 }
 
-void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
+void SpircController::loadTrack(bool flush, uint32_t position_ms, bool isPaused) {
+    if (flush) {
+        sendEvent(CSpotEventType::FLUSH);
+    }
     sendEvent(CSpotEventType::LOAD, (int) position_ms);
     state->setPlaybackState(PlaybackState::Loading);
-    std::function<void(bool)> loadedLambda = [=](bool needFlush) {
+    std::function<void()> loadedLambda = [=]() {
         // Loading finished, notify that playback started
         setPause(isPaused, false);
-        sendEvent(CSpotEventType::PLAYBACK_START, needFlush);
+        sendEvent(CSpotEventType::PLAYBACK_START);
     };
 
     player->handleLoad(state->getCurrentTrack(), loadedLambda, position_ms,
@@ -206,7 +209,7 @@ void SpircController::notify() {
     this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-void SpircController::sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data) {
+void SpircController::sendEvent(CSpotEventType eventType, std::variant <TrackInfo, int, bool> data) {
     if (eventHandler != nullptr) {
         CSpotEvent event = {
             .eventType = eventType,
