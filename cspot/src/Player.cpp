@@ -167,7 +167,7 @@ void Player::handleLoad(std::shared_ptr<TrackReference> trackReference, std::fun
 
     this->nextTrack->trackInfoReceived = this->trackChanged;
     this->nextTrack->loadedTrackCallback = [this, framesCallback, trackLoadedCallback]() {
-		cancelCurrentTrack();		
+        cancelCurrentTrack();		
         trackLoadedCallback();
 
         this->nextTrackMutex.lock();
