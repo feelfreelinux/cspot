@@ -116,6 +116,8 @@ int main(int argc, char** argv)
                     return spircController->subscribe();
                 };
 
+                // make sure it runs or we'll exit immediately
+                while (!mercuryManager->isRunning) usleep(10 * 1000);
                 mercuryManager->handleQueue();
             }
 
