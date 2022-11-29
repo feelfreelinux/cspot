@@ -179,6 +179,7 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t> &data)
                 break;
             default:
                 if (retries++ > 4) throw std::runtime_error("Error in write");
+                goto WRITE;
             }
         }
         idx += n;
