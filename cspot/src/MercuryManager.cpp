@@ -26,10 +26,13 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
     this->session->shanConn->conn->timeoutHandler = [this]() {
         return this->timeoutHandler();
     };
+
+    isRunning = true;
 }
 
 MercuryManager::~MercuryManager()
 {
+    isRunning = false;
     //pb_release(Header_fields, &tempMercuryHeader);
 }
 
@@ -159,7 +162,7 @@ void MercuryManager::runTask()
 {
     std::scoped_lock lock(this->runningMutex);
     // Listen for mercury replies and handle them accordingly
-    isRunning = true;
+
     while (isRunning)
     {
         std::unique_ptr<Packet> packet;
