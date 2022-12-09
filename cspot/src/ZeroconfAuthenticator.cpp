@@ -24,7 +24,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
     this->crypto->dhInit();
     this->server = httpServer;
     this->name = name;
-    this->deviceId = deviceId;
+    this->deviceId = deviceId; 
 
 #ifdef _WIN32
     if (ZeroconfAuthenticator::service || mdnsService) {
