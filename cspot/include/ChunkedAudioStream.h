@@ -5,7 +5,9 @@
 #include <vector>
 #include <fstream>
 #include <array>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <atomic>
 #include "ivorbisfile.h"
 #include "MercuryManager.h"

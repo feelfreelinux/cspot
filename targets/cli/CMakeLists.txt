@@ -8,14 +8,19 @@ option(USE_PORTAUDIO "Enable PortAudio" OFF)
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake Build Type")
 
 # CMake options
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+
+if(MSVC)
+	add_compile_definitions(NOMINMAX _WINSOCK_DEPRECATED_NO_WARNINGS _CRT_SECURE_NO_WARNINGS)
+	add_definitions(/wd4068 /wd4244 /wd4018 /wd4101 /wd4102 /wd4142)
+endif()
 
 # Main target sources
 file(GLOB SOURCES "*.cpp")
 
 if(USE_PORTAUDIO)
     add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
-    set(BELL_USE_PORTAUDIO ON)
+    set(BELL_SINK_PORTAUDIO ON)
 endif(USE_PORTAUDIO)
 unset(USE_PORTAUDIO CACHE)
 

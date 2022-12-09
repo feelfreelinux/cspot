@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 #include <string>
 #include <streambuf>
 #include <SpircController.h>
@@ -39,13 +42,20 @@ bool createdFromZeroconf = false;
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+    WSADATA wsaData;
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    int WSerr = WSAStartup(wVersionRequested, &wsaData);
+    if (WSerr != 0) exit(1);
+#endif
+
     try
     {
         bell::setDefaultLogger();
 
 
         std::ifstream blobFile(credentialsFileName);
-        auto httpServer = std::make_shared<bell::HTTPServer>(2137);
+        auto httpServer = std::make_shared<bell::HTTPServer>();
 
         auto args = CommandLineArguments::parse(argc, argv);
         if (args->shouldShowHelp)
@@ -78,7 +88,7 @@ int main(int argc, char** argv)
 
         auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {
             CSPOT_LOG(info, "Creating player");
-            auto session = std::make_unique<Session>();
+            auto session = std::make_unique<Session>(configMan);
             session->connectWithRandomAp();
             auto token = session->authenticate(blob);
 
@@ -101,11 +111,13 @@ int main(int argc, char** argv)
 
                 mercuryManager->startTask();
 
-                spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink);
+                spircController = std::make_shared<SpircController>(mercuryManager, blob->username, audioSink, configMan);
                 mercuryManager->reconnectedCallback = []() {
                     return spircController->subscribe();
                 };
 
+                // make sure it runs or we'll exit immediately
+                while (!mercuryManager->isRunning) usleep(10 * 1000);
                 mercuryManager->handleQueue();
             }
 
@@ -135,9 +147,10 @@ int main(int argc, char** argv)
         else
         {
             createdFromZeroconf = true;
-            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer);
-            authenticator->registerHandlers();
-            httpServer->listen();
+            auto authenticator = std::make_shared<ZeroconfAuthenticator>(createPlayerCallback, httpServer, configMan->deviceName, configMan->deviceId);
+            httpServer->listen([&authenticator]() {
+               authenticator->registerHandlers();
+            });
         }
 
         while (true);

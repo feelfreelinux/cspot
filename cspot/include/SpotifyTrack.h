@@ -38,12 +38,13 @@ private:
     bool canPlayTrack(int altIndex);
     Track trackInfo;
     Episode episodeInfo;
+    AudioFormat format;
 
     std::vector<uint8_t> fileId;
     std::vector<uint8_t> currentChunkData;
     std::vector<uint8_t> currentChunkHeader;
 public:
-    SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackRef, uint32_t position_ms, bool isPaused);
+    SpotifyTrack(std::shared_ptr<MercuryManager> manager, std::shared_ptr<TrackReference> trackRef, AudioFormat format, uint32_t position_ms, bool isPaused);
     ~SpotifyTrack();
     uint64_t reqSeqNum = -1;
     std::atomic<bool> loaded = false;

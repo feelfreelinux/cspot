@@ -4,7 +4,7 @@
 
 using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
-Session::Session()
+Session::Session(std::shared_ptr<ConfigJSON> config) 
 {
     this->clientHello = {};
     this->apResponse = {};
@@ -14,6 +14,7 @@ Session::Session()
     // Generates the public and priv key
     this->crypto = std::make_unique<Crypto>();
     this->shanConn = std::make_shared<ShannonConnection>();
+    this->configMan = config;
 }
 
 Session::~Session()
@@ -32,7 +33,7 @@ void Session::connect(std::unique_ptr<PlainConnection> connection)
 
 void Session::connectWithRandomAp()
 {
-    auto apResolver = std::make_unique<ApResolve>();
+    auto apResolver = std::make_unique<ApResolve>(configMan->apOverride);
     this->conn = std::make_unique<PlainConnection>();
 
     auto apAddr = apResolver->fetchFirstApAddress();
@@ -60,9 +61,7 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 
     auto infoStr = std::string(informationString);
     pbPutString(infoStr, authRequest.system_info.system_information_string);
-
-    auto deviceIdStr = std::string(deviceId);
-    pbPutString(deviceId, authRequest.system_info.device_id);
+    pbPutString(configMan->deviceId, authRequest.system_info.device_id);
 
     auto versionStr = std::string(versionString);
     pbPutString(versionStr, authRequest.version_string);

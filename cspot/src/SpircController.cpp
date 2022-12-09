@@ -5,20 +5,22 @@
 
 SpircController::SpircController(std::shared_ptr<MercuryManager> manager,
                                  std::string username,
-                                 std::shared_ptr<AudioSink> audioSink) {
+                                 std::shared_ptr<AudioSink> audioSink,
+                                 std::shared_ptr<ConfigJSON> config) {
 
     this->manager = manager;
-    this->player = std::make_unique<Player>(manager, audioSink);
-    this->state = std::make_unique<PlayerState>(manager->timeProvider);
+    this->config = config;
+    this->player = std::make_unique<Player>(manager, audioSink, config);
+    this->state = std::make_unique<PlayerState>(manager->timeProvider, config);
     this->username = username;
 
     player->endOfFileCallback = [=]() {
         if (state->nextTrack()) {
-            loadTrack();
+            loadTrack(false);
         }
     };
 
-    player->setVolume(configMan->volume);
+    player->setVolume(config->volume);
     subscribe();
 }
 
@@ -82,7 +84,7 @@ void SpircController::adjustVolume(int by) {
 void SpircController::setVolume(int volume) {
     setRemoteVolume(volume);
     player->setVolume(volume);
-    configMan->save();
+    config->save();
 }
 
 void SpircController::setRemoteVolume(int volume) {
@@ -92,7 +94,7 @@ void SpircController::setRemoteVolume(int volume) {
 
 void SpircController::nextSong() {
     if (state->nextTrack()) {
-        loadTrack();
+        loadTrack(true);
     } else {
         player->cancelCurrentTrack();
     }
@@ -101,7 +103,7 @@ void SpircController::nextSong() {
 
 void SpircController::prevSong() {
     state->prevTrack();
-    loadTrack();
+    loadTrack(true);
     notify();
 }
 
@@ -158,7 +160,7 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
 
         // bool isPaused = (state->remoteFrame.state->status.value() ==
         // PlayStatus::kPlayStatusPlay) ? false : true;
-        loadTrack(state->remoteFrame.state.position_ms, false);
+        loadTrack(player->hasTrack(), state->remoteFrame.state.position_ms, false);
         state->updatePositionMs(state->remoteFrame.state.position_ms);
 
         this->notify();
@@ -187,7 +189,10 @@ void SpircController::handleFrame(std::vector<uint8_t> &data) {
     }
 }
 
-void SpircController::loadTrack(uint32_t position_ms, bool isPaused) {
+void SpircController::loadTrack(bool flush, uint32_t position_ms, bool isPaused) {
+    if (flush) {
+        sendEvent(CSpotEventType::FLUSH);
+    }
     sendEvent(CSpotEventType::LOAD, (int) position_ms);
     state->setPlaybackState(PlaybackState::Loading);
     std::function<void()> loadedLambda = [=]() {
@@ -204,7 +209,7 @@ void SpircController::notify() {
     this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-void SpircController::sendEvent(CSpotEventType eventType, std::variant<TrackInfo, int, bool> data) {
+void SpircController::sendEvent(CSpotEventType eventType, std::variant <TrackInfo, int, bool> data) {
     if (eventHandler != nullptr) {
         CSpotEvent event = {
             .eventType = eventType,

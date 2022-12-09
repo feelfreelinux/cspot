@@ -3,6 +3,12 @@
 #include "Logger.h"
 #include "ConstantParameters.h"
 
+// provide weak deviceId (see ConstantParameters.h)
+#if _MSC_VER
+char deviceId[] = "142137fd329622137a14901634264e6f332e2411";
+#else
+char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
+#endif
 
 ConfigJSON::ConfigJSON(std::string jsonFileName, std::shared_ptr<FileHelper> file)
 {
@@ -51,6 +57,7 @@ bool ConfigJSON::load()
           auto volumeObject = cJSON_GetObjectItemCaseSensitive(root, "volume");
           this->volume = cJSON_GetNumberValue(volumeObject);
         }
+        if (this->deviceId.empty()) this->deviceId = ::deviceId;
         cJSON_Delete(root);
       }
       else
@@ -60,6 +67,7 @@ bool ConfigJSON::load()
          this->volume = 32767;
          this->deviceName = defaultDeviceName;
          this->format = AudioFormat_OGG_VORBIS_160;
+         this->deviceId = ::deviceId;
       }
       return true;
     }

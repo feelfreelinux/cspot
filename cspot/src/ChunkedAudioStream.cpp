@@ -5,8 +5,10 @@
 static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, ChunkedAudioStream *self)
 {
     size_t readSize = 0;
-    while (readSize < nmemb * size && self->byteStream->position() < self->byteStream->size()) {
-        readSize += self->byteStream->read((uint8_t *) ptr + readSize, (size * nmemb) - readSize);
+    while (readSize < nmemb * size && self->byteStream->position() < self->byteStream->size() && self->isRunning) {
+		size_t bytes = self->byteStream->read((uint8_t *) ptr + readSize, (size * nmemb) - readSize);
+		if (!bytes) break;
+		readSize += bytes;
     }
     return readSize;
 }

@@ -1,22 +1,64 @@
 #include "ZeroconfAuthenticator.h"
 #include "JSONObject.h"
 #include <sstream>
+#ifndef _WIN32
 #include <sys/select.h>
+#else
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "Logger.h"
-#include "ConfigJSON.h"
+#include "CspotAssert.h"
 
-// provide weak deviceId (see ConstantParameters.h)
-char deviceId[] __attribute__((weak)) = "142137fd329622137a14901634264e6f332e2411";
+#ifdef _WIN32
+struct mdnsd* ZeroconfAuthenticator::service = NULL;
+#endif
 
-ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer) {
+ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, std::string deviceId, void *mdnsService) {
     this->gotBlobCallback = callback;
     srand((unsigned int)time(NULL));
 
     this->crypto = std::make_unique<Crypto>();
     this->crypto->dhInit();
     this->server = httpServer;
+    this->name = name;
+    this->deviceId = deviceId;
+
+#ifdef _WIN32
+    if (ZeroconfAuthenticator::service || mdnsService) {
+        if (mdnsService) ZeroconfAuthenticator::service = (struct mdnsd*) mdnsService;
+        return;
+    }
+
+    char hostname[128];
+    gethostname(hostname, sizeof(hostname));
+
+    struct sockaddr_in* host = NULL;
+    ULONG size = sizeof(IP_ADAPTER_ADDRESSES) * 32;
+    IP_ADAPTER_ADDRESSES* adapters = (IP_ADAPTER_ADDRESSES*) malloc(size);
+    int ret = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_GATEWAYS | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST, 0, adapters, &size);
+
+    for (PIP_ADAPTER_ADDRESSES adapter = adapters; adapter && !host; adapter = adapter->Next) {
+        if (adapter->TunnelType == TUNNEL_TYPE_TEREDO) continue;
+        if (adapter->OperStatus != IfOperStatusUp) continue;
+
+        for (IP_ADAPTER_UNICAST_ADDRESS* unicast = adapter->FirstUnicastAddress; unicast;
+            unicast = unicast->Next) {
+            if (adapter->FirstGatewayAddress && unicast->Address.lpSockaddr->sa_family == AF_INET) {
+                host = (struct sockaddr_in*)unicast->Address.lpSockaddr;
+                BELL_LOG(info, "mdns", "mDNS on interface %s", inet_ntoa(host->sin_addr));
+                mdnsService = mdnsd_start(host->sin_addr, false);
+                break;
+            }
+        }
+    }
+
+    ZeroconfAuthenticator::service = (struct mdnsd*) mdnsService;
+	CSPOT_ASSERT(ZeroconfAuthenticator::service, "can't start mDNS service");
+    mdnsd_set_hostname(ZeroconfAuthenticator::service, hostname, host->sin_addr);
+#endif
 }
 
 void ZeroconfAuthenticator::registerHandlers() {
@@ -59,23 +101,28 @@ void ZeroconfAuthenticator::registerHandlers() {
 
 void ZeroconfAuthenticator::registerZeroconf()
 {
-    const char* service = "_spotify-connect._tcp";
-
 #ifdef ESP_PLATFORM
-    mdns_txt_item_t serviceTxtData[3] = {
-        {"VERSION", "1.0"},
-        {"CPath", "/spotify_info"},
-        {"Stack", "SP"} };
-    mdns_service_add("cspot", "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
-
+	mdns_txt_item_t serviceTxtData[3] = {
+		{"VERSION", "1.0"},
+		{"CPath", "/spotify_info"},
+		{"Stack", "SP"} };
+	mdns_service_add(this->name.c_str(), "_spotify-connect", "_tcp", this->server->serverPort, serviceTxtData, 3);
+#elif _WIN32
+	const char *serviceTxtData[] = {
+		"VERSION=1.0",
+		"CPath=/spotify_info",
+		"Stack=SP",
+		NULL };
+    mdnsd_register_svc(ZeroconfAuthenticator::service, this->name.c_str(), "_spotify-connect._tcp.local", this->server->serverPort, NULL, serviceTxtData);
 #else
+    const char* service = "_spotify-connect._tcp";
     DNSServiceRef ref = NULL;
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, NULL);
     TXTRecordSetValue(&txtRecord, "VERSION", 3, "1.0");
     TXTRecordSetValue(&txtRecord, "CPath", 13, "/spotify_info");
     TXTRecordSetValue(&txtRecord, "Stack", 2, "SP");
-    DNSServiceRegister(&ref, 0, 0, (char*)informationString, service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
+    DNSServiceRegister(&ref, 0, 0, this->name.c_str(), service, NULL, NULL, htons(this->server->serverPort), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), NULL, NULL);
     TXTRecordDeallocate(&txtRecord);
 #endif
 }
@@ -123,7 +170,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["libraryVersion"] = swVersion;
     obj["accountReq"] = "PREMIUM";
     obj["brandDisplayName"] = brandName;
-    obj["modelDisplayName"] = configMan->deviceName.c_str();
+    obj["modelDisplayName"] = name.c_str();
     obj["voiceSupport"] = "NO";
     obj["availability"] = "";
     obj["productID"] = 0;
@@ -133,7 +180,7 @@ std::string ZeroconfAuthenticator::buildJsonInfo()
     obj["scope"] = "streaming,client-authorization-universal";
     obj["activeUser"] = "";
     obj["deviceID"] = deviceId;
-    obj["remoteName"] = configMan->deviceName.c_str();
+    obj["remoteName"] = name.c_str();
     obj["publicKey"] = encodedKey;
     obj["deviceType"] = "SPEAKER";
     return obj.toString();

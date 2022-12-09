@@ -7,18 +7,26 @@
 #include <cstring>
 #include <stdlib.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include "win32shim.h"
+#else
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#endif
 #include <sstream>
 #include <fstream>
 #include "Logger.h"
 #include <cJSON.h>
-#include <ConfigJSON.h>
 #include <random>
 
-ApResolve::ApResolve() {}
+ApResolve::ApResolve(std::string apOverride) 
+{ 
+    this->apOverride = apOverride;
+}
 
 std::string ApResolve::getApList()
 {
@@ -85,9 +93,9 @@ std::string ApResolve::getApList()
 
 std::string ApResolve::fetchFirstApAddress()
 {
-    if (configMan->apOverride != "")
+    if (apOverride != "")
     {
-        return configMan->apOverride;
+        return apOverride;
     }
 
     // Fetch json body

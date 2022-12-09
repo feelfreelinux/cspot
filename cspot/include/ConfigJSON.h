@@ -19,9 +19,8 @@ public:
     uint16_t volume;
     std::string deviceName;
     std::string apOverride;
+    std::string deviceId;
     AudioFormat format;
 };
-
-extern std::shared_ptr<ConfigJSON> configMan;
 
 #endif
