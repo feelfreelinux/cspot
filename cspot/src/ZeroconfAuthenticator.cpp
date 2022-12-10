@@ -36,7 +36,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
     gethostname(hostname, sizeof(hostname));
 
     struct sockaddr_in* host = NULL;
-    ULONG size = sizeof(IP_ADAPTER_ADDRESSES) * 32;
+    ULONG size = sizeof(IP_ADAPTER_ADDRESSES) * 64;
     IP_ADAPTER_ADDRESSES* adapters = (IP_ADAPTER_ADDRESSES*) malloc(size);
     int ret = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_GATEWAYS | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST, 0, adapters, &size);
 
@@ -55,6 +55,7 @@ ZeroconfAuthenticator::ZeroconfAuthenticator(authCallback callback, std::shared_
         }
     }
 
+    free(adapters);
     ZeroconfAuthenticator::service = (struct mdnsd*) mdnsService;
 	CSPOT_ASSERT(ZeroconfAuthenticator::service, "can't start mDNS service");
     mdnsd_set_hostname(ZeroconfAuthenticator::service, hostname, host->sin_addr);
