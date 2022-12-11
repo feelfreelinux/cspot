@@ -9,13 +9,13 @@
 #else
 #include <unistd.h>
 #include <sys/socket.h>
+#include <mutex>
 #include <netdb.h>
 #endif
 #include <sys/types.h>
 #include <string>
 #include <memory>
 #include <cstdint>
-#include "platform/WrappedMutex.h"
 #include "Utils.h"
 #include "Shannon.h"
 #include "PlainConnection.h"
@@ -32,8 +32,8 @@ private:
     uint32_t sendNonce = 0;
     uint32_t recvNonce = 0;
     std::vector<uint8_t> cipherPacket(uint8_t cmd, std::vector<uint8_t> &data);
-    WrappedMutex writeMutex;
-    WrappedMutex readMutex;
+    std::mutex writeMutex;
+    std::mutex readMutex;
     
 public:
     ShannonConnection();

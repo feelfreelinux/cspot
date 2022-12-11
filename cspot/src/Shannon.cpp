@@ -9,16 +9,18 @@ using std::size_t;
 
 static inline uint32_t rotl(uint32_t n, unsigned int c)
 {
+    const unsigned int mask = (CHAR_BIT * sizeof(n) - 1); // assumes width is a power of 2.
     // assert ( (c<=mask) &&"rotate by type width or more");
-    c &= sizeof(n) * CHAR_BIT - 1;
-    return (n << c) | (n >> (sizeof(n)*CHAR_BIT-c));
+    c &= mask;
+    return (n << c) | (n >> ((-c) & mask));
 }
 
 static inline uint32_t rotr(uint32_t n, unsigned int c)
 {
+    const unsigned int mask = (CHAR_BIT * sizeof(n) - 1); // assumes width is a power of 2.
     // assert ( (c<=mask) &&"rotate by type width or more");
-    c &= sizeof(n) * CHAR_BIT - 1;
-    return (n >> c) | (n << (sizeof(n)*CHAR_BIT-c));
+    c &= mask;
+    return (n >> c) | (n << ((-c) & mask));
 }
 
 uint32_t Shannon::sbox1(uint32_t w)
@@ -140,7 +142,7 @@ void Shannon::diffuse()
 #define ADDKEY(k) \
     this->R[KEYP] ^= (k);
 
-void Shannon::loadKey(const std::vector<uint8_t> &key)
+void Shannon::loadKey(const std::vector<uint8_t>& key)
 {
     int i, j;
     uint32_t k;
@@ -182,7 +184,7 @@ void Shannon::loadKey(const std::vector<uint8_t> &key)
         this->R[i] ^= this->CRC[i];
 }
 
-void Shannon::key(const std::vector<uint8_t> &key)
+void Shannon::key(const std::vector<uint8_t>& key)
 {
     this->initState();
     this->loadKey(key);
@@ -191,7 +193,7 @@ void Shannon::key(const std::vector<uint8_t> &key)
     this->nbuf = 0;
 }
 
-void Shannon::nonce(const std::vector<uint8_t> &nonce)
+void Shannon::nonce(const std::vector<uint8_t>& nonce)
 {
     this->reloadState();
     this->konst = Shannon::INITKONST;
@@ -200,11 +202,11 @@ void Shannon::nonce(const std::vector<uint8_t> &nonce)
     this->nbuf = 0;
 }
 
-void Shannon::stream(std::vector<uint8_t> &bufVec)
+void Shannon::stream(std::vector<uint8_t>& bufVec)
 {
-    uint8_t *endbuf;
+    uint8_t* endbuf;
     size_t nbytes = bufVec.size();
-    uint8_t *buf = bufVec.data();
+    uint8_t* buf = bufVec.data();
     /* handle any previously buffered bytes */
     while (this->nbuf != 0 && nbytes != 0)
     {
@@ -239,12 +241,12 @@ void Shannon::stream(std::vector<uint8_t> &bufVec)
     }
 }
 
-void Shannon::maconly(std::vector<uint8_t> &bufVec)
+void Shannon::maconly(std::vector<uint8_t>& bufVec)
 {
     size_t nbytes = bufVec.size();
-    uint8_t *buf = bufVec.data();
+    uint8_t* buf = bufVec.data();
 
-    uint8_t *endbuf;
+    uint8_t* endbuf;
 
     /* handle any previously buffered bytes */
     if (this->nbuf != 0)
@@ -286,11 +288,11 @@ void Shannon::maconly(std::vector<uint8_t> &bufVec)
     }
 }
 
-void Shannon::encrypt(std::vector<uint8_t> &bufVec)
+void Shannon::encrypt(std::vector<uint8_t>& bufVec)
 {
     size_t nbytes = bufVec.size();
-    uint8_t *buf = bufVec.data();
-    uint8_t *endbuf;
+    uint8_t* buf = bufVec.data();
+    uint8_t* endbuf;
     uint32_t t = 0;
 
     /* handle any previously buffered bytes */
@@ -341,11 +343,11 @@ void Shannon::encrypt(std::vector<uint8_t> &bufVec)
 }
 
 
-void Shannon::decrypt(std::vector<uint8_t> &bufVec)
+void Shannon::decrypt(std::vector<uint8_t>& bufVec)
 {
     size_t nbytes = bufVec.size();
-    uint8_t *buf = bufVec.data();
-    uint8_t *endbuf;
+    uint8_t* buf = bufVec.data();
+    uint8_t* endbuf;
     uint32_t t = 0;
 
     /* handle any previously buffered bytes */
@@ -394,10 +396,10 @@ void Shannon::decrypt(std::vector<uint8_t> &bufVec)
     }
 }
 
-void Shannon::finish(std::vector<uint8_t> &bufVec)
+void Shannon::finish(std::vector<uint8_t>& bufVec)
 {
     size_t nbytes = bufVec.size();
-    uint8_t *buf = bufVec.data();
+    uint8_t* buf = bufVec.data();
     int i;
 
     /* handle any previously buffered bytes */
@@ -408,10 +410,10 @@ void Shannon::finish(std::vector<uint8_t> &bufVec)
     }
 
     /* perturb the MAC to mark end of input.
-	 * Note that only the stream register is updated, not the CRC. This is an
-	 * action that can't be duplicated by passing in plaintext, hence
-	 * defeating any kind of extension attack.
-	 */
+     * Note that only the stream register is updated, not the CRC. This is an
+     * action that can't be duplicated by passing in plaintext, hence
+     * defeating any kind of extension attack.
+     */
     this->cycle();
     ADDKEY(INITKONST ^ (this->nbuf << 3));
     this->nbuf = 0;

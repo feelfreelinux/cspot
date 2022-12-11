@@ -15,7 +15,7 @@
 #include "AudioChunkManager.h"
 #include <atomic>
 #include "BellTask.h"
-#include "platform/WrappedSemaphore.h"
+#include "WrappedSemaphore.h"
 #include "TimeProvider.h"
 #include "Session.h"
 #include <NanoPBHelper.h>
@@ -66,7 +66,7 @@ private:
   std::shared_ptr<LoginBlob> lastAuthBlob; 
   std::unique_ptr<AudioChunkManager> audioChunkManager;
   std::vector<std::unique_ptr<Packet>> queue;
-  std::unique_ptr<WrappedSemaphore> queueSemaphore;
+  std::unique_ptr<bell::WrappedSemaphore> queueSemaphore;
   unsigned long long lastRequestTimestamp = -1;
   unsigned long long lastPingTimestamp = -1;
   uint64_t sequenceId;

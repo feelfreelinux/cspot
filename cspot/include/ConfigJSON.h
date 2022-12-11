@@ -13,12 +13,13 @@ private:
     std::string _jsonFileName;
 public:
     ConfigJSON(std::string jsonFileName, std::shared_ptr<FileHelper> file);
+    ConfigJSON();
     bool load();
     bool save();
 
     uint16_t volume;
     std::string deviceName;
-    std::string apOverride;
+    std::string apOverride = "";
     std::string deviceId;
     AudioFormat format;
 };

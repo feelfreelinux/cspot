@@ -95,6 +95,7 @@ std::vector<uint8_t> PlainConnection::recvPacket()
     // Read packet size
     auto sizeData = readBlock(4);
     uint32_t packetSize = ntohl(extract<uint32_t>(sizeData, 0));
+
     // Read actual data
     auto data = readBlock(packetSize - 4);
     sizeData.insert(sizeData.end(), data.begin(), data.end());

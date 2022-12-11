@@ -13,7 +13,6 @@
 #include "MercuryManager.h"
 #include "AudioSink.h"
 #include "AudioChunk.h"
-#include "platform/WrappedMutex.h"
 #include "ChunkedByteStream.h"
 
 #define SPOTIFY_HEADER_SIZE 167
@@ -56,7 +55,7 @@ public:
     std::atomic<bool> finished = false;
     pcmDataCallback pcmCallback;
     std::shared_ptr<AudioSink> audioSink;
-    WrappedMutex seekMutex;
+    std::mutex seekMutex;
 
     std::vector<uint8_t> read(size_t bytes);
     void seekMs(uint32_t positionMs);

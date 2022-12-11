@@ -26,8 +26,8 @@ private:
     std::shared_ptr<AudioSink> audioSink;
     std::shared_ptr<ConfigJSON> config;
     std::mutex loadTrackMutex;
-    WrappedMutex nextTrackMutex;
-    WrappedMutex currentTrackMutex;
+    std::mutex nextTrackMutex;
+    std::mutex currentTrackMutex;
     void runTask();
 
 public:

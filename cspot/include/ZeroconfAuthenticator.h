@@ -2,14 +2,16 @@
 #define ZEROCONFAUTHENTICATOR_H
 
 #include <vector>
+#include <functional>
+
 #ifndef _WIN32
 #include <unistd.h>
 #endif
 #include <string>
-#include <BaseHTTPServer.h>
 #include <cstdlib>
 #include "Utils.h"
 #include "LoginBlob.h"
+#include <map>
 #include "Crypto.h"
 #include "BellTask.h"
 #include "ConstantParameters.h"
@@ -36,22 +38,23 @@ typedef std::function<void(std::shared_ptr<LoginBlob>)> authCallback;
 class ZeroconfAuthenticator {
 private:
 #ifdef _WIN32
-	static struct mdnsd* service;
+    static struct mdnsd* service;
 #endif
     int serverPort;
     bool authorized = false;
     std::unique_ptr<Crypto> crypto;
-    std::shared_ptr<bell::BaseHTTPServer> server;
+
     authCallback gotBlobCallback;
-    void startServer();
     std::string name, deviceId;
+
+public:
+    ZeroconfAuthenticator(authCallback callback, int serverPort, std::string name, std::string deviceId);
+    void registerHandlers();
+    
     std::string buildJsonInfo();
+    std::string getParameterFromUrlEncoded(std::string data, std::string param);
     void handleAddUser(std::map<std::string, std::string>& queryMap);
     void registerZeroconf();
-    std::string getParameterFromUrlEncoded(std::string data, std::string param);
-public:
-    ZeroconfAuthenticator(authCallback callback, std::shared_ptr<bell::BaseHTTPServer> httpServer, std::string name, std::string deviceId, void *mdnsService = NULL);
-    void registerHandlers();
 };
 
 #endif

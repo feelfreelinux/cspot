@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "platform/WrappedSemaphore.h"
+#include "WrappedSemaphore.h"
 #include "Crypto.h"
 #include "Utils.h"
 #include <mutex>
@@ -39,12 +39,12 @@ public:
     /**
      * @brief Triggered when audiochunk is fully downloaded and decrypted.
      */
-    std::unique_ptr<WrappedSemaphore> isLoadedSemaphore;
+    std::unique_ptr<bell::WrappedSemaphore> isLoadedSemaphore;
 
     /**
      * @brief
      */
-    std::unique_ptr<WrappedSemaphore> isHeaderFileSizeLoadedSemaphore;
+    std::unique_ptr<bell::WrappedSemaphore> isHeaderFileSizeLoadedSemaphore;
 
     /**
      * Decrypts data and writes it to the target buffer

@@ -27,7 +27,7 @@ void ShannonConnection::wrapConnection(std::shared_ptr<PlainConnection> conn, st
 
 void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data)
 {
-    this->writeMutex.lock();
+    std::scoped_lock lock(this->writeMutex);
     auto rawPacket = this->cipherPacket(cmd, data);
 
     // Shannon encrypt the packet and write it to sock
@@ -44,12 +44,11 @@ void ShannonConnection::sendPacket(uint8_t cmd, std::vector<uint8_t> &data)
 
     // Write the mac to sock
     this->conn->writeBlock(mac);
-    this->writeMutex.unlock();
 }
 
 std::unique_ptr<Packet> ShannonConnection::recvPacket()
 {
-    this->readMutex.lock();
+    std::scoped_lock lock(this->readMutex);
     // Receive 3 bytes, cmd + int16 size
     auto data = this->conn->readBlock(3);
     this->recvCipher->decrypt(data);
@@ -80,9 +79,6 @@ std::unique_ptr<Packet> ShannonConnection::recvPacket()
     // Update the nonce
     this->recvNonce += 1;
     this->recvCipher->nonce(pack<uint32_t>(htonl(this->recvNonce)));
-
-    // Unlock the mutex
-    this->readMutex.unlock();
 
     // data[0] == cmd
     return std::make_unique<Packet>(data[0], packetData);

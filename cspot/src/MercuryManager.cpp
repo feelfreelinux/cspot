@@ -21,7 +21,7 @@ MercuryManager::MercuryManager(std::unique_ptr<Session> session): bell::Task("me
     this->audioChunkSequence = 0;
     this->audioKeySequence = 0;
     this->queue = std::vector<std::unique_ptr<Packet>>();
-    queueSemaphore = std::make_unique<WrappedSemaphore>(200);
+    queueSemaphore = std::make_unique<bell::WrappedSemaphore>(200);
 
     this->session->shanConn->conn->timeoutHandler = [this]() {
         return this->timeoutHandler();

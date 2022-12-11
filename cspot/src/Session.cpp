@@ -48,7 +48,6 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob)
 {
     // save auth blob for reconnection purposes
     authBlob = blob;
-
     // prepare authentication request proto
     pbPutString(blob->username, authRequest.login_credentials.username);
 
