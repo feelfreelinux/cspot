@@ -23,7 +23,7 @@ uint64_t hton64(uint64_t value) {
     }
 }
 
-std::string bytesToHexString(std::vector<uint8_t>& v) {
+std::string bytesToHexString(const std::vector<uint8_t>& v) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     std::vector<uint8_t>::const_iterator it;

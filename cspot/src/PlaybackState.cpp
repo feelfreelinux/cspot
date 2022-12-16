@@ -1,10 +1,13 @@
-#include "PlayerState.h"
+#include "PlaybackState.h"
+#include <memory>
+#include "CSpotContext.h"
 #include "Logger.h"
 
-PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared_ptr<ConfigJSON> config)
+using namespace cspot;
+
+PlaybackState::PlaybackState(std::shared_ptr<cspot::Context> ctx)
 {
-    this->timeProvider = timeProvider;
-    this->config = config;
+    this->ctx = ctx;
     innerFrame = {};
     remoteFrame = {};
 
@@ -32,10 +35,10 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared
     innerFrame.device_state.can_play = true;
     innerFrame.device_state.has_can_play = true;
 
-    innerFrame.device_state.volume = config->volume;
+    innerFrame.device_state.volume = ctx->config.volume;
     innerFrame.device_state.has_volume = true;
 
-    innerFrame.device_state.name = strdup(config->deviceName.c_str());
+    innerFrame.device_state.name = strdup(ctx->config.deviceName.c_str());
 
     innerFrame.state.track_count = 0;
 
@@ -54,42 +57,42 @@ PlayerState::PlayerState(std::shared_ptr<TimeProvider> timeProvider, std::shared
     innerFrame.device_state.capabilities_count = 8;
 }
 
-PlayerState::~PlayerState() {
+PlaybackState::~PlaybackState() {
     pb_release(Frame_fields, &innerFrame);
     pb_release(Frame_fields, &remoteFrame);
 }
 
-void PlayerState::setPlaybackState(const PlaybackState state)
+void PlaybackState::setPlaybackState(const PlaybackState::State state)
 {
     switch (state)
     {
-        case PlaybackState::Loading:
+        case State::Loading:
             // Prepare the playback at position 0
             innerFrame.state.status = PlayStatus_kPlayStatusPause;
             innerFrame.state.position_ms = 0;
-            innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
+            innerFrame.state.position_measured_at = ctx->timeProvider->getSyncedTimestamp();
             break;
-        case PlaybackState::Playing:
+        case State::Playing:
             innerFrame.state.status = PlayStatus_kPlayStatusPlay;
-            innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
+            innerFrame.state.position_measured_at = ctx->timeProvider->getSyncedTimestamp();
             break;
-        case PlaybackState::Stopped:
+        case State::Stopped:
             break;
-        case PlaybackState::Paused:
+        case State::Paused:
             // Update state and recalculate current song position
             innerFrame.state.status = PlayStatus_kPlayStatusPause;
-            uint32_t diff = timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
+            uint32_t diff = ctx->timeProvider->getSyncedTimestamp() - innerFrame.state.position_measured_at;
             this->updatePositionMs(innerFrame.state.position_ms + diff);
             break;
     }
 }
 
-bool PlayerState::isActive()
+bool PlaybackState::isActive()
 {
     return innerFrame.device_state.is_active;
 }
 
-bool PlayerState::nextTrack()
+bool PlaybackState::nextTrack()
 {
     if (innerFrame.state.repeat) return true;
 
@@ -100,7 +103,7 @@ bool PlayerState::nextTrack()
         innerFrame.state.playing_track_index = 0;
         if (!innerFrame.state.repeat)
         {
-            setPlaybackState(PlaybackState::Paused);
+            setPlaybackState(State::Paused);
             return false;
         }
     }
@@ -108,7 +111,7 @@ bool PlayerState::nextTrack()
     return true;
 }
 
-void PlayerState::prevTrack()
+void PlaybackState::prevTrack()
 {
     if (innerFrame.state.playing_track_index > 0)
     {
@@ -120,26 +123,26 @@ void PlayerState::prevTrack()
     }
 }
 
-void PlayerState::setActive(bool isActive)
+void PlaybackState::setActive(bool isActive)
 {
     innerFrame.device_state.is_active = isActive;
     if (isActive)
     {
-        innerFrame.device_state.became_active_at = timeProvider->getSyncedTimestamp();
+        innerFrame.device_state.became_active_at = ctx->timeProvider->getSyncedTimestamp();
         innerFrame.device_state.has_became_active_at = true;
     }
 }
 
-void PlayerState::updatePositionMs(uint32_t position)
+void PlaybackState::updatePositionMs(uint32_t position)
 {
     innerFrame.state.position_ms = position;
-    innerFrame.state.position_measured_at = timeProvider->getSyncedTimestamp();
+    innerFrame.state.position_measured_at = ctx->timeProvider->getSyncedTimestamp();
 }
 
 #define FREE(ptr) { free(ptr); ptr = NULL; }
 #define STRDUP(dst, src) if(src != NULL) { dst = strdup(src); } else { FREE(dst); } // strdup null pointer safe
 
-void PlayerState::updateTracks()
+void PlaybackState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
     CSPOT_LOG(info, "---- Inner track count %d", innerFrame.state.track_count);
@@ -200,14 +203,13 @@ void PlayerState::updateTracks()
     }
 }
 
-void PlayerState::setVolume(uint32_t volume)
+void PlaybackState::setVolume(uint32_t volume)
 {
     innerFrame.device_state.volume = volume;
-    config->volume = volume;
-    config->save();
+    ctx->config.volume = volume;
 }
 
-void PlayerState::setShuffle(bool shuffle)
+void PlaybackState::setShuffle(bool shuffle)
 {
     innerFrame.state.shuffle = shuffle;
     if (shuffle)
@@ -225,29 +227,29 @@ void PlayerState::setShuffle(bool shuffle)
     }
 }
 
-void PlayerState::setRepeat(bool repeat)
+void PlaybackState::setRepeat(bool repeat)
 {
     innerFrame.state.repeat = repeat;
 }
 
-std::shared_ptr<TrackReference> PlayerState::getCurrentTrack()
+TrackRef* PlaybackState::getCurrentTrack()
 {
     // Wrap current track in a class
-    return std::make_shared<TrackReference>(&innerFrame.state.track[innerFrame.state.playing_track_index]);
+    return &innerFrame.state.track[innerFrame.state.playing_track_index];
 }
 
-std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
+std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ)
 {
     free(innerFrame.ident);
     free(innerFrame.protocol_version);
 
     // Prepare current frame info
     innerFrame.version = 1;
-    innerFrame.ident = strdup(config->deviceId.c_str());
+    innerFrame.ident = strdup(ctx->config.deviceId.c_str());
     innerFrame.seq_nr = this->seqNum;
     innerFrame.protocol_version = strdup(protocolVersion);
     innerFrame.typ = typ;
-    innerFrame.state_update_id = timeProvider->getSyncedTimestamp();
+    innerFrame.state_update_id = ctx->timeProvider->getSyncedTimestamp();
     innerFrame.has_version = true;
     innerFrame.has_seq_nr = true;
     innerFrame.recipient_count = 0;
@@ -261,7 +263,7 @@ std::vector<uint8_t> PlayerState::encodeCurrentFrame(MessageType typ)
 }
 
 // Wraps messy nanopb setters. @TODO: find a better way to handle this
-void PlayerState::addCapability(CapabilityType typ, int intValue, std::vector<std::string> stringValue)
+void PlaybackState::addCapability(CapabilityType typ, int intValue, std::vector<std::string> stringValue)
 {
     innerFrame.device_state.capabilities[capabilityIndex].has_typ = true;
     this->innerFrame.device_state.capabilities[capabilityIndex].typ = typ;

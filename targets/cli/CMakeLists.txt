@@ -6,6 +6,9 @@ project(cspotcli)
 option(USE_ALSA "Enable ALSA" OFF)
 option(USE_PORTAUDIO "Enable PortAudio" OFF)
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake Build Type")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # CMake options
 set(CMAKE_CXX_STANDARD 20)
@@ -17,6 +20,10 @@ endif()
 
 # Main target sources
 file(GLOB SOURCES "*.cpp")
+
+find_package( portaudio REQUIRED )
+include_directories( ${PORTAUDIO_INCLUDE_DIRS} )
+set(THINGS_TO_LINK ${THINGS_TO_LINK} ${PORTAUDIO_LIBRARIES})
 
 if(USE_PORTAUDIO)
     add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
@@ -35,5 +42,5 @@ add_subdirectory("../../cspot" ${CMAKE_CURRENT_BINARY_DIR}/cspot)
 
 # Configure the target
 add_executable(cspotcli ${SOURCES})
-target_link_libraries(cspotcli PUBLIC cspot ${EXTRA_LIBS})
+target_link_libraries(cspotcli PUBLIC cspot ${EXTRA_LIBS}  ${THINGS_TO_LINK})
 target_include_directories(cspotcli PRIVATE "." ${EXTRA_INCLUDES})

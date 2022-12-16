@@ -1,54 +1,43 @@
-#ifndef SESSION_H
-#define SESSION_H
+#pragma once
 
-#include <vector>
-#include <random>
-#include <memory>
-#include <functional>
-#include <climits>
 #include <algorithm>
-#include "Utils.h"
-#include "stdlib.h"
-#include "ShannonConnection.h"
-#include "LoginBlob.h"
-#include "ConfigJSON.h"
-#include "ApResolve.h"
-#include "PlainConnection.h"
-#include "Packet.h"
-#include "ConstantParameters.h"
-#include "Crypto.h"
-#include "NanoPBHelper.h"
-#include "protobuf/authentication.pb.h"
-#include "protobuf/keyexchange.pb.h"
+#include <functional>
+#include <memory>
+#include <vector>
 
-#define SPOTIFY_VERSION 0x10800000000
+#include "ApResolve.h"
+#include "AuthChallenges.h"
+#include "ConstantParameters.h"
+#include "Logger.h"
+#include "LoginBlob.h"
+#include "Packet.h"
+#include "PlainConnection.h"
+#include "ShannonConnection.h"
+#include "Utils.h"
+#include "protobuf/mercury.pb.h"
+
 #define LOGIN_REQUEST_COMMAND 0xAB
 #define AUTH_SUCCESSFUL_COMMAND 0xAC
 #define AUTH_DECLINED_COMMAND 0xAD
 
-class Session
-{
-private:
-    ClientResponseEncrypted authRequest;
-    ClientResponsePlaintext clientResPlaintext;
-    ClientHello clientHello;
-    APResponseMessage apResponse;
+namespace cspot {
+class Session {
+ private:
+  std::unique_ptr<cspot::AuthChallenges> challenges;
+  std::shared_ptr<cspot::PlainConnection> conn;
+  std::shared_ptr<LoginBlob> authBlob;
 
-    std::shared_ptr<PlainConnection> conn;
-    std::unique_ptr<Crypto> crypto;
-    std::vector<uint8_t> sendClientHelloRequest();
-    void processAPHelloResponse(std::vector<uint8_t> &helloPacket);
+  std::string deviceId = "142137fd329622137a14901634264e6f332e2411";
 
-public:
-    Session(std::shared_ptr<ConfigJSON> config);
-    ~Session();
-    std::shared_ptr<ShannonConnection> shanConn;
-    std::shared_ptr<LoginBlob> authBlob;
-    std::shared_ptr<ConfigJSON> configMan;
-    void connect(std::unique_ptr<PlainConnection> connection);
-    void connectWithRandomAp();
-    void close();
-    std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
+ public:
+  Session();
+  ~Session();
+
+  std::shared_ptr<cspot::ShannonConnection> shanConn;
+
+  void connect(std::unique_ptr<cspot::PlainConnection> connection);
+  void connectWithRandomAp();
+  void close();
+  std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
 };
-
-#endif
+}  // namespace cspot

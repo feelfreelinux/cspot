@@ -1,17 +1,11 @@
-#ifndef PACKET_H
-#define PACKET_H
+#pragma once
 
-#include <vector>
 #include <cstdint>
+#include <vector>
 
-class Packet
-{
-private:
-
-public:
-    Packet(uint8_t command, const std::vector<uint8_t> &data);
-    uint8_t command;
-    std::vector<uint8_t> data;
+namespace cspot {
+struct Packet {
+  uint8_t command;
+  std::vector<uint8_t> data;
 };
-
-#endif
+}  // namespace cspot

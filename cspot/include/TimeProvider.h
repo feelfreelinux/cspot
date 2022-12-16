@@ -1,34 +1,34 @@
-#ifndef TIMEPROVIDER_H
-#define TIMEPROVIDER_H
+#pragma once
 
-#include <vector>
 #include <stdint.h>
+#include <vector>
 
-class TimeProvider
-{
-private:
-    unsigned long long timestampDiff;
+#include "Utils.h"
 
-public:
-    /**
+namespace cspot {
+class TimeProvider {
+ private:
+  unsigned long long timestampDiff;
+
+ public:
+  /**
      * @brief Bypasses the need for NTP server sync by syncing with spotify's servers
      * 
      */
-    TimeProvider();
+  TimeProvider();
 
-    /**
+  /**
      * @brief Syncs the TimeProvider with spotify server's timestamp
      * 
      * @param pongPacket pong packet containing timestamp
      */
-    void syncWithPingPacket(const std::vector<uint8_t>& pongPacket);
-    
-    /**
+  void syncWithPingPacket(const std::vector<uint8_t>& pongPacket);
+
+  /**
      * @brief Get current timestamp synced with spotify servers
      * 
      * @return unsigned long long timestamp
      */
-    unsigned long long getSyncedTimestamp();
+  unsigned long long getSyncedTimestamp();
 };
-
-#endif
+}  // namespace cspot
