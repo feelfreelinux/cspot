@@ -1,5 +1,4 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#pragma once
 
 #include <BellLogger.h>
 
@@ -8,5 +7,3 @@
     {                                                       \
         bell::bellGlobalLogger->type(__FILE__, __LINE__, "cspot", __VA_ARGS__); \
     } while (0)
-
-#endif

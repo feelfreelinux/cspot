@@ -9,7 +9,7 @@
 namespace cspot {
 class ApResolve {
  private:
-  std::string getApList();
+  std::string_view getApList();
   std::string apOverride;
 
  public:

@@ -29,7 +29,7 @@ struct Context {
         .deviceId = "142137fd329622137a14901634264e6f332e2411",
         .deviceName = "cspot",
         .volume = 0,
-        .username = "fliperspotify",
+        .username = "",
     };
     return ctx;
   }

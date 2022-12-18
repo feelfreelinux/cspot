@@ -2,11 +2,15 @@
 
 #include <cstddef>
 #include <memory>
-#include "AccessKeyFetcher.h"
-#include "CSpotContext.h"
 #include "Crypto.h"
-#include "HTTPClient2.h"
+#include "HTTPClient.h"
 #include "WrappedSemaphore.h"
+
+#include "Logger.h"
+#include "Utils.h"
+#include "CSpotContext.h"
+#include "AccessKeyFetcher.h"
+
 
 namespace cspot {
 
@@ -69,7 +73,7 @@ class CDNTrackStream {
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
 
-  std::unique_ptr<bell2::HTTPClient::Response> httpConnection;
+  std::unique_ptr<bell::HTTPClient::Response> httpConnection;
   bool isConnected = false;
 
   size_t position = 0; // Spotify header size

@@ -1,8 +1,11 @@
+#include <atomic>
+#include "BellHTTPServer.h"
 #include "BellUtils.h"
 #include "CSpotContext.h"
 #include "CliPlayer.h"
-#include "HTTPClient2.h"
+#include "MDNSService.h"
 #include "SpircHandler.h"
+#include "civetweb.h"
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -28,15 +31,8 @@
 #include "NamedPipeAudioSink.h"
 #endif
 
-#include "CliFile.h"
-#include "ConfigJSON.h"
 #include "Logger.h"
 
-std::shared_ptr<ConfigJSON> configMan;
-std::shared_ptr<CliFile> file;
-
-std::string credentialsFileName = "authBlob.json";
-std::string configFileName = "config.json";
 bool createdFromZeroconf = false;
 
 int main(int argc, char** argv) {
@@ -48,15 +44,8 @@ int main(int argc, char** argv) {
     exit(1);
 #endif
 
-  // auto req = bell2::HTTPClient::get("https://audio-fa.scdn.co/audio/962244253eb77af60ee5a47ddc1936a8277a1565?1671393092_6OUmJufSbYnL1c7n-gV1jHi9YrWOhD8Rn6YnEzhZUhw=", {
-  //   bell2::HTTPClient::RangeHeader::range(0, 128)
-  // });
-  // std::cout << req.body() << std::endl;
-  // return 0;
   try {
     bell::setDefaultLogger();
-
-    std::ifstream blobFile(credentialsFileName);
 
     auto args = CommandLineArguments::parse(argc, argv);
     if (args->shouldShowHelp) {
@@ -75,24 +64,19 @@ int main(int argc, char** argv) {
                    "account settings\n";
       std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
       std::cout << "\n";
-      std::cout << "ddd 2021\n";
+      std::cout << "ddd 2022\n";
       return 0;
     }
 
-    file = std::make_shared<CliFile>();
-    configMan = std::make_shared<ConfigJSON>(configFileName, file);
     if (args->setBitrate) {
-      configMan->format = args->bitrate;
+      // configMan->format = args->bitrate;
     }
+    auto ctx = cspot::Context::create();
+    ctx->config.deviceName = "CSpot player";
 
-    if (!configMan->load()) {
-      CSPOT_LOG(error, "Config error");
-    }
-
-    auto createPlayerCallback = [](std::shared_ptr<LoginBlob> blob) {
+    auto createPlayerCallback = [ctx](std::shared_ptr<LoginBlob> blob) {
       CSPOT_LOG(info, "Creating player");
-
-      auto ctx = cspot::Context::create();
+      ctx->config.username = blob->username;
       ctx->session->connectWithRandomAp();
       auto token = ctx->session->authenticate(blob);
 
@@ -108,28 +92,61 @@ int main(int argc, char** argv) {
     };
 
     // Blob file
-    std::shared_ptr<LoginBlob> blob;
-    std::string jsonData;
-
-    bool read_status = file->readFile(credentialsFileName, jsonData);
+    std::shared_ptr<LoginBlob> blob = std::make_shared<LoginBlob>(
+        ctx->config.deviceName, ctx->config.deviceId);
 
     // Login using Command line arguments
     if (!args->username.empty()) {
-      blob = std::make_shared<LoginBlob>();
       blob->loadUserPass(args->username, args->password);
       createPlayerCallback(blob);
     }
-    // Login using Blob
-    else if (jsonData.length() > 0 && read_status) {
-      blob = std::make_shared<LoginBlob>();
-      blob->loadJson(jsonData);
+    // ZeroconfAuthenticator
+    else {
+      std::atomic<bool> gotLoginQuery = false;
+      auto server = bell::BellHTTPServer(7864);
+      server.registerGet(
+          "/spotify_info", [&server, blob](struct mg_connection* conn) {
+            return server.makeJsonResponse(blob->buildZeroconfInfo());
+          });
+
+      server.registerPost(
+          "/spotify_info", [&server, blob, &gotLoginQuery](struct mg_connection* conn) {
+            nlohmann::json obj;
+            obj["status"] = 101;
+            obj["spotifyError"] = 0;
+            obj["statusString"] = "ERROR-OK";
+
+            std::string body = "";
+            auto requestInfo = mg_get_request_info(conn);
+            if (requestInfo->content_length > 0) {
+              body.resize(requestInfo->content_length);
+              mg_read(conn, body.data(), requestInfo->content_length);
+
+              mg_header hd[10];
+              int num = mg_split_form_urlencoded(body.data(), hd, 10);
+              std::map<std::string, std::string> queryMap;
+
+              for (int i = 0; i < num; i++) {
+                queryMap[hd[i].name] = hd[i].value;
+              }
+
+              blob->loadZeroconfQuery(queryMap);
+              gotLoginQuery = true;
+            }
+
+            return server.makeJsonResponse(obj.dump());
+          });
+
+      MDNSService::registerService(
+          ctx->config.deviceName, "_spotify-connect", "_tcp", "", 7864,
+          {{"VERSION", "1.0"}, {"CPath", "/spotify_info"}, {"Stack", "SP"}});
+
+      while (!gotLoginQuery) {
+        BELL_SLEEP_MS(100);
+      }
+
       createPlayerCallback(blob);
     }
-    // ZeroconfAuthenticator
-    else {}
-
-    while (true)
-      ;
   } catch (std::invalid_argument e) {
     std::cout << "Invalid options passed: " << e.what() << "\n";
     std::cout << "Pass --help for more informaton. \n";

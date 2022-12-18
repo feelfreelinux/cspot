@@ -7,14 +7,10 @@ ApResolve::ApResolve(std::string apOverride)
     this->apOverride = apOverride;
 }
 
-std::string ApResolve::getApList()
+std::string_view ApResolve::getApList()
 {
-    auto request = bell::HTTPClient::execute(bell::HTTPClient::HTTPRequest{
-        .url = "https://apresolve.spotify.com/"
-    });
-
-    return request->readToString();
-
+    auto request = bell::HTTPClient::get("https://apresolve.spotify.com/");
+    return request->body();
 }
 
 std::string ApResolve::fetchFirstApAddress()

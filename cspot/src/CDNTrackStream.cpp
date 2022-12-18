@@ -1,10 +1,5 @@
 #include "CDNTrackStream.h"
-#include <cstddef>
-#include "AccessKeyFetcher.h"
 #include "HTTPClient.h"
-#include "HTTPClient2.h"
-#include "Logger.h"
-#include "Utils.h"
 
 using namespace cspot;
 
@@ -36,10 +31,9 @@ void CDNTrackStream::fetchFile(const std::vector<uint8_t>& trackId,
         "%s?alt=json&product=9",
         bytesToHexString(trackId).c_str());
 
-    auto req = bell::HTTPClient::execute(bell::HTTPClient::HTTPRequest{
-        .url = requestUrl, .headers = {{"Authorization", "Bearer " + key}}});
+    auto req = bell::HTTPClient::get(requestUrl, { bell::HTTPClient::ValueHeader({"Authorization", "Bearer " + key}) });
 
-    std::string result = req->readToString();
+    std::string_view result = req->body();
 
     auto jsonResult = nlohmann::json::parse(result);
     std::string cdnUrl = jsonResult["cdnurl"][0];
@@ -68,9 +62,9 @@ void CDNTrackStream::openStream() {
   CSPOT_LOG(info, "Opening HTTP stream to %s", this->cdnUrl.c_str());
 
   // Open connection, read first 128 bytes
-  this->httpConnection = bell2::HTTPClient::get(
+  this->httpConnection = bell::HTTPClient::get(
       this->cdnUrl,
-      {bell2::HTTPClient::RangeHeader::range(0, OPUS_HEADER_SIZE)},
+      {bell::HTTPClient::RangeHeader::range(0, OPUS_HEADER_SIZE)},
       HTTP_BUFFER_SIZE + 4096);
 
   this->httpConnection->read(header.data(), OPUS_HEADER_SIZE);
@@ -87,7 +81,7 @@ void CDNTrackStream::openStream() {
   this->footer = std::vector<uint8_t>(
       this->totalFileSize - footerStartLocation + SPOTIFY_OPUS_HEADER);
   this->httpConnection->get(
-      cdnUrl, {bell2::HTTPClient::RangeHeader::last(footer.size())});
+      cdnUrl, {bell::HTTPClient::RangeHeader::last(footer.size())});
 
   this->httpConnection->read(footer.data(), this->footer.size());
 
@@ -157,7 +151,7 @@ size_t CDNTrackStream::readBytes(uint8_t* dst, size_t bytes) {
     }
 
     this->httpConnection->get(
-        cdnUrl, {bell2::HTTPClient::RangeHeader::range(
+        cdnUrl, {bell::HTTPClient::RangeHeader::range(
                     requestPosition, requestPosition + HTTP_BUFFER_SIZE - 1)});
     this->lastRequestPosition = requestPosition;
     this->lastRequestCapacity = this->httpConnection->contentLength();

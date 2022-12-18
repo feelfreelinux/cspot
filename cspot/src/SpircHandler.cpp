@@ -39,7 +39,7 @@ void SpircHandler::subscribeToMercury() {
   };
 
   ctx->session->executeSubscription(MercurySession::RequestType::SUB,
-                                    "hm://remote/user/fliperspotify/",
+                                    "hm://remote/user/" + ctx->config.username + "/",
                                     responseLambda, subscriptionLambda);
 }
 

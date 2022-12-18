@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include "CSpotContext.h"
-#include "ConfigJSON.h"
 #include "ConstantParameters.h"
 #include "CspotAssert.h"
 #include "TimeProvider.h"
