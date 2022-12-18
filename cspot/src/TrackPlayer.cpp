@@ -1,28 +1,33 @@
 #include "TrackPlayer.h"
+#include <sys/_types/_va_list.h>
+#include <cstddef>
 #include <fstream>
 #include <memory>
+#include <mutex>
+#include <vector>
+#include "CDNTrackStream.h"
 #include "Logger.h"
+#include "PortAudioSink.h"
+#include "ivorbisfile.h"
 
 using namespace cspot;
 
-static size_t vorbisReadCb(void *ptr, size_t size, size_t nmemb, TrackPlayer *self)
-{
-    return 0;
-}
-static int vorbisCloseCb(TrackPlayer *self)
-{
-    return 0;
+static size_t vorbisReadCb(void* ptr, size_t size, size_t nmemb,
+                           TrackPlayer* self) {
+  return self->_vorbisRead(ptr, size, nmemb);
 }
 
-static int vorbisSeekCb(TrackPlayer *self, int64_t offset, int whence)
-{
-
-    return 0;
+static int vorbisCloseCb(TrackPlayer* self) {
+  return self->_vorbisClose();
 }
 
-static long vorbisTellCb(TrackPlayer *self)
-{
-    return 0;
+static int vorbisSeekCb(TrackPlayer* self, int64_t offset, int whence) {
+
+  return self->_vorbisSeek(offset, whence);
+}
+
+static long vorbisTellCb(TrackPlayer* self) {
+  return self->_vorbisTell();
 }
 
 TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
@@ -31,19 +36,46 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
   this->trackProvider = std::make_shared<cspot::TrackProvider>(ctx);
   this->playbackSemaphore = std::make_unique<bell::WrappedSemaphore>(0);
 
+  // Initialize vorbis callbacks
+  vorbisFile = {};
+  vorbisCallbacks = {
+      (decltype(ov_callbacks::read_func))&vorbisReadCb,
+      (decltype(ov_callbacks::seek_func))&vorbisSeekCb,
+      (decltype(ov_callbacks::close_func))&vorbisCloseCb,
+      (decltype(ov_callbacks::tell_func))&vorbisTellCb,
+  };
+
+  portAudioSink = std::make_unique<PortAudioSink>();
+  portAudioSink->setParams(44100, 2, 16);
+
   startTask();
 }
 
 TrackPlayer::~TrackPlayer() {}
 
-void TrackPlayer::loadTrackFromRed(TrackRef* ref) {
+void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs, bool startAutomatically) {
+  this->playbackPosition = positionMs;
+  this->autoStart = startAutomatically;
+
   this->playerStatus = Status::LOADING;
-  this->currentTrackStream = trackProvider->loadFromTrackRef(ref);
+  auto nextTrack = trackProvider->loadFromTrackRef(ref);
+
+  stopTrack();
+  this->currentTrackStream = nextTrack;
   this->playbackSemaphore->give();
 }
 
+void TrackPlayer::stopTrack() {
+  this->currentSongPlaying = false;
+  std::scoped_lock lock(playbackMutex);
+}
+
+void TrackPlayer::seekMs(size_t ms) {
+  std::scoped_lock lock(seekMutex);
+  ov_time_seek(&vorbisFile, ms);
+}
+
 void TrackPlayer::runTask() {
-  std::fstream file("dupa.opus", std::ios::binary | std::ios::app);
   while (true) {
     this->playbackSemaphore->wait();
 
@@ -56,13 +88,80 @@ void TrackPlayer::runTask() {
       continue;
     }
 
-    CSPOT_LOG(info, "Track is ready, starting playback");
-    this->playerStatus = Status::PLAYING;
+    this->currentSongPlaying = true;
 
-    while (true) {
-      std::vector<uint8_t> buffer(1024 * 2);
-      size_t bytesRead = this->currentTrackStream->readBytes(buffer.data(), 1024);
-      file.write((char*)buffer.data(), bytesRead);
+    this->trackLoaded();
+
+    this->playbackMutex.lock();
+
+    int32_t r = ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
+
+    if (playbackPosition > 0) {
+      ov_time_seek(&vorbisFile, playbackPosition);
     }
+
+    bool eof = false;
+
+    while (!eof && currentSongPlaying) {
+      seekMutex.lock();
+      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), &currentSection);
+      seekMutex.unlock();
+      if (ret == 0) {
+        CSPOT_LOG(info, "EOL");
+        // and done :)
+        eof = true;
+      } else if (ret < 0) {
+        CSPOT_LOG(error, "An error has occured in the stream %d", ret);
+        eof = true;
+      } else {
+        if (this->dataCallback != nullptr) {
+          dataCallback(pcmBuffer.data(), ret);
+        }
+      }
+    }
+
+    this->playbackMutex.unlock();
   }
+}
+
+size_t TrackPlayer::_vorbisRead(void* ptr, size_t size, size_t nmemb) {
+  return this->currentTrackStream->readBytes((uint8_t*)ptr, nmemb * size);
+}
+
+size_t TrackPlayer::_vorbisClose() {
+  return 0;
+}
+
+void TrackPlayer::setTrackLoadedCallback(TrackLoadedCallback callback) {
+  this->trackLoaded = callback;
+}
+
+int TrackPlayer::_vorbisSeek(int64_t offset, int whence) {
+  switch (whence) {
+    case 0:
+      this->currentTrackStream->seek(offset);  // Spotify header offset
+      break;
+    case 1:
+      this->currentTrackStream->seek(this->currentTrackStream->getPosition() +
+                                     offset);
+      break;
+    case 2:
+      this->currentTrackStream->seek(this->currentTrackStream->getSize() +
+                                     offset);
+      break;
+  }
+
+  return 0;
+}
+
+long TrackPlayer::_vorbisTell() {
+  return this->currentTrackStream->getPosition();
+}
+
+CDNTrackStream::TrackInfo TrackPlayer::getCurrentTrackInfo() {
+  return this->currentTrackStream->trackInfo;
+}
+
+void TrackPlayer::setDataCallback(DataCallback callback) {
+  this->dataCallback = callback;
 }

@@ -146,6 +146,7 @@ void PlaybackState::updateTracks()
 {
     CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
     CSPOT_LOG(info, "---- Inner track count %d", innerFrame.state.track_count);
+    CSPOT_LOG(info, "--- Context URI %s", remoteFrame.state.context_uri);
 
     // free unused tracks
     if(innerFrame.state.track_count > remoteFrame.state.track_count)

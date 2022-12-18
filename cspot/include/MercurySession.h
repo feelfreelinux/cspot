@@ -83,6 +83,8 @@ class MercurySession : public bell::Task, public cspot::Session {
                        const std::vector<uint8_t>& fileId,
                        AudioKeyCallback audioCallback);
 
+  std::string getCountryCode();
+
  private:
   std::shared_ptr<cspot::TimeProvider> timeProvider;
   Header tempMercuryHeader = {};
@@ -100,6 +102,7 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   unsigned long long timestampDiff;
   unsigned long long lastPingTimestamp = -1;
+  std::string countryCode = "";
 
   Response decodeResponse(const std::vector<uint8_t>& data);
 };

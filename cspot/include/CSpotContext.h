@@ -13,6 +13,7 @@ struct Context {
     int volume;
 
     std::string username;
+    std::string countryCode;
   };
 
   ConfigState config;

@@ -35,6 +35,10 @@ void MercurySession::runTask() {
   }
 }
 
+std::string MercurySession::getCountryCode() {
+  return this->countryCode;
+}
+
 void MercurySession::handlePacket() {
   Packet packet = {};
 
@@ -43,8 +47,9 @@ void MercurySession::handlePacket() {
 
     switch (static_cast<RequestType>(packet.command)) {
       case RequestType::COUNTRY_CODE_RESPONSE: {
-
-        // memcpy(countryCode, packet->data.data(), 2);
+        this->countryCode = std::string();
+        this->countryCode.reserve(2);
+        memcpy(this->countryCode.data(), packet.data.data(), 2);
         CSPOT_LOG(debug, "Received country code");
         break;
       }

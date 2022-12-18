@@ -14,12 +14,24 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
     : playbackState(ctx) {
   this->ctx = ctx;
   this->trackPlayer = std::make_shared<TrackPlayer>(ctx);
+
+  this->trackPlayer->setTrackLoadedCallback([this]() {
+    playbackState.setPlaybackState(PlaybackState::State::Playing);
+    this->notify();
+
+    setPause(false);
+    sendEvent(EventType::PLAYBACK_START);
+    sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
+  });
 }
 
 void SpircHandler::subscribeToMercury() {
   auto responseLambda = [=](MercurySession::Response& res) {
     sendCmd(MessageType_kMessageTypeHello);
     CSPOT_LOG(debug, "Sent kMessageTypeHello!");
+
+    // Assign country code
+    this->ctx->config.countryCode = this->ctx->session->getCountryCode();
   };
   auto subscriptionLambda = [=](MercurySession::Response& res) {
     CSPOT_LOG(debug, "Received subscription response");
@@ -46,66 +58,67 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     }
     case MessageType_kMessageTypeSeek: {
       CSPOT_LOG(debug, "Seek command");
-      // sendEvent(CSpotEventType::SEEK, (int)state->remoteFrame.position);
-      // state->updatePositionMs(state->remoteFrame.position);
-      // this->player->seekMs(state->remoteFrame.position);
-      // notify();
+      sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
+      playbackState.updatePositionMs(playbackState.remoteFrame.position);
+      trackPlayer->seekMs(playbackState.remoteFrame.position);
+      notify();
       break;
     }
     case MessageType_kMessageTypeVolume:
-      // sendEvent(CSpotEventType::VOLUME, (int)state->remoteFrame.volume);
-      // setVolume(state->remoteFrame.volume);
+      sendEvent(EventType::VOLUME, (int)playbackState.remoteFrame.volume);
+      setRemoteVolume(playbackState.remoteFrame.volume);
       break;
     case MessageType_kMessageTypePause:
-      // setPause(true);
+      setPause(true);
       break;
     case MessageType_kMessageTypePlay:
-      // setPause(false);
+      setPause(false);
       break;
     case MessageType_kMessageTypeNext:
-      // sendEvent(CSpotEventType::NEXT);
-      // nextSong();
+      sendEvent(EventType::NEXT);
+      nextSong();
       break;
     case MessageType_kMessageTypePrev:
-      // sendEvent(CSpotEventType::PREV);
-      // prevSong();
+      sendEvent(EventType::PREV);
+      previousSong();
       break;
     case MessageType_kMessageTypeLoad: {
       CSPOT_LOG(debug, "Load frame!");
 
       playbackState.setActive(true);
-
-      // Every sane person on the planet would expect std::move to work here.
-      // And it does... on every single platform EXCEPT for ESP32 for some
-      // reason. For which it corrupts memory and makes printf fail. so yeah.
-      // its cursed.
       playbackState.updateTracks();
 
-      // bool isPaused = (state->remoteFrame.state->status.value() ==
-      // PlayStatus::kPlayStatusPlay) ? false : true;
       // loadTrack(player->hasTrack(), state->remoteFrame.state.position_ms,
-      // false); state->updatePositionMs(state->remoteFrame.state.position_ms);
+      //           false);
+      playbackState.updatePositionMs(
+          playbackState.remoteFrame.state.position_ms);
+
+      this->trackPlayer->loadTrackFromRef(
+          playbackState.getCurrentTrack(),
+          playbackState.remoteFrame.state.position_ms, true);
+      playbackState.setPlaybackState(PlaybackState::State::Loading);
+      playbackState.updatePositionMs(
+          playbackState.remoteFrame.state.position_ms);
 
       this->notify();
-      this->trackPlayer->loadTrackFromRed(playbackState.getCurrentTrack());
       break;
     }
     case MessageType_kMessageTypeReplace: {
       CSPOT_LOG(debug, "Got replace frame");
-      // state->updateTracks();
-      // this->notify();
+      playbackState.updateTracks();
+      this->notify();
       break;
     }
     case MessageType_kMessageTypeShuffle: {
       CSPOT_LOG(debug, "Got shuffle frame");
-      // state->setShuffle(state->remoteFrame.state.shuffle);
-      // this->notify();
+      playbackState.setShuffle(playbackState.remoteFrame.state.shuffle);
+      this->notify();
       break;
     }
     case MessageType_kMessageTypeRepeat: {
       CSPOT_LOG(debug, "Got repeat frame");
-      // state->setRepeat(state->remoteFrame.state.repeat);
-      // this->notify();
+      playbackState.setRepeat(playbackState.remoteFrame.state.repeat);
+      this->notify();
       break;
     }
     default:
@@ -113,8 +126,33 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
   }
 }
 
+void SpircHandler::setRemoteVolume(int volume) {
+  playbackState.setVolume(volume);
+}
+
 void SpircHandler::notify() {
   this->sendCmd(MessageType_kMessageTypeNotify);
+}
+
+void SpircHandler::nextSong() {
+  if (playbackState.nextTrack()) {
+    this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrack(), 0,
+                                        true);
+  } else {
+    // player->cancelCurrentTrack();
+    trackPlayer->stopTrack();
+  }
+  notify();
+}
+
+void SpircHandler::previousSong() {
+  playbackState.prevTrack();
+  // loadTrack(true);
+  notify();
+}
+
+std::shared_ptr<TrackPlayer> SpircHandler::getTrackPlayer() {
+  return this->trackPlayer;
 }
 
 void SpircHandler::sendCmd(MessageType typ) {
@@ -127,4 +165,34 @@ void SpircHandler::sendCmd(MessageType typ) {
   ctx->session->execute(MercurySession::RequestType::SEND,
                         "hm://remote/user/" + ctx->config.username + "/",
                         responseLambda, parts);
+}
+void SpircHandler::setEventHandler(EventHandler handler) {
+  this->eventHandler = handler;
+}
+
+void SpircHandler::setPause(bool isPaused) {
+  sendEvent(EventType::PLAY_PAUSE, isPaused);
+  if (isPaused) {
+    CSPOT_LOG(debug, "External pause command");
+    playbackState.setPlaybackState(PlaybackState::State::Paused);
+  } else {
+    CSPOT_LOG(debug, "External play command");
+
+    playbackState.setPlaybackState(PlaybackState::State::Playing);
+  }
+  notify();
+}
+
+void SpircHandler::sendEvent(EventType type) {
+  auto event = std::make_unique<Event>();
+  event->eventType = type;
+  event->data = {};
+  eventHandler(std::move(event));
+}
+
+void SpircHandler::sendEvent(EventType type, EventData data) {
+  auto event = std::make_unique<Event>();
+  event->eventType = type;
+  event->data = data;
+  eventHandler(std::move(event));
 }

@@ -12,14 +12,15 @@ using namespace cspot;
 TrackProvider::TrackProvider(std::shared_ptr<cspot::Context> ctx) {
   this->accessKeyFetcher = std::make_shared<cspot::AccessKeyFetcher>(ctx);
   this->ctx = ctx;
-  this->cdnStream = std::make_unique<cspot::CDNTrackStream>(ctx);
+  this->cdnStream =
+      std::make_unique<cspot::CDNTrackStream>(this->accessKeyFetcher);
 }
 
 TrackProvider::~TrackProvider() {}
 
 std::shared_ptr<cspot::CDNTrackStream> TrackProvider::loadFromTrackRef(
     TrackRef* ref) {
-  auto track = std::make_shared<cspot::CDNTrackStream>(ctx);
+  auto track = std::make_shared<cspot::CDNTrackStream>(this->accessKeyFetcher);
   this->currentTrackReference = track;
 
   if (ref->gid != nullptr) {
@@ -70,6 +71,7 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
 
   CSPOT_LOG(info, "Track name: %s", trackInfo.name);
   CSPOT_LOG(info, "Track duration: %d", trackInfo.duration);
+
   CSPOT_LOG(debug, "trackInfo.restriction.size() = %d",
             trackInfo.restriction_count);
 
@@ -107,6 +109,20 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
     }
   }
 
+  if (!this->currentTrackReference.expired()) {
+    auto trackRef = this->currentTrackReference.lock();
+
+    auto imageId =
+        pbArrayToVector(trackInfo.album.cover_group.image[0].file_id);
+
+    trackRef->trackInfo.name = std::string(trackInfo.name);
+    trackRef->trackInfo.album = std::string(trackInfo.album.name);
+    trackRef->trackInfo.artist = std::string(trackInfo.artist[0].name);
+    trackRef->trackInfo.imageUrl =
+        "https://i.scdn.co/image/" + bytesToHexString(imageId);
+    trackRef->trackInfo.duration = trackInfo.duration;
+  }
+
   this->fetchFile(fileId, trackId);
 }
 
@@ -132,6 +148,47 @@ void TrackProvider::fetchFile(const std::vector<uint8_t>& fileId,
       });
 }
 
+bool countryListContains(char* countryList, char* country) {
+  uint16_t countryList_length = strlen(countryList);
+  for (int x = 0; x < countryList_length; x += 2) {
+    if (countryList[x] == country[0] && countryList[x + 1] == country[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool TrackProvider::canPlayTrack(int altIndex) {
+  if (altIndex < 0) {
+    for (int x = 0; x < trackInfo.restriction_count; x++) {
+      if (trackInfo.restriction[x].countries_allowed != nullptr) {
+        return countryListContains(trackInfo.restriction[x].countries_allowed,
+                                   (char*)ctx->config.countryCode.c_str());
+      }
+
+      if (trackInfo.restriction[x].countries_forbidden != nullptr) {
+        return !countryListContains(
+            trackInfo.restriction[x].countries_forbidden,
+            (char*)ctx->config.countryCode.c_str());
+      }
+    }
+  } else {
+    for (int x = 0; x < trackInfo.alternative[altIndex].restriction_count;
+         x++) {
+      if (trackInfo.alternative[altIndex].restriction[x].countries_allowed !=
+          nullptr) {
+        return countryListContains(
+            trackInfo.alternative[altIndex].restriction[x].countries_allowed,
+            (char*)ctx->config.countryCode.c_str());
+      }
+
+      if (trackInfo.alternative[altIndex].restriction[x].countries_forbidden !=
+          nullptr) {
+        return !countryListContains(
+            trackInfo.alternative[altIndex].restriction[x].countries_forbidden,
+            (char*)ctx->config.countryCode.c_str());
+      }
+    }
+  }
   return true;
 }
