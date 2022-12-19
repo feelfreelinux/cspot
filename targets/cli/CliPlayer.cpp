@@ -1,5 +1,6 @@
 #include "CliPlayer.h"
 #include <memory>
+#include <mutex>
 #include "BellUtils.h"
 #include "CircularBuffer.h"
 #include "PortAudioSink.h"
@@ -54,7 +55,8 @@ void CliPlayer::feedData(uint8_t* data, size_t len) {
 void CliPlayer::runTask() {
   std::vector<uint8_t> outBuf = std::vector<uint8_t>(1024);
 
-  while (true) {
+  std::scoped_lock lock(runningMutex);
+  while (isRunning) {
     if (!this->isPaused) {
       size_t read = this->circularBuffer->read(outBuf.data(), outBuf.size());
       this->audioSink->feedPCMFrames(outBuf.data(), read);
@@ -62,4 +64,9 @@ void CliPlayer::runTask() {
       BELL_SLEEP_MS(10);
     }
   }
+}
+
+void CliPlayer::disconnect() {
+  isRunning = false;
+  std::scoped_lock lock(runningMutex);
 }

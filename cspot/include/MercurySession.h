@@ -85,6 +85,8 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   std::string getCountryCode();
 
+  void disconnect();
+
  private:
   std::shared_ptr<cspot::TimeProvider> timeProvider;
   Header tempMercuryHeader = {};
@@ -103,6 +105,9 @@ class MercurySession : public bell::Task, public cspot::Session {
   unsigned long long timestampDiff;
   unsigned long long lastPingTimestamp = -1;
   std::string countryCode = "";
+
+  std::mutex isRunningMutex;
+  std::atomic<bool> isRunning = false;
 
   Response decodeResponse(const std::vector<uint8_t>& data);
 };

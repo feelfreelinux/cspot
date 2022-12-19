@@ -51,7 +51,10 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
   startTask();
 }
 
-TrackPlayer::~TrackPlayer() {}
+TrackPlayer::~TrackPlayer() {
+  isRunning = false;
+  std::scoped_lock lock(runningMutex);
+}
 
 void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs, bool startAutomatically) {
   this->playbackPosition = positionMs;
@@ -68,6 +71,7 @@ void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs, bool startA
 void TrackPlayer::stopTrack() {
   this->currentSongPlaying = false;
   std::scoped_lock lock(playbackMutex);
+  this->currentTrackStream = nullptr;
 }
 
 void TrackPlayer::seekMs(size_t ms) {
@@ -76,8 +80,14 @@ void TrackPlayer::seekMs(size_t ms) {
 }
 
 void TrackPlayer::runTask() {
-  while (true) {
-    this->playbackSemaphore->wait();
+  std::scoped_lock lock(runningMutex);
+
+  while (isRunning) {
+    this->playbackSemaphore->twait(50);
+
+    if (this->currentTrackStream == nullptr) {
+      continue;
+    }
 
     CSPOT_LOG(info, "Player received a track, waiting for it to be ready...");
     this->currentTrackStream->trackReady->wait();

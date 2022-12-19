@@ -48,6 +48,8 @@ class SpircHandler {
   void previousSong();
   void setRemoteVolume(int volume);
 
+  void disconnect();
+
  private:
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackPlayer> trackPlayer;

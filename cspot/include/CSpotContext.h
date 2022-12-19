@@ -21,16 +21,18 @@ struct Context {
   std::shared_ptr<TimeProvider> timeProvider;
   std::shared_ptr<cspot::MercurySession> session;
 
-  static std::shared_ptr<Context> create() {
+  static std::shared_ptr<Context> createFromBlob(std::shared_ptr<LoginBlob> blob) {
     auto ctx = std::make_shared<Context>();
     ctx->timeProvider = std::make_shared<TimeProvider>();
+
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
     ctx->config = {
-        .deviceId = "142137fd329622137a14901634264e6f332e2411",
+        .deviceId = blob->getDeviceId(),
         .deviceName = "cspot",
         .volume = 0,
-        .username = "",
+        .username = blob->getUserName()
     };
+
     return ctx;
   }
 

@@ -1,7 +1,9 @@
 #include "MercurySession.h"
 #include <memory>
+#include <mutex>
 #include "BellLogger.h"
 #include "BellTask.h"
+#include "BellUtils.h"
 #include "CSpotContext.h"
 #include "Logger.h"
 
@@ -12,27 +14,41 @@ MercurySession::MercurySession(std::shared_ptr<TimeProvider> timeProvider)
   this->timeProvider = timeProvider;
 }
 
-MercurySession::~MercurySession() {}
+MercurySession::~MercurySession() {
+  std::scoped_lock lock(this->isRunningMutex);
+}
 
 void MercurySession::runTask() {
-  while (true) {
+  isRunning = true;
+  std::scoped_lock lock(this->isRunningMutex);
+
+  while (isRunning) {
     cspot::Packet packet = {};
     try {
       packet = shanConn->recvPacket();
       CSPOT_LOG(info, "Received packet, command: %d", packet.command);
+
+      if (static_cast<RequestType>(packet.command) == RequestType::PING) {
+        timeProvider->syncWithPingPacket(packet.data);
+
+        this->lastPingTimestamp = timeProvider->getSyncedTimestamp();
+        this->shanConn->sendPacket(0x49, packet.data);
+      } else {
+        this->packetQueue.push(packet);
+      }
     } catch (const std::runtime_error& e) {
       CSPOT_LOG(error, "Error while receiving packet: %s", e.what());
+      BELL_SLEEP_MS(100);
       continue;
     }
-    if (static_cast<RequestType>(packet.command) == RequestType::PING) {
-      timeProvider->syncWithPingPacket(packet.data);
-
-      this->lastPingTimestamp = timeProvider->getSyncedTimestamp();
-      this->shanConn->sendPacket(0x49, packet.data);
-    } else {
-      this->packetQueue.push(packet);
-    }
   }
+}
+
+void MercurySession::disconnect() {
+  CSPOT_LOG(info, "Disconnecting mercury session");
+  this->isRunning = false;
+  conn->close();
+  std::scoped_lock lock(this->isRunningMutex);
 }
 
 std::string MercurySession::getCountryCode() {
@@ -42,56 +58,54 @@ std::string MercurySession::getCountryCode() {
 void MercurySession::handlePacket() {
   Packet packet = {};
 
-  while (true) {
-    this->packetQueue.wpop(packet);
+  this->packetQueue.wtpop(packet, 10);
 
-    switch (static_cast<RequestType>(packet.command)) {
-      case RequestType::COUNTRY_CODE_RESPONSE: {
-        this->countryCode = std::string();
-        this->countryCode.reserve(2);
-        memcpy(this->countryCode.data(), packet.data.data(), 2);
-        CSPOT_LOG(debug, "Received country code");
-        break;
-      }
-      case RequestType::AUDIO_KEY_FAILURE_RESPONSE:
-      case RequestType::AUDIO_KEY_SUCCESS_RESPONSE: {
-        // this->lastRequestTimestamp = -1;
-
-        // First four bytes mark the sequence id
-        auto seqId = ntohl(extract<uint32_t>(packet.data, 0));
-        if (seqId == (this->audioKeySequence - 1) &&
-            audioKeyCallback != nullptr) {
-          auto success = static_cast<RequestType>(packet.command) ==
-                         RequestType::AUDIO_KEY_SUCCESS_RESPONSE;
-          audioKeyCallback(success, packet.data);
-        }
-        break;
-      }
-      case RequestType::SEND:
-      case RequestType::SUB:
-      case RequestType::UNSUB: {
-        CSPOT_LOG(debug, "Received mercury packet");
-
-        auto response = this->decodeResponse(packet.data);
-        if (this->callbacks.count(response.sequenceId) > 0) {
-          auto seqId = response.sequenceId;
-          this->callbacks[response.sequenceId](response);
-          this->callbacks.erase(this->callbacks.find(seqId));
-        }
-        break;
-      }
-      case RequestType::SUBRES: {
-        auto response = decodeResponse(packet.data);
-
-        auto uri = std::string(response.mercuryHeader.uri);
-        if (this->subscriptions.count(uri) > 0) {
-          this->subscriptions[uri](response);
-        }
-        break;
-      }
-      default:
-        break;
+  switch (static_cast<RequestType>(packet.command)) {
+    case RequestType::COUNTRY_CODE_RESPONSE: {
+      this->countryCode = std::string();
+      this->countryCode.reserve(2);
+      memcpy(this->countryCode.data(), packet.data.data(), 2);
+      CSPOT_LOG(debug, "Received country code");
+      break;
     }
+    case RequestType::AUDIO_KEY_FAILURE_RESPONSE:
+    case RequestType::AUDIO_KEY_SUCCESS_RESPONSE: {
+      // this->lastRequestTimestamp = -1;
+
+      // First four bytes mark the sequence id
+      auto seqId = ntohl(extract<uint32_t>(packet.data, 0));
+      if (seqId == (this->audioKeySequence - 1) &&
+          audioKeyCallback != nullptr) {
+        auto success = static_cast<RequestType>(packet.command) ==
+                       RequestType::AUDIO_KEY_SUCCESS_RESPONSE;
+        audioKeyCallback(success, packet.data);
+      }
+      break;
+    }
+    case RequestType::SEND:
+    case RequestType::SUB:
+    case RequestType::UNSUB: {
+      CSPOT_LOG(debug, "Received mercury packet");
+
+      auto response = this->decodeResponse(packet.data);
+      if (this->callbacks.count(response.sequenceId) > 0) {
+        auto seqId = response.sequenceId;
+        this->callbacks[response.sequenceId](response);
+        this->callbacks.erase(this->callbacks.find(seqId));
+      }
+      break;
+    }
+    case RequestType::SUBRES: {
+      auto response = decodeResponse(packet.data);
+
+      auto uri = std::string(response.mercuryHeader.uri);
+      if (this->subscriptions.count(uri) > 0) {
+        this->subscriptions[uri](response);
+      }
+      break;
+    }
+    default:
+      break;
   }
 }
 

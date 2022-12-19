@@ -3,10 +3,10 @@
 #include "JSONObject.h"
 #include "Logger.h"
 
-LoginBlob::LoginBlob(std::string& name, std::string& deviceId) {
+LoginBlob::LoginBlob(std::string name) {
   this->crypto = std::make_unique<Crypto>();
   this->name = name;
-  this->deviceId = deviceId;
+  this->deviceId = "142137fd329622137a14901634264e6f332e2411";
   this->crypto->dhInit();
 }
 
@@ -187,4 +187,14 @@ std::string LoginBlob::buildZeroconfInfo() {
   obj["deviceType"] = "SPEAKER";
 
   return obj.dump();
+}
+
+std::string LoginBlob::getDeviceId() {
+  return this->deviceId;
+}
+std::string LoginBlob::getDeviceName() {
+  return this->name;
+}
+std::string LoginBlob::getUserName() {
+  return this->username;
 }

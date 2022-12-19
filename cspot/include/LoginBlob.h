@@ -24,7 +24,7 @@ private:
     std::vector<uint8_t> decodeBlobSecondary(const std::vector<uint8_t>& blob, const std::string& username, const std::string& deviceId);
 
 public:
-    LoginBlob(std::string& name, std::string& deviceId);
+    LoginBlob(std::string name);
     std::vector<uint8_t> authData;
     std::string username = "";
     int authType;
@@ -36,6 +36,9 @@ public:
     void loadJson(const std::string& json);
 
     std::string buildZeroconfInfo();
+    std::string getDeviceId();
+    std::string getDeviceName();
+    std::string getUserName();
 
     std::string toJson();
 };

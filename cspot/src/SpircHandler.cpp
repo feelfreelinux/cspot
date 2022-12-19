@@ -43,6 +43,11 @@ void SpircHandler::subscribeToMercury() {
                                     responseLambda, subscriptionLambda);
 }
 
+void SpircHandler::disconnect() {
+  this->trackPlayer->stopTrack();
+  this->ctx->session->disconnect();
+}
+
 void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
   pb_release(Frame_fields, &playbackState.remoteFrame);
   pbDecode(playbackState.remoteFrame, Frame_fields, data);

@@ -22,7 +22,7 @@
 
 namespace cspot {
 class Session {
- private:
+ protected:
   std::unique_ptr<cspot::AuthChallenges> challenges;
   std::shared_ptr<cspot::PlainConnection> conn;
   std::shared_ptr<LoginBlob> authBlob;

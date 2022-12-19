@@ -37,6 +37,8 @@ class TrackPlayer : bell::Task {
   int _vorbisSeek(int64_t offset, int whence);
   long _vorbisTell();
 
+  void destroy();
+
  private:
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackProvider> trackProvider;
@@ -61,6 +63,8 @@ class TrackPlayer : bell::Task {
 
   size_t playbackPosition = 0;
   bool autoStart = false;
+  std::atomic<bool> isRunning = true;
+  std::mutex runningMutex;
 
   void runTask() override;
 };
