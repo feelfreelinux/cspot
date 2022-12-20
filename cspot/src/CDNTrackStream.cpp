@@ -6,7 +6,7 @@ using namespace cspot;
 CDNTrackStream::CDNTrackStream(std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher) {
   this->accessKeyFetcher = accessKeyFetcher;
   this->status = Status::INITIALIZING;
-  this->trackReady = std::make_unique<bell::WrappedSemaphore>(0);
+  this->trackReady = std::make_unique<bell::WrappedSemaphore>(5);
   this->crypto = std::make_unique<Crypto>();
 }
 

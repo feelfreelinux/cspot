@@ -1,5 +1,4 @@
 #include "TrackPlayer.h"
-#include <sys/_types/_va_list.h>
 #include <cstddef>
 #include <fstream>
 #include <memory>
@@ -7,7 +6,6 @@
 #include <vector>
 #include "CDNTrackStream.h"
 #include "Logger.h"
-#include "PortAudioSink.h"
 #include "ivorbisfile.h"
 
 using namespace cspot;
@@ -31,10 +29,10 @@ static long vorbisTellCb(TrackPlayer* self) {
 }
 
 TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
-    : bell::Task("cspot_player", 4 * 1024, 0, 0) {
+    : bell::Task("cspot_player", 32 * 1024, 5, 1) {
   this->ctx = ctx;
   this->trackProvider = std::make_shared<cspot::TrackProvider>(ctx);
-  this->playbackSemaphore = std::make_unique<bell::WrappedSemaphore>(0);
+  this->playbackSemaphore = std::make_unique<bell::WrappedSemaphore>(5);
 
   // Initialize vorbis callbacks
   vorbisFile = {};
@@ -44,10 +42,9 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
       (decltype(ov_callbacks::close_func))&vorbisCloseCb,
       (decltype(ov_callbacks::tell_func))&vorbisTellCb,
   };
+  isRunning = true;
 
-  portAudioSink = std::make_unique<PortAudioSink>();
-  portAudioSink->setParams(44100, 2, 16);
-
+  std::cout << "Starging player task" << std::endl;
   startTask();
 }
 
@@ -83,7 +80,8 @@ void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
   while (isRunning) {
-    this->playbackSemaphore->twait(50);
+    std::cout << "Track player waiting on playback semaphore" << std::endl;
+    this->playbackSemaphore->twait(100);
 
     if (this->currentTrackStream == nullptr) {
       continue;
@@ -91,6 +89,7 @@ void TrackPlayer::runTask() {
 
     CSPOT_LOG(info, "Player received a track, waiting for it to be ready...");
     this->currentTrackStream->trackReady->wait();
+    CSPOT_LOG(info, "Got track");
 
     if (this->currentTrackStream->status == CDNTrackStream::Status::FAILED) {
       CSPOT_LOG(error, "Track failed to load, aborting playback");

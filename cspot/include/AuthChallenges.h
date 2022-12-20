@@ -35,7 +35,7 @@ class AuthChallenges {
   std::vector<uint8_t> prepareClientHello();
 
  private:
-  const long SPOTIFY_VERSION = 0x10800000000;
+  const long long SPOTIFY_VERSION = 0x10800000000;
   ClientResponseEncrypted authRequest;
   ClientResponsePlaintext clientResPlaintext;
   ClientHello clientHello;

@@ -9,7 +9,6 @@
 #include "TrackProvider.h"
 #include "WrappedSemaphore.h"
 #include "ivorbisfile.h"
-#include "PortAudioSink.h"
 
 namespace cspot {
 class TrackPlayer : bell::Task {
@@ -45,7 +44,6 @@ class TrackPlayer : bell::Task {
   std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
-  std::unique_ptr<PortAudioSink> portAudioSink;
 
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;

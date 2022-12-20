@@ -8,6 +8,7 @@ idf_component_register(
     SRCS ${SOURCES}
     INCLUDE_DIRS "."
 )
+idf_build_set_property(COMPILE_OPTIONS "-fdiagnostics-color=always" APPEND)
 
 # Build static library, do not build test executables
 option(BUILD_SHARED_LIBS OFF)

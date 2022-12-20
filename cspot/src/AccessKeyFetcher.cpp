@@ -1,12 +1,12 @@
 #include "AccessKeyFetcher.h"
+#include <cstring>
 #include "HTTPClient.h"
 #include "Logger.h"
 #include "Utils.h"
 
 using namespace cspot;
 
-AccessKeyFetcher::AccessKeyFetcher(
-    std::shared_ptr<cspot::Context> ctx) {
+AccessKeyFetcher::AccessKeyFetcher(std::shared_ptr<cspot::Context> ctx) {
   this->ctx = ctx;
 }
 
@@ -39,12 +39,17 @@ void AccessKeyFetcher::getAccessKey(AccessKeyFetcher::Callback callback) {
   ctx->session->execute(
       MercurySession::RequestType::GET, url,
       [this, timeProvider, callback](MercurySession::Response& res) {
-        auto jsonBody = nlohmann::json::parse(res.parts[0].data());
+        std::cout << "Response size: " << res.parts.size() << std::endl;
+        char* accessKeyJson = (char*)res.parts[0].data();
+        auto accessJSON = std::string(accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
+        std::cout << accessJSON << std::endl;
+        auto jsonBody = nlohmann::json::parse(accessJSON);
         this->accessKey = jsonBody["accessToken"];
         int expiresIn = jsonBody["expiresIn"];
-        expiresIn = expiresIn / 2; // Refresh token before it expires
+        expiresIn = expiresIn / 2;  // Refresh token before it expires
 
-        this->expiresAt=  timeProvider->getSyncedTimestamp() + (expiresIn * 1000);
+        this->expiresAt =
+            timeProvider->getSyncedTimestamp() + (expiresIn * 1000);
         callback(jsonBody["accessToken"]);
       });
 }

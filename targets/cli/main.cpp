@@ -1,4 +1,5 @@
 #include <atomic>
+#include "AuthChallenges.h"
 #include "BellHTTPServer.h"
 #include "BellUtils.h"
 #include "CSpotContext.h"

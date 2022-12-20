@@ -14,6 +14,8 @@ TrackProvider::TrackProvider(std::shared_ptr<cspot::Context> ctx) {
   this->ctx = ctx;
   this->cdnStream =
       std::make_unique<cspot::CDNTrackStream>(this->accessKeyFetcher);
+
+  this->trackInfo = {};
 }
 
 TrackProvider::~TrackProvider() {}

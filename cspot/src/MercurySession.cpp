@@ -10,7 +10,7 @@
 using namespace cspot;
 
 MercurySession::MercurySession(std::shared_ptr<TimeProvider> timeProvider)
-    : bell::Task("mercury_dispatcher", 4 * 1024, 0, 0) {
+    : bell::Task("mercury_dispatcher", 4 * 1024, 0, 1) {
   this->timeProvider = timeProvider;
 }
 

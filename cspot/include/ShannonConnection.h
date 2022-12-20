@@ -10,6 +10,7 @@
 #include "Packet.h"
 #include "PlainConnection.h"
 #include "Shannon.h"
+#include <mutex>
 #include "Utils.h"
 #include "Logger.h"
 
