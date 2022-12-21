@@ -19,6 +19,7 @@ std::vector<uint8_t> LoginBlob::decodeBlob(
 
   // baseKey = sha1(sharedKey) 0:16
   crypto->sha1Init();
+
   crypto->sha1Update(sharedKey);
   auto baseKey = crypto->sha1FinalBytes();
   baseKey = std::vector<uint8_t>(baseKey.begin(), baseKey.begin() + 16);
@@ -93,6 +94,7 @@ void LoginBlob::loadZeroconf(const std::vector<uint8_t>& blob,
                              const std::vector<uint8_t>& sharedKey,
                              const std::string& deviceId,
                              const std::string& username) {
+
   auto partDecoded = this->decodeBlob(blob, sharedKey);
   auto loginData = this->decodeBlobSecondary(partDecoded, username, deviceId);
 
