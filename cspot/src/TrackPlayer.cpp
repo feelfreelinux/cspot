@@ -80,7 +80,6 @@ void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
   while (isRunning) {
-    std::cout << "Track player waiting on playback semaphore" << std::endl;
     this->playbackSemaphore->twait(100);
 
     if (this->currentTrackStream == nullptr) {
@@ -116,20 +115,24 @@ void TrackPlayer::runTask() {
       long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), &currentSection);
       seekMutex.unlock();
       if (ret == 0) {
-        CSPOT_LOG(info, "EOL");
+        CSPOT_LOG(info, "EOF");
         // and done :)
         eof = true;
       } else if (ret < 0) {
         CSPOT_LOG(error, "An error has occured in the stream %d", ret);
-        eof = true;
+        currentSongPlaying = false;
       } else {
         if (this->dataCallback != nullptr) {
-          dataCallback(pcmBuffer.data(), ret);
+          dataCallback(pcmBuffer.data(), ret, this->currentTrackStream->trackInfo.trackId);
         }
       }
     }
 
     this->playbackMutex.unlock();
+
+    if (eof) {
+      this->eofCallback();
+    }
   }
 }
 
@@ -173,4 +176,8 @@ CDNTrackStream::TrackInfo TrackPlayer::getCurrentTrackInfo() {
 
 void TrackPlayer::setDataCallback(DataCallback callback) {
   this->dataCallback = callback;
+}
+
+void TrackPlayer::setEOFCallback(EOFCallback callback) {
+  this->eofCallback = callback;
 }

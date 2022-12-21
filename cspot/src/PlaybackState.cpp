@@ -233,10 +233,18 @@ void PlaybackState::setRepeat(bool repeat)
     innerFrame.state.repeat = repeat;
 }
 
-TrackRef* PlaybackState::getCurrentTrack()
+TrackRef* PlaybackState::getCurrentTrackRef()
 {
-    // Wrap current track in a class
     return &innerFrame.state.track[innerFrame.state.playing_track_index];
+}
+
+TrackRef* PlaybackState::getNextTrackRef()
+{
+    if (innerFrame.state.playing_track_index >= innerFrame.state.track_count) {
+        return nullptr;
+    }
+
+    return &innerFrame.state.track[innerFrame.state.playing_track_index + 1];
 }
 
 std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ)

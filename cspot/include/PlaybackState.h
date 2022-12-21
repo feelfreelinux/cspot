@@ -120,7 +120,14 @@ class PlaybackState {
        *
        * @return std::shared_ptr<TrackReference> pointer to track reference
        */
-  TrackRef* getCurrentTrack();
+  TrackRef* getCurrentTrackRef();
+
+  /**
+    * @brief Gets reference to next track in queue, or nullptr if there is no next track.
+    *
+    * @return std::shared_ptr<TrackReference> pointer to track reference
+    */
+  TrackRef* getNextTrackRef();
 
   /**
      * @brief Encodes current frame into binary data via protobuf.

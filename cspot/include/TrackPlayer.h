@@ -17,13 +17,15 @@ class TrackPlayer : bell::Task {
   ~TrackPlayer();
 
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<void(uint8_t*, size_t)> DataCallback;
+  typedef std::function<void(uint8_t*, size_t, std::string_view)> DataCallback;
+  typedef std::function<void()> EOFCallback;
 
   enum class Status { STOPPED, LOADING, PLAYING, PAUSED };
   Status playerStatus;
 
   void loadTrackFromRef(TrackRef* ref, size_t playbackMs, bool startAutomatically);
   void setTrackLoadedCallback(TrackLoadedCallback callback);
+  void setEOFCallback(EOFCallback callback);
   void setDataCallback(DataCallback callback);
 
   CDNTrackStream::TrackInfo getCurrentTrackInfo();
@@ -47,6 +49,7 @@ class TrackPlayer : bell::Task {
 
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;
+  EOFCallback eofCallback = nullptr;
 
   // Playback control
   std::atomic<bool> currentSongPlaying;

@@ -28,7 +28,7 @@ struct Context {
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
     ctx->config = {
         .deviceId = blob->getDeviceId(),
-        .deviceName = "cspot",
+        .deviceName = blob->getDeviceName(),
         .volume = 0,
         .username = blob->getUserName()
     };

@@ -117,6 +117,7 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
     auto imageId =
         pbArrayToVector(trackInfo.album.cover_group.image[0].file_id);
 
+    trackRef->trackInfo.trackId = bytesToHexString(gid);
     trackRef->trackInfo.name = std::string(trackInfo.name);
     trackRef->trackInfo.album = std::string(trackInfo.album.name);
     trackRef->trackInfo.artist = std::string(trackInfo.artist[0].name);

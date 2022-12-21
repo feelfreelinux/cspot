@@ -34,7 +34,6 @@ class SpircHandler {
     EventData data;
   };
 
-
   typedef std::function<void(std::unique_ptr<Event>)> EventHandler;
 
   void subscribeToMercury();
@@ -46,6 +45,8 @@ class SpircHandler {
 
   void nextSong();
   void previousSong();
+
+  void notifyAudioReachedPlayback();
   void setRemoteVolume(int volume);
 
   void disconnect();
@@ -57,6 +58,13 @@ class SpircHandler {
   EventHandler eventHandler = nullptr;
 
   cspot::PlaybackState playbackState;
+  CDNTrackStream::TrackInfo currentTrackInfo;
+
+  bool isTrackFresh = true;
+  bool isRequestedFromLoad = false;
+  bool isNextTrackPreloaded = false;
+  uint32_t nextTrackPosition = 0;
+
   void sendCmd(MessageType typ);
 
   void sendEvent(EventType type);

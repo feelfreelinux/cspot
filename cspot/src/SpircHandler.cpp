@@ -15,13 +15,23 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
   this->ctx = ctx;
   this->trackPlayer = std::make_shared<TrackPlayer>(ctx);
 
-  this->trackPlayer->setTrackLoadedCallback([this]() {
-    playbackState.setPlaybackState(PlaybackState::State::Playing);
-    this->notify();
+  this->trackPlayer->setEOFCallback([this]() {
+    auto ref = this->playbackState.getNextTrackRef();
 
-    setPause(false);
-    sendEvent(EventType::PLAYBACK_START);
-    sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
+    if (!isNextTrackPreloaded && ref != nullptr) {
+      isNextTrackPreloaded = true;
+      this->trackPlayer->loadTrackFromRef(ref, 0, true);
+    }
+  });
+
+  this->trackPlayer->setTrackLoadedCallback([this]() {
+    this->currentTrackInfo = this->trackPlayer->getCurrentTrackInfo();
+
+    if (isRequestedFromLoad) {
+      isRequestedFromLoad = false;
+      sendEvent(EventType::PLAYBACK_START);
+      setPause(false);
+    }
   });
 }
 
@@ -38,9 +48,29 @@ void SpircHandler::subscribeToMercury() {
     this->handleFrame(res.parts[0]);
   };
 
-  ctx->session->executeSubscription(MercurySession::RequestType::SUB,
-                                    "hm://remote/user/" + ctx->config.username + "/",
-                                    responseLambda, subscriptionLambda);
+  ctx->session->executeSubscription(
+      MercurySession::RequestType::SUB,
+      "hm://remote/user/" + ctx->config.username + "/", responseLambda,
+      subscriptionLambda);
+}
+
+void SpircHandler::notifyAudioReachedPlayback() {
+  if (isNextTrackPreloaded) {
+    isNextTrackPreloaded = false;
+
+    playbackState.nextTrack();
+    nextTrackPosition = 0;
+  }
+
+  playbackState.updatePositionMs(nextTrackPosition);
+  playbackState.setPlaybackState(PlaybackState::State::Playing);
+  this->notify();
+
+  sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
+
+  if (isRequestedFromLoad) {
+    setPause(false);
+  }
 }
 
 void SpircHandler::disconnect() {
@@ -56,9 +86,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     case MessageType_kMessageTypeNotify: {
       CSPOT_LOG(debug, "Notify frame");
       // Pause the playback if another player took control
-      // if (state->isActive() && state->remoteFrame.device_state.is_active) {
-      //   disconnect();
-      // }
+      if (playbackState.isActive() && playbackState.remoteFrame.device_state.is_active) {
+          CSPOT_LOG(debug, "Another player took control, pausing playback");
+          playbackState.setActive(false);
+          this->trackPlayer->stopTrack();
+          sendEvent(EventType::DISC);
+      }
       break;
     }
     case MessageType_kMessageTypeSeek: {
@@ -89,21 +122,20 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     case MessageType_kMessageTypeLoad: {
       CSPOT_LOG(debug, "Load frame!");
+      isRequestedFromLoad = true;
+      isNextTrackPreloaded = false;
 
       playbackState.setActive(true);
       playbackState.updateTracks();
 
-      // loadTrack(player->hasTrack(), state->remoteFrame.state.position_ms,
-      //           false);
       playbackState.updatePositionMs(
           playbackState.remoteFrame.state.position_ms);
 
       this->trackPlayer->loadTrackFromRef(
-          playbackState.getCurrentTrack(),
+          playbackState.getCurrentTrackRef(),
           playbackState.remoteFrame.state.position_ms, true);
       playbackState.setPlaybackState(PlaybackState::State::Loading);
-      playbackState.updatePositionMs(
-          playbackState.remoteFrame.state.position_ms);
+      this->nextTrackPosition = playbackState.remoteFrame.state.position_ms;
 
       this->notify();
       break;
@@ -141,18 +173,31 @@ void SpircHandler::notify() {
 
 void SpircHandler::nextSong() {
   if (playbackState.nextTrack()) {
-    this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrack(), 0,
+    isRequestedFromLoad = true;
+    isNextTrackPreloaded = false;
+
+    sendEvent(EventType::NEXT);
+    this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrackRef(), 0,
                                         true);
   } else {
-    // player->cancelCurrentTrack();
+    sendEvent(EventType::FLUSH);
+    playbackState.updatePositionMs(0);
     trackPlayer->stopTrack();
   }
+  this->nextTrackPosition = 0;
   notify();
 }
 
 void SpircHandler::previousSong() {
   playbackState.prevTrack();
-  // loadTrack(true);
+  isRequestedFromLoad = true;
+  isNextTrackPreloaded = false;
+
+  sendEvent(EventType::PREV);
+  this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrackRef(), 0,
+                                      true);
+  this->nextTrackPosition = 0;
+
   notify();
 }
 
@@ -176,7 +221,6 @@ void SpircHandler::setEventHandler(EventHandler handler) {
 }
 
 void SpircHandler::setPause(bool isPaused) {
-  sendEvent(EventType::PLAY_PAUSE, isPaused);
   if (isPaused) {
     CSPOT_LOG(debug, "External pause command");
     playbackState.setPlaybackState(PlaybackState::State::Paused);
@@ -186,6 +230,7 @@ void SpircHandler::setPause(bool isPaused) {
     playbackState.setPlaybackState(PlaybackState::State::Playing);
   }
   notify();
+  sendEvent(EventType::PLAY_PAUSE, isPaused);
 }
 
 void SpircHandler::sendEvent(EventType type) {

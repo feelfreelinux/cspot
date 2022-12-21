@@ -23,6 +23,7 @@ class CDNTrackStream {
   enum class Status { INITIALIZING, HAS_DATA, HAS_URL, FAILED };
 
   struct TrackInfo {
+    std::string trackId;
     std::string name;
     std::string album;
     std::string artist;
