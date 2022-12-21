@@ -103,8 +103,9 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     }
     case MessageType_kMessageTypeVolume:
+      playbackState.setVolume(playbackState.remoteFrame.volume);
+      this->notify();
       sendEvent(EventType::VOLUME, (int)playbackState.remoteFrame.volume);
-      setRemoteVolume(playbackState.remoteFrame.volume);
       break;
     case MessageType_kMessageTypePause:
       setPause(true);
@@ -165,6 +166,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
 
 void SpircHandler::setRemoteVolume(int volume) {
   playbackState.setVolume(volume);
+  // notify();
 }
 
 void SpircHandler::notify() {
