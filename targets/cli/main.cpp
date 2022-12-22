@@ -159,7 +159,6 @@ int main(int argc, char** argv) {
     }
 
     gotBlob = false;
-    goto waitForBlob;
 
   } catch (std::invalid_argument e) {
     std::cout << "Invalid options passed: " << e.what() << "\n";

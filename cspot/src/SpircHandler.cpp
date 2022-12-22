@@ -86,11 +86,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     case MessageType_kMessageTypeNotify: {
       CSPOT_LOG(debug, "Notify frame");
       // Pause the playback if another player took control
-      if (playbackState.isActive() && playbackState.remoteFrame.device_state.is_active) {
-          CSPOT_LOG(debug, "Another player took control, pausing playback");
-          playbackState.setActive(false);
-          this->trackPlayer->stopTrack();
-          sendEvent(EventType::DISC);
+      if (playbackState.isActive() &&
+          playbackState.remoteFrame.device_state.is_active) {
+        CSPOT_LOG(debug, "Another player took control, pausing playback");
+        playbackState.setActive(false);
+        this->trackPlayer->stopTrack();
+        sendEvent(EventType::DISC);
       }
       break;
     }

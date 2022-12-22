@@ -18,7 +18,9 @@ TrackProvider::TrackProvider(std::shared_ptr<cspot::Context> ctx) {
   this->trackInfo = {};
 }
 
-TrackProvider::~TrackProvider() {}
+TrackProvider::~TrackProvider() {
+  pb_release(Track_fields, &trackInfo);
+}
 
 std::shared_ptr<cspot::CDNTrackStream> TrackProvider::loadFromTrackRef(
     TrackRef* ref) {

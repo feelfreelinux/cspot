@@ -53,7 +53,8 @@ TrackPlayer::~TrackPlayer() {
   std::scoped_lock lock(runningMutex);
 }
 
-void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs, bool startAutomatically) {
+void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs,
+                                   bool startAutomatically) {
   this->playbackPosition = positionMs;
   this->autoStart = startAutomatically;
 
@@ -112,7 +113,8 @@ void TrackPlayer::runTask() {
 
     while (!eof && currentSongPlaying) {
       seekMutex.lock();
-      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), &currentSection);
+      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(),
+                         &currentSection);
       seekMutex.unlock();
       if (ret == 0) {
         CSPOT_LOG(info, "EOF");
@@ -123,11 +125,12 @@ void TrackPlayer::runTask() {
         currentSongPlaying = false;
       } else {
         if (this->dataCallback != nullptr) {
-          dataCallback(pcmBuffer.data(), ret, this->currentTrackStream->trackInfo.trackId);
+          dataCallback(pcmBuffer.data(), ret,
+                       this->currentTrackStream->trackInfo.trackId);
         }
       }
     }
-
+    ov_clear(&vorbisFile);
     this->playbackMutex.unlock();
 
     if (eof) {
