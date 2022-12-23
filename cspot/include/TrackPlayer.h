@@ -4,10 +4,11 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include <BellUtils.h>
+#include <WrappedSemaphore.h>
 #include "CDNTrackStream.h"
 #include "CSpotContext.h"
 #include "TrackProvider.h"
-#include "WrappedSemaphore.h"
 #include "ivorbisfile.h"
 
 namespace cspot {
@@ -17,7 +18,7 @@ class TrackPlayer : bell::Task {
   ~TrackPlayer();
 
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<void(uint8_t*, size_t, std::string_view)> DataCallback;
+  typedef std::function<int(uint8_t*, size_t, std::string_view)> DataCallback;
   typedef std::function<void()> EOFCallback;
 
   enum class Status { STOPPED, LOADING, PLAYING, PAUSED };

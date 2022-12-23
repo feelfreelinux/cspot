@@ -231,13 +231,16 @@ void PlaybackState::setRepeat(bool repeat) {
 }
 
 TrackRef* PlaybackState::getCurrentTrackRef() {
+  if (innerFrame.state.playing_track_index >= innerFrame.state.track_count) {
+    return nullptr;
+  }
   return &innerFrame.state.track[innerFrame.state.playing_track_index];
 }
 
 TrackRef* PlaybackState::getNextTrackRef() {
-  if (innerFrame.state.playing_track_index >= innerFrame.state.track_count) {
+  if ((innerFrame.state.playing_track_index + 1) >= innerFrame.state.track_count) {
     if (innerFrame.state.repeat) {
-      return 0;
+        return &innerFrame.state.track[0];
     }
     return nullptr;
   }

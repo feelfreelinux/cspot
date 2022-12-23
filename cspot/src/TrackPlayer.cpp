@@ -44,7 +44,6 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
   };
   isRunning = true;
 
-  std::cout << "Starging player task" << std::endl;
   startTask();
 }
 
@@ -124,13 +123,24 @@ void TrackPlayer::runTask() {
         CSPOT_LOG(error, "An error has occured in the stream %d", ret);
         currentSongPlaying = false;
       } else {
+
         if (this->dataCallback != nullptr) {
-          dataCallback(pcmBuffer.data(), ret,
-                       this->currentTrackStream->trackInfo.trackId);
+          auto toWrite = ret;
+
+          while (!eof && currentSongPlaying && toWrite > 0) {
+            auto written =
+                dataCallback(pcmBuffer.data() + (ret-toWrite), toWrite,
+                             this->currentTrackStream->trackInfo.trackId);
+            if (written == 0) {
+              BELL_SLEEP_MS(10);
+            }
+            toWrite -= written;
+          }
         }
       }
     }
     ov_clear(&vorbisFile);
+    this->currentTrackStream = nullptr;
     this->playbackMutex.unlock();
 
     if (eof) {

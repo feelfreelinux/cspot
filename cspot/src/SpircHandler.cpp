@@ -28,7 +28,6 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
     this->currentTrackInfo = this->trackPlayer->getCurrentTrackInfo();
 
     if (isRequestedFromLoad) {
-      isRequestedFromLoad = false;
       sendEvent(EventType::PLAYBACK_START);
       setPause(false);
     }
@@ -55,6 +54,15 @@ void SpircHandler::subscribeToMercury() {
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
+  if (isRequestedFromLoad || isNextTrackPreloaded) {
+    playbackState.updatePositionMs(nextTrackPosition);
+    playbackState.setPlaybackState(PlaybackState::State::Playing);
+  } else {
+    setPause(true);
+  }
+
+  isRequestedFromLoad = false;
+
   if (isNextTrackPreloaded) {
     isNextTrackPreloaded = false;
 
@@ -62,15 +70,9 @@ void SpircHandler::notifyAudioReachedPlayback() {
     nextTrackPosition = 0;
   }
 
-  playbackState.updatePositionMs(nextTrackPosition);
-  playbackState.setPlaybackState(PlaybackState::State::Playing);
   this->notify();
 
   sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
-
-  if (isRequestedFromLoad) {
-    setPause(false);
-  }
 }
 
 void SpircHandler::disconnect() {
@@ -85,6 +87,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
   switch (playbackState.remoteFrame.typ) {
     case MessageType_kMessageTypeNotify: {
       CSPOT_LOG(debug, "Notify frame");
+
       // Pause the playback if another player took control
       if (playbackState.isActive() &&
           playbackState.remoteFrame.device_state.is_active) {
@@ -92,6 +95,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
         playbackState.setActive(false);
         this->trackPlayer->stopTrack();
         sendEvent(EventType::DISC);
+
+        disconnect();
       }
       break;
     }
@@ -115,12 +120,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       setPause(false);
       break;
     case MessageType_kMessageTypeNext:
-      sendEvent(EventType::NEXT);
       nextSong();
+      sendEvent(EventType::NEXT);
       break;
     case MessageType_kMessageTypePrev:
-      sendEvent(EventType::PREV);
       previousSong();
+      sendEvent(EventType::PREV);
       break;
     case MessageType_kMessageTypeLoad: {
       CSPOT_LOG(debug, "Load frame!");
@@ -130,14 +135,18 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       playbackState.setActive(true);
       playbackState.updateTracks();
 
-      playbackState.updatePositionMs(
-          playbackState.remoteFrame.state.position_ms);
+      auto playbackRef = playbackState.getCurrentTrackRef();
 
-      this->trackPlayer->loadTrackFromRef(
-          playbackState.getCurrentTrackRef(),
-          playbackState.remoteFrame.state.position_ms, true);
-      playbackState.setPlaybackState(PlaybackState::State::Loading);
-      this->nextTrackPosition = playbackState.remoteFrame.state.position_ms;
+      if (playbackRef != nullptr) {
+        playbackState.updatePositionMs(
+            playbackState.remoteFrame.state.position_ms);
+
+        this->trackPlayer->loadTrackFromRef(
+            playbackState.getCurrentTrackRef(),
+            playbackState.remoteFrame.state.position_ms, true);
+        playbackState.setPlaybackState(PlaybackState::State::Loading);
+        this->nextTrackPosition = playbackState.remoteFrame.state.position_ms;
+      }
 
       this->notify();
       break;
@@ -179,9 +188,9 @@ void SpircHandler::nextSong() {
     isRequestedFromLoad = true;
     isNextTrackPreloaded = false;
 
-    sendEvent(EventType::NEXT);
     this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrackRef(), 0,
                                         true);
+
   } else {
     sendEvent(EventType::FLUSH);
     playbackState.updatePositionMs(0);

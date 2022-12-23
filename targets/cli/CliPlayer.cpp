@@ -22,17 +22,7 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
       [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
         auto hash = hashFunc(trackId);
 
-        size_t toWrite = bytes;
-        size_t written = 0;
-
-        while (toWrite > 0) {
-          written = this->centralAudioBuffer->writePCM(data + (bytes-toWrite), toWrite, hash);
-          if (written == 0) {
-            BELL_SLEEP_MS(100);
-          }
-
-          toWrite -= written;
-        }
+        return this->centralAudioBuffer->writePCM(data, bytes, hash);
       });
   this->isPaused = false;
 
@@ -80,7 +70,8 @@ void CliPlayer::runTask() {
         continue;
       } else {
         if (lastHash != chunk.trackHash) {
-          std::cout << " Last hash " << lastHash << " new hash " << chunk.trackHash << std::endl;
+          std::cout << " Last hash " << lastHash << " new hash "
+                    << chunk.trackHash << std::endl;
           lastHash = chunk.trackHash;
           this->handler->notifyAudioReachedPlayback();
         }
