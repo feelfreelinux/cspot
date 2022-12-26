@@ -3,8 +3,7 @@
 
 using namespace cspot;
 
-CDNTrackStream::CDNTrackStream(
-    std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher) {
+CDNTrackStream::CDNTrackStream(std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher) {
   this->accessKeyFetcher = accessKeyFetcher;
   this->status = Status::INITIALIZING;
   this->trackReady = std::make_unique<bell::WrappedSemaphore>(5);
@@ -32,9 +31,7 @@ void CDNTrackStream::fetchFile(const std::vector<uint8_t>& trackId,
         "%s?alt=json&product=9",
         bytesToHexString(trackId).c_str());
 
-    auto req = bell::HTTPStream::get(
-        requestUrl,
-        {bell::HTTPStream::ValueHeader({"Authorization", "Bearer " + key})});
+    auto req = bell::HTTPClient::get(requestUrl, { bell::HTTPClient::ValueHeader({"Authorization", "Bearer " + key}) });
 
     std::string_view result = req->body();
 
@@ -65,11 +62,12 @@ void CDNTrackStream::openStream() {
   CSPOT_LOG(info, "Opening HTTP stream to %s", this->cdnUrl.c_str());
 
   // Open connection, read first 128 bytes
-  this->httpConnection = bell::HTTPStream::get(
-      this->cdnUrl, {bell::HTTPStream::RangeHeader::range(0, OPUS_HEADER_SIZE)},
+  this->httpConnection = bell::HTTPClient::get(
+      this->cdnUrl,
+      {bell::HTTPClient::RangeHeader::range(0, OPUS_HEADER_SIZE)},
       HTTP_BUFFER_SIZE + 4096);
 
-  this->httpConnection->readFull(header.data(), OPUS_HEADER_SIZE);
+  this->httpConnection->read(header.data(), OPUS_HEADER_SIZE);
   this->totalFileSize =
       this->httpConnection->fullContentLength() - SPOTIFY_OPUS_HEADER;
 
@@ -83,9 +81,10 @@ void CDNTrackStream::openStream() {
   this->footer = std::vector<uint8_t>(
       this->totalFileSize - footerStartLocation + SPOTIFY_OPUS_HEADER);
   this->httpConnection->get(
-      cdnUrl, {bell::HTTPStream::RangeHeader::last(footer.size())});
+      cdnUrl, {bell::HTTPClient::RangeHeader::last(footer.size())});
 
-  this->httpConnection->readFull(footer.data(), this->footer.size());
+  this->httpConnection->read(footer.data(), this->footer.size());
+
   this->decrypt(footer.data(), footer.size(), footerStartLocation);
   CSPOT_LOG(info, "Header and footer bytes received");
   this->position = 0;
@@ -110,7 +109,7 @@ size_t CDNTrackStream::readBytes(uint8_t* dst, size_t bytes) {
     return bytes;
   }
 
-  // Opus tries to read footer, use prefetched data
+  // // Opus tries to read footer, use prefetched data
   if (offsetPosition >= (actualFileSize - this->footer.size())) {
     size_t toReadBytes = bytes;
 
@@ -152,14 +151,12 @@ size_t CDNTrackStream::readBytes(uint8_t* dst, size_t bytes) {
     }
 
     this->httpConnection->get(
-        cdnUrl, {bell::HTTPStream::RangeHeader::range(
+        cdnUrl, {bell::HTTPClient::RangeHeader::range(
                     requestPosition, requestPosition + HTTP_BUFFER_SIZE - 1)});
     this->lastRequestPosition = requestPosition;
     this->lastRequestCapacity = this->httpConnection->contentLength();
 
-    this->httpConnection->readFull(this->httpBuffer.data(),
-                                   lastRequestCapacity);
-
+    this->httpConnection->read(this->httpBuffer.data(), lastRequestCapacity);
     this->decrypt(this->httpBuffer.data(), lastRequestCapacity,
                   this->lastRequestPosition);
 
