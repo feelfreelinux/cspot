@@ -16,7 +16,7 @@
 #include "Utils.h"
 #include "protobuf/mercury.pb.h"
 
-namespace cspot {
+namespace cspot { 
 class MercurySession : public bell::Task, public cspot::Session {
  public:
   MercurySession(std::shared_ptr<cspot::TimeProvider> timeProvider);
@@ -28,10 +28,12 @@ class MercurySession : public bell::Task, public cspot::Session {
     uint8_t flags;
     DataParts parts;
     uint64_t sequenceId;
+    bool fail;
   };
 
   typedef std::function<void(Response&)> ResponseCallback;
   typedef std::function<void(bool, const std::vector<uint8_t>&)> AudioKeyCallback;
+  typedef std::function<void()> ConnectionEstabilishedCallback;
 
   enum class RequestType : uint8_t {
     SUB = 0xb3,
@@ -87,13 +89,21 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   void disconnect();
 
+  void setConnectedHandler(ConnectionEstabilishedCallback callback);
+
+  bool triggerTimeout() override;
+
  private:
+  const int PING_TIMEOUT_MS = 2 * 60 * 1000 + 5000;
+
   std::shared_ptr<cspot::TimeProvider> timeProvider;
   Header tempMercuryHeader = {};
+  ConnectionEstabilishedCallback connectionReadyCallback = nullptr;
 
   bell::Queue<cspot::Packet> packetQueue;
 
   void runTask() override;
+  void reconnect();
 
   std::unordered_map<uint64_t, ResponseCallback> callbacks;
   std::unordered_map<std::string, ResponseCallback> subscriptions;
@@ -108,6 +118,10 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   std::mutex isRunningMutex;
   std::atomic<bool> isRunning = false;
+  std::atomic<bool> isReconnecting = false;
+  std::atomic<bool> executeEstabilishedCallback = false;
+
+  void failAllPending();
 
   Response decodeResponse(const std::vector<uint8_t>& data);
 };

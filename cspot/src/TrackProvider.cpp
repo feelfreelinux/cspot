@@ -86,6 +86,12 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
 
     if (altIndex >= trackInfo.alternative_count) {
       // no alternatives for song
+      if (!this->currentTrackReference.expired()) {
+        auto trackRef = this->currentTrackReference.lock();
+        trackRef->status = CDNTrackStream::Status::FAILED;
+        trackRef->trackReady->give();
+
+      }
       return;
     }
   }

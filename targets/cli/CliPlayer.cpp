@@ -14,7 +14,9 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
   this->audioSink = std::make_unique<PortAudioSink>();
   this->audioSink->setParams(44100, 2, 16);
 
-  this->centralAudioBuffer = std::make_unique<bell::CentralAudioBuffer>(1024);
+  this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(1024);
+
+  this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
 
   auto hashFunc = std::hash<std::string_view>();
 
@@ -24,13 +26,18 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
       });
+
   this->isPaused = false;
 
   this->handler->setEventHandler(
       [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
-            this->isPaused = std::get<bool>(event->data);
+            if (std::get<bool>(event->data)) {
+              this->pauseRequested = true;
+            } else {
+              this->isPaused = false;
+            }
             break;
           case cspot::SpircHandler::EventType::FLUSH:
             this->centralAudioBuffer->clearBuffer();
@@ -43,7 +50,8 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
             this->centralAudioBuffer->clearBuffer();
             break;
           case cspot::SpircHandler::EventType::PLAYBACK_START:
-            this->centralAudioBuffer->clearBuffer();
+            //this->centralAudioBuffer->clearBuffer();
+            break;
           default:
             break;
         }
@@ -65,6 +73,14 @@ void CliPlayer::runTask() {
     if (!this->isPaused) {
       chunk = this->centralAudioBuffer->readChunk();
 
+      if (this->pauseRequested) {
+        this->pauseRequested = false;
+        std::cout << "Pause requsted!" << std::endl;
+        auto effect = std::make_unique<bell::BellDSP::FadeoutEffect>(
+            44100, [this]() { this->isPaused = true; });
+        this->dsp->queryInstantEffect(std::move(effect));
+      }
+
       if (chunk.pcmSize == 0) {
         BELL_SLEEP_MS(10);
         continue;
@@ -75,6 +91,9 @@ void CliPlayer::runTask() {
           lastHash = chunk.trackHash;
           this->handler->notifyAudioReachedPlayback();
         }
+
+        this->dsp->process(chunk.pcmData, chunk.pcmSize, 2,
+                           bell::SampleRate::SR_44100, bell::BitWidth::BW_16);
         this->audioSink->feedPCMFrames(chunk.pcmData, chunk.pcmSize);
       }
     } else {

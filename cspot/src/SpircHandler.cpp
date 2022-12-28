@@ -32,10 +32,15 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
       setPause(false);
     }
   });
+
+  // Subscribe to mercury on session ready
+  ctx->session->setConnectedHandler([this]() { this->subscribeToMercury(); });
 }
 
 void SpircHandler::subscribeToMercury() {
   auto responseLambda = [=](MercurySession::Response& res) {
+    if (res.fail) return;
+
     sendCmd(MessageType_kMessageTypeHello);
     CSPOT_LOG(debug, "Sent kMessageTypeHello!");
 
@@ -43,7 +48,9 @@ void SpircHandler::subscribeToMercury() {
     this->ctx->config.countryCode = this->ctx->session->getCountryCode();
   };
   auto subscriptionLambda = [=](MercurySession::Response& res) {
+    if (res.fail) return;
     CSPOT_LOG(debug, "Received subscription response");
+
     this->handleFrame(res.parts[0]);
   };
 

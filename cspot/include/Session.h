@@ -38,6 +38,7 @@ class Session {
   void connect(std::unique_ptr<cspot::PlainConnection> connection);
   void connectWithRandomAp();
   void close();
+  virtual bool triggerTimeout() = 0;
   std::vector<uint8_t> authenticate(std::shared_ptr<LoginBlob> blob);
 };
 }  // namespace cspot

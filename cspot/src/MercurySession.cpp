@@ -22,9 +22,11 @@ void MercurySession::runTask() {
   isRunning = true;
   std::scoped_lock lock(this->isRunningMutex);
 
+  this->executeEstabilishedCallback = true;
   while (isRunning) {
     cspot::Packet packet = {};
     try {
+      std::cout << "Waiting on packet" << std::endl;
       packet = shanConn->recvPacket();
       CSPOT_LOG(info, "Received packet, command: %d", packet.command);
 
@@ -38,10 +40,61 @@ void MercurySession::runTask() {
       }
     } catch (const std::runtime_error& e) {
       CSPOT_LOG(error, "Error while receiving packet: %s", e.what());
-      BELL_SLEEP_MS(100);
+      failAllPending();
+
+      if (!isRunning)
+        return;
+
+      reconnect();
       continue;
     }
   }
+}
+
+void MercurySession::reconnect() {
+  isReconnecting = true;
+
+  try {
+    this->conn = nullptr;
+    this->shanConn = nullptr;
+
+    this->connectWithRandomAp();
+    this->authenticate(this->authBlob);
+
+    CSPOT_LOG(info, "Reconnection successful");
+
+    BELL_SLEEP_MS(100);
+
+    lastPingTimestamp = timeProvider->getSyncedTimestamp();
+    isReconnecting = false;
+
+    this->executeEstabilishedCallback = true;
+  } catch (...) {
+    CSPOT_LOG(error, "Cannot reconnect, will retry in 5s");
+    BELL_SLEEP_MS(5000);
+
+    if (isRunning) {
+      return reconnect();
+    }
+  }
+}
+
+void MercurySession::setConnectedHandler(
+    ConnectionEstabilishedCallback callback) {
+  this->connectionReadyCallback = callback;
+}
+
+bool MercurySession::triggerTimeout() {
+  if (!isRunning)
+    return true;
+  auto currentTimestamp = timeProvider->getSyncedTimestamp();
+
+  if (currentTimestamp - this->lastPingTimestamp > PING_TIMEOUT_MS) {
+    CSPOT_LOG(debug, "Reconnection required, no ping received");
+    return true;
+  }
+
+  return false;
 }
 
 void MercurySession::disconnect() {
@@ -59,6 +112,11 @@ void MercurySession::handlePacket() {
   Packet packet = {};
 
   this->packetQueue.wtpop(packet, 10);
+
+  if (executeEstabilishedCallback && this->connectionReadyCallback != nullptr) {
+    executeEstabilishedCallback = false;
+    this->connectionReadyCallback();
+  }
 
   switch (static_cast<RequestType>(packet.command)) {
     case RequestType::COUNTRY_CODE_RESPONSE: {
@@ -109,6 +167,24 @@ void MercurySession::handlePacket() {
   }
 }
 
+void MercurySession::failAllPending() {
+  Response response = {.fail = true};
+
+  // Fail all callbacks
+  for (auto& it : this->callbacks) {
+    it.second(response);
+  }
+
+  // Fail all subscriptions
+  for (auto& it : this->subscriptions) {
+    it.second(response);
+  }
+
+  // Remove references
+  this->subscriptions = {};
+  this->callbacks = {};
+}
+
 MercurySession::Response MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
   Response response = {};
@@ -133,6 +209,7 @@ MercurySession::Response MercurySession::decodeResponse(
   }
 
   pbDecode(response.mercuryHeader, Header_fields, headerBytes);
+  response.fail = false;
 
   return response;
 }

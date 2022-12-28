@@ -33,6 +33,7 @@
 #endif
 
 #include "Logger.h"
+#define PROXY_URL "http://localhost:2137"
 
 bool createdFromZeroconf = false;
 
@@ -142,9 +143,9 @@ int main(int argc, char** argv) {
 
       // Auth successful
       if (token.size() > 0) {
-        ctx->session->startTask();
         auto handler = std::make_shared<cspot::SpircHandler>(ctx);
-        handler->subscribeToMercury();
+        ctx->session->startTask();
+
         auto player = std::make_shared<CliPlayer>(handler);
 
         while (running) {

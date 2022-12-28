@@ -91,8 +91,9 @@ void TrackPlayer::runTask() {
     CSPOT_LOG(info, "Got track");
 
     if (this->currentTrackStream->status == CDNTrackStream::Status::FAILED) {
-      CSPOT_LOG(error, "Track failed to load, aborting playback");
-      this->playerStatus = Status::STOPPED;
+      CSPOT_LOG(error, "Track failed to load, skipping it");
+      this->currentTrackStream = nullptr;
+      this->eofCallback();
       continue;
     }
 

@@ -6,6 +6,7 @@
 #include "CentralAudioBuffer.h"
 #include "PortAudioSink.h"
 #include "SpircHandler.h"
+#include "BellDSP.h"
 
 class CliPlayer : public bell::Task {
  public:
@@ -14,11 +15,13 @@ class CliPlayer : public bell::Task {
 private:
   std::string currentTrackId;
   std::shared_ptr<cspot::SpircHandler> handler;
+  std::shared_ptr<bell::BellDSP> dsp;
   std::unique_ptr<PortAudioSink> audioSink;
-  std::unique_ptr<bell::CentralAudioBuffer> centralAudioBuffer;
+  std::shared_ptr<bell::CentralAudioBuffer> centralAudioBuffer;
 
   void feedData(uint8_t* data, size_t len);
 
+  std::atomic<bool> pauseRequested = false;
   std::atomic<bool> isPaused = true;
   std::atomic<bool> isRunning = true;
   std::mutex runningMutex;

@@ -1,6 +1,7 @@
 
 #include "PlainConnection.h"
 #include <cstring>
+#include "URLParser.h"
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #else
@@ -8,6 +9,9 @@
 #endif
 #include <errno.h>
 #include "Logger.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 using namespace cspot;
 
@@ -34,9 +38,23 @@ PlainConnection::~PlainConnection() {
 
 void PlainConnection::connect(const std::string& apAddress) {
   struct addrinfo h, *airoot, *ai;
-  std::string hostname = apAddress.substr(0, apAddress.find(":"));
-  std::string portStr =
-      apAddress.substr(apAddress.find(":") + 1, apAddress.size());
+
+  std::string connectionURL = apAddress;
+#ifdef PROXY_URL
+  connectionURL = std::string(PROXY_URL);
+#endif
+  auto parser = bell::URLParser::parse(connectionURL);
+
+  
+  std::string hostname = parser.host;
+  if (hostname.size() == 0) {
+    hostname = "localhost";
+  }
+  std::string portStr = std::to_string(parser.port);
+
+  std::cout << hostname << " port " << portStr << std::endl;
+  portStr = "2137";
+
   memset(&h, 0, sizeof(h));
   h.ai_family = AF_INET;
   h.ai_socktype = SOCK_STREAM;
@@ -51,13 +69,14 @@ void PlainConnection::connect(const std::string& apAddress) {
   for (ai = airoot; ai; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
       continue;
+    struct sockaddr_in* saddr = (struct sockaddr_in*)ai->ai_addr;
 
     this->apSock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (this->apSock < 0)
       continue;
 
-    if (::connect(this->apSock, (struct sockaddr*)ai->ai_addr, ai->ai_addrlen) !=
-        -1) {
+    if (::connect(this->apSock, (struct sockaddr*)ai->ai_addr,
+                  ai->ai_addrlen) != -1) {
 #ifdef _WIN32
       uint32_t tv = 3000;
 #else
@@ -85,6 +104,7 @@ void PlainConnection::connect(const std::string& apAddress) {
   }
 
   freeaddrinfo(airoot);
+
   CSPOT_LOG(debug, "Connected to spotify server");
 }
 
@@ -129,10 +149,10 @@ void PlainConnection::readBlock(const uint8_t* dst, size_t size) {
       switch (getErrno()) {
         case EAGAIN:
         case ETIMEDOUT:
-          // if (timeoutHandler()) {
-          //   CSPOT_LOG(error, "Connection lost, will need to reconnect...");
-          //   throw std::runtime_error("Reconnection required");
-          // }
+          if (timeoutHandler()) {
+            CSPOT_LOG(error, "Connection lost, will need to reconnect...");
+            throw std::runtime_error("Reconnection required");
+          }
           goto READ;
         case EINTR:
           break;
@@ -159,9 +179,9 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t>& data) {
       switch (getErrno()) {
         case EAGAIN:
         case ETIMEDOUT:
-          // if (timeoutHandler()) {
-          //   throw std::runtime_error("Reconnection required");
-          // }
+          if (timeoutHandler()) {
+            throw std::runtime_error("Reconnection required");
+          }
           goto WRITE;
         case EINTR:
           break;
