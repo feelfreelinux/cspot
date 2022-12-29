@@ -26,7 +26,6 @@ void MercurySession::runTask() {
   while (isRunning) {
     cspot::Packet packet = {};
     try {
-      std::cout << "Waiting on packet" << std::endl;
       packet = shanConn->recvPacket();
       CSPOT_LOG(info, "Received packet, command: %d", packet.command);
 

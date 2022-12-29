@@ -33,7 +33,6 @@
 #endif
 
 #include "Logger.h"
-#define PROXY_URL "http://localhost:2137"
 
 bool createdFromZeroconf = false;
 
