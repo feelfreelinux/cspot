@@ -102,8 +102,6 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
         playbackState.setActive(false);
         this->trackPlayer->stopTrack();
         sendEvent(EventType::DISC);
-
-        disconnect();
       }
       break;
     }
