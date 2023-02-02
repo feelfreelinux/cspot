@@ -1,6 +1,5 @@
 #include "AccessKeyFetcher.h"
 #include <cstring>
-#include "HTTPClient.h"
 #include "Logger.h"
 #include "Utils.h"
 

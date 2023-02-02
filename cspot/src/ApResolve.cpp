@@ -7,12 +7,6 @@ ApResolve::ApResolve(std::string apOverride)
     this->apOverride = apOverride;
 }
 
-std::string_view ApResolve::getApList()
-{
-    auto request = bell::HTTPClient::get("https://apresolve.spotify.com/");
-    return request->body();
-}
-
 std::string ApResolve::fetchFirstApAddress()
 {
     if (apOverride != "")
@@ -20,8 +14,9 @@ std::string ApResolve::fetchFirstApAddress()
         return apOverride;
     }
 
+    auto request = bell::HTTPStream::get("https://apresolve.spotify.com/");
+
     // parse json with nlohmann
-    auto jsonData = getApList();
-    auto json = nlohmann::json::parse(jsonData);
+    auto json = nlohmann::json::parse(request->body());
     return json["ap_list"][0];
 }

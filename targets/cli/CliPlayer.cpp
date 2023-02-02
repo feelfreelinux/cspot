@@ -44,13 +44,12 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
             break;
           case cspot::SpircHandler::EventType::DISC:
             this->centralAudioBuffer->clearBuffer();
-            // this->lastTrackHash = 0;
             break;
           case cspot::SpircHandler::EventType::SEEK:
             this->centralAudioBuffer->clearBuffer();
             break;
           case cspot::SpircHandler::EventType::PLAYBACK_START:
-            //this->centralAudioBuffer->clearBuffer();
+            this->centralAudioBuffer->clearBuffer();
             break;
           default:
             break;
@@ -76,8 +75,8 @@ void CliPlayer::runTask() {
       if (this->pauseRequested) {
         this->pauseRequested = false;
         std::cout << "Pause requsted!" << std::endl;
-        auto effect = std::make_unique<bell::BellDSP::FadeoutEffect>(
-            44100, [this]() { this->isPaused = true; });
+        auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
+            44100 / 2, false, [this]() { this->isPaused = true; });
         this->dsp->queryInstantEffect(std::move(effect));
       }
 

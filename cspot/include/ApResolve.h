@@ -3,13 +3,12 @@
 #include <string>
 #include <memory>
 
-#include "HTTPClient.h"
+#include "HTTPStream.h"
 #include "nlohmann/json.hpp"
 
 namespace cspot {
 class ApResolve {
  private:
-  std::string_view getApList();
   std::string apOverride;
 
  public:
