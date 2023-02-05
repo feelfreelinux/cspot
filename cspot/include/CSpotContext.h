@@ -4,10 +4,13 @@
 
 #include "MercurySession.h"
 #include "TimeProvider.h"
+#include "protobuf/metadata.pb.h"
 
 namespace cspot {
 struct Context {
   struct ConfigState {
+    // Setup default bitrate to 160
+    AudioFormat audioFormat = AudioFormat::AudioFormat_OGG_VORBIS_160;
     std::string deviceId;
     std::string deviceName;
     int volume;

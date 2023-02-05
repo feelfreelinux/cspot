@@ -1,25 +1,20 @@
 #include <atomic>
-#include "AuthChallenges.h"
+#include <functional>
 #include "BellHTTPServer.h"
 #include "BellUtils.h"
 #include "CSpotContext.h"
 #include "CliPlayer.h"
 #include "MDNSService.h"
 #include "SpircHandler.h"
+#include "WrappedSemaphore.h"
 #include "civetweb.h"
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#include <ApResolve.h>
-#include <PlainConnection.h>
 #include <Session.h>
-#include <inttypes.h>
-#include <fstream>
 #include <iostream>
 #include <memory>
-#include <streambuf>
 #include <string>
-#include <vector>
 #include "CommandLineArguments.h"
 #include "LoginBlob.h"
 #include "URLParser.h"
@@ -34,7 +29,66 @@
 
 #include "Logger.h"
 
-bool createdFromZeroconf = false;
+class ZeroconfAuthenticator {
+ public:
+  ZeroconfAuthenticator(){};
+  ~ZeroconfAuthenticator(){};
+
+  // Authenticator state
+  int serverPort = 7864;
+
+  // Use bell's HTTP server to handle the authentication, although anything can be used
+  std::unique_ptr<bell::BellHTTPServer> server;
+  std::shared_ptr<LoginBlob> blob;
+
+  std::function<void()> onAuthSuccess;
+
+  void registerHandlers() {
+    this->server = std::make_unique<bell::BellHTTPServer>(serverPort);
+
+    server->registerGet("/spotify_info", [this](struct mg_connection* conn) {
+      return this->server->makeJsonResponse(this->blob->buildZeroconfInfo());
+    });
+
+    server->registerPost("/spotify_info", [this](struct mg_connection* conn) {
+      nlohmann::json obj;
+      // Prepare a success response for spotify
+      obj["status"] = 101;
+      obj["spotifyError"] = 0;
+      obj["statusString"] = "ERROR-OK";
+
+      std::string body = "";
+      auto requestInfo = mg_get_request_info(conn);
+      if (requestInfo->content_length > 0) {
+        body.resize(requestInfo->content_length);
+        mg_read(conn, body.data(), requestInfo->content_length);
+
+        mg_header hd[10];
+        int num = mg_split_form_urlencoded(body.data(), hd, 10);
+        std::map<std::string, std::string> queryMap;
+
+        // Parse the form data
+        for (int i = 0; i < num; i++) {
+          queryMap[hd[i].name] = hd[i].value;
+        }
+
+        // Pass user's credentials to the blob
+        blob->loadZeroconfQuery(queryMap);
+
+        // We have the blob, proceed to login
+        onAuthSuccess();
+      }
+
+      return server->makeJsonResponse(obj.dump());
+    });
+
+    // Register mdns service, for spotify to find us
+    MDNSService::registerService(
+        blob->getDeviceName(), "_spotify-connect", "_tcp", "", serverPort,
+        {{"VERSION", "1.0"}, {"CPath", "/spotify_info"}, {"Stack", "SP"}});
+    std::cout << "Waiting for spotify app to connect..." << std::endl;
+  }
+};
 
 int main(int argc, char** argv) {
 #ifdef _WIN32
@@ -46,12 +100,12 @@ int main(int argc, char** argv) {
 #endif
   bell::setDefaultLogger();
 
-  std::atomic<bool> gotBlob = false;
-  std::atomic<bool> running = true;
-  auto server = std::make_unique<bell::BellHTTPServer>(7864);
+  // Semaphore, main thread waits for this to be signaled before signing in
+  auto loggedInSemaphore = std::make_shared<bell::WrappedSemaphore>(1);
+
+  auto zeroconfServer = std::make_unique<ZeroconfAuthenticator>();
 
   try {
-
     auto args = CommandLineArguments::parse(argc, argv);
     if (args->shouldShowHelp) {
       std::cout << "Usage: cspotcli [OPTION]...\n";
@@ -73,92 +127,56 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-    if (args->setBitrate) {
-      // configMan->format = args->bitrate;
-    }
-    auto blob = std::make_shared<LoginBlob>("CSpot player");
+    // Create a login blob, pass a device name
+    auto loginBlob = std::make_shared<LoginBlob>("CSpot player");
 
     // Login using Command line arguments
     if (!args->username.empty()) {
-      blob->loadUserPass(args->username, args->password);
-      gotBlob = true;
+      loginBlob->loadUserPass(args->username, args->password);
+      loggedInSemaphore->give();
     }
     // ZeroconfAuthenticator
     else {
-      server->registerGet(
-          "/spotify_info", [&server, blob](struct mg_connection* conn) {
-            return server->makeJsonResponse(blob->buildZeroconfInfo());
-          });
-      server->registerGet(
-          "/disconnect", [&server, &running, blob](struct mg_connection* conn) {
-            running = false;
-            return server->makeJsonResponse("ok");
-          });
-      server->registerPost("/spotify_info", [&server, blob, &gotBlob](
-                                                struct mg_connection* conn) {
-        nlohmann::json obj;
-        obj["status"] = 101;
-        obj["spotifyError"] = 0;
-        obj["statusString"] = "ERROR-OK";
-
-        std::string body = "";
-        auto requestInfo = mg_get_request_info(conn);
-        if (requestInfo->content_length > 0) {
-          body.resize(requestInfo->content_length);
-          mg_read(conn, body.data(), requestInfo->content_length);
-
-          mg_header hd[10];
-          int num = mg_split_form_urlencoded(body.data(), hd, 10);
-          std::map<std::string, std::string> queryMap;
-
-          for (int i = 0; i < num; i++) {
-            queryMap[hd[i].name] = hd[i].value;
-          }
-
-          blob->loadZeroconfQuery(queryMap);
-          gotBlob = true;
-        }
-
-        return server->makeJsonResponse(obj.dump());
-      });
-
-      MDNSService::registerService(
-          blob->getDeviceName(), "_spotify-connect", "_tcp", "", 7864,
-          {{"VERSION", "1.0"}, {"CPath", "/spotify_info"}, {"Stack", "SP"}});
-      std::cout << "Waiting for spotify app to connect..." << std::endl;
+      zeroconfServer->blob = loginBlob;
+      zeroconfServer->onAuthSuccess = [loggedInSemaphore]() {
+        loggedInSemaphore->give();
+      };
+      zeroconfServer->registerHandlers();
     }
 
-  waitForBlob:
-    while (!gotBlob) {
-      BELL_SLEEP_MS(100);
+    // Wait for authentication to complete
+    loggedInSemaphore->wait();
+    auto ctx = cspot::Context::createFromBlob(loginBlob);
+
+    // Apply preferences
+    if (args->setBitrate) {
+      ctx->config.audioFormat = args->bitrate;
     }
-    running = true;
 
-    if (gotBlob) {
-      auto ctx = cspot::Context::createFromBlob(blob);
-      CSPOT_LOG(info, "Creating player");
-      ctx->session->connectWithRandomAp();
-      auto token = ctx->session->authenticate(blob);
+    CSPOT_LOG(info, "Creating player");
+    ctx->session->connectWithRandomAp();
+    auto token = ctx->session->authenticate(loginBlob);
 
-      // Auth successful
-      if (token.size() > 0) {
-        auto handler = std::make_shared<cspot::SpircHandler>(ctx);
-        ctx->session->startTask();
+    // Auth successful
+    if (token.size() > 0) {
+      auto handler = std::make_shared<cspot::SpircHandler>(ctx);
 
-        auto player = std::make_shared<CliPlayer>(handler);
+      // Start handling mercury messages
+      ctx->session->startTask();
 
-        while (running) {
-          ctx->session->handlePacket();
-        }
+      // Create a player, pass the handler
+      auto player = std::make_shared<CliPlayer>(handler);
 
-        handler->disconnect();
-        player->disconnect();
-
-        running = false;
+      // If we wanted to handle multiple devices, we would halt this loop
+      // when a new zeroconf login is requested, and reinitialize the session
+      while (true) {
+        ctx->session->handlePacket();
       }
-    }
 
-    gotBlob = false;
+      // Never happens, but required for above case
+      handler->disconnect();
+      player->disconnect();
+    }
 
   } catch (std::invalid_argument e) {
     std::cout << "Invalid options passed: " << e.what() << "\n";
