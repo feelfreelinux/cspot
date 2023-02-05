@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <memory>
 #include "Crypto.h"
-#include "HTTPStream.h"
 #include "WrappedSemaphore.h"
 
 #include "Logger.h"
@@ -74,7 +73,7 @@ class CDNTrackStream {
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
 
-  std::unique_ptr<bell::HTTPStream::Response> httpConnection;
+  std::unique_ptr<bell::HTTPClient::Response> httpConnection;
   bool isConnected = false;
 
   size_t position = 0; // Spotify header size

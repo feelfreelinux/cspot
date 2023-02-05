@@ -14,7 +14,7 @@ std::string ApResolve::fetchFirstApAddress()
         return apOverride;
     }
 
-    auto request = bell::HTTPStream::get("https://apresolve.spotify.com/");
+    auto request = bell::HTTPClient::get("https://apresolve.spotify.com/");
 
     // parse json with nlohmann
     auto json = nlohmann::json::parse(request->body());

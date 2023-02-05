@@ -64,7 +64,7 @@ void CliPlayer::runTask() {
   std::vector<uint8_t> outBuf = std::vector<uint8_t>(1024);
 
   std::scoped_lock lock(runningMutex);
-  bell::CentralAudioBuffer::AudioChunk chunk;
+  bell::CentralAudioBuffer::AudioChunk* chunk;
 
   size_t lastHash = 0;
 
@@ -80,20 +80,20 @@ void CliPlayer::runTask() {
         this->dsp->queryInstantEffect(std::move(effect));
       }
 
-      if (chunk.pcmSize == 0) {
+      if (!chunk || chunk->pcmSize == 0) {
         BELL_SLEEP_MS(10);
         continue;
       } else {
-        if (lastHash != chunk.trackHash) {
+        if (lastHash != chunk->trackHash) {
           std::cout << " Last hash " << lastHash << " new hash "
-                    << chunk.trackHash << std::endl;
-          lastHash = chunk.trackHash;
+                    << chunk->trackHash << std::endl;
+          lastHash = chunk->trackHash;
           this->handler->notifyAudioReachedPlayback();
         }
 
-        this->dsp->process(chunk.pcmData, chunk.pcmSize, 2,
-                           bell::SampleRate::SR_44100, bell::BitWidth::BW_16);
-        this->audioSink->feedPCMFrames(chunk.pcmData, chunk.pcmSize);
+        this->dsp->process(chunk->pcmData, chunk->pcmSize, 2, 44100,
+                           bell::BitWidth::BW_16);
+        this->audioSink->feedPCMFrames(chunk->pcmData, chunk->pcmSize);
       }
     } else {
       BELL_SLEEP_MS(10);

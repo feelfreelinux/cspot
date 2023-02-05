@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 
-#include "HTTPStream.h"
+#include "HTTPClient.h"
 #include "nlohmann/json.hpp"
 
 namespace cspot {

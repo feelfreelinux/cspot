@@ -1,6 +1,5 @@
 #include "LoginBlob.h"
 #include "ConstantParameters.h"
-#include "JSONObject.h"
 #include "Logger.h"
 
 LoginBlob::LoginBlob(std::string name) {
@@ -120,18 +119,12 @@ void LoginBlob::loadUserPass(const std::string& username,
 }
 
 void LoginBlob::loadJson(const std::string& json) {
-  auto root = cJSON_Parse(json.c_str());
-  auto authTypeObject = cJSON_GetObjectItemCaseSensitive(root, "authType");
-  auto usernameObject = cJSON_GetObjectItemCaseSensitive(root, "username");
-  auto authDataObject = cJSON_GetObjectItemCaseSensitive(root, "authData");
+  auto root = nlohmann::json::parse(json);
+  this->authType = root["authType"];
+  this->username = root["username"];
+  std::string authDataObject = root["authData"];
 
-  auto authDataString = std::string(cJSON_GetStringValue(authDataObject));
-  this->authData = crypto->base64Decode(authDataString);
-
-  this->username = std::string(cJSON_GetStringValue(usernameObject));
-  this->authType = cJSON_GetNumberValue(authTypeObject);
-
-  cJSON_Delete(root);
+  this->authData = crypto->base64Decode(authDataObject);
 }
 
 std::string LoginBlob::toJson() {

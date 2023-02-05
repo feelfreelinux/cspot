@@ -68,7 +68,6 @@ void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs,
 void TrackPlayer::stopTrack() {
   this->currentSongPlaying = false;
   std::scoped_lock lock(playbackMutex);
-  this->currentTrackStream = nullptr;
 }
 
 void TrackPlayer::seekMs(size_t ms) {
@@ -130,7 +129,7 @@ void TrackPlayer::runTask() {
 
           while (!eof && currentSongPlaying && toWrite > 0) {
             auto written =
-                dataCallback(pcmBuffer.data() + (ret-toWrite), toWrite,
+                dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
                              this->currentTrackStream->trackInfo.trackId);
             if (written == 0) {
               BELL_SLEEP_MS(10);
@@ -141,7 +140,7 @@ void TrackPlayer::runTask() {
       }
     }
     ov_clear(&vorbisFile);
-    this->currentTrackStream = nullptr;
+    this->currentTrackStream.reset();
     this->playbackMutex.unlock();
 
     if (eof) {
@@ -151,6 +150,9 @@ void TrackPlayer::runTask() {
 }
 
 size_t TrackPlayer::_vorbisRead(void* ptr, size_t size, size_t nmemb) {
+  if (this->currentTrackStream == nullptr) {
+    return 0;
+  }
   return this->currentTrackStream->readBytes((uint8_t*)ptr, nmemb * size);
 }
 
@@ -163,6 +165,9 @@ void TrackPlayer::setTrackLoadedCallback(TrackLoadedCallback callback) {
 }
 
 int TrackPlayer::_vorbisSeek(int64_t offset, int whence) {
+  if (this->currentTrackStream == nullptr) {
+    return 0;
+  }
   switch (whence) {
     case 0:
       this->currentTrackStream->seek(offset);  // Spotify header offset
@@ -181,6 +186,9 @@ int TrackPlayer::_vorbisSeek(int64_t offset, int whence) {
 }
 
 long TrackPlayer::_vorbisTell() {
+  if (this->currentTrackStream == nullptr) {
+    return 0;
+  }
   return this->currentTrackStream->getPosition();
 }
 
