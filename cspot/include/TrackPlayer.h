@@ -18,7 +18,7 @@ class TrackPlayer : bell::Task {
   ~TrackPlayer();
 
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<int(uint8_t*, size_t, std::string_view)> DataCallback;
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view)> DataCallback;
   typedef std::function<void()> EOFCallback;
 
   enum class Status { STOPPED, LOADING, PLAYING, PAUSED };

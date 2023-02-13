@@ -2,6 +2,8 @@
 #include "ConstantParameters.h"
 #include "Logger.h"
 
+using namespace cspot;
+
 LoginBlob::LoginBlob(std::string name) {
   this->crypto = std::make_unique<Crypto>();
   this->name = name;
