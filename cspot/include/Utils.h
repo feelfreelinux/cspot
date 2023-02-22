@@ -39,6 +39,8 @@ unsigned long long getCurrentTimestamp();
  */
 uint64_t hton64(uint64_t value);
 
+std::vector<uint8_t> bigNumDivide(std::vector<uint8_t> num, int n);
+
 /**
  * @brief Performs big number multiplication on two numbers
  * 
@@ -62,6 +64,13 @@ unsigned char h2int(char c);
 
 std::string urlDecode(std::string str);
 
+/**
+ * @brief Converts provided hex string into binary data
+ * 
+ * @param s string containing hex data
+ * @return std::vector<uint8_t> vector containing binary data
+ */
+std::vector<uint8_t> stringHexToBytes(const std::string &s);
 
 /**
  * @brief Converts provided bytes into a human readable hex string

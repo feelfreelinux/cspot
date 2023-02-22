@@ -9,6 +9,7 @@
 #include "CDNTrackStream.h"
 #include "CSpotContext.h"
 #include "TrackProvider.h"
+#include "TrackReference.h"
 #include "ivorbisfile.h"
 
 namespace cspot {
@@ -24,7 +25,7 @@ class TrackPlayer : bell::Task {
   enum class Status { STOPPED, LOADING, PLAYING, PAUSED };
   Status playerStatus;
 
-  void loadTrackFromRef(TrackRef* ref, size_t playbackMs, bool startAutomatically);
+  void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
   void setTrackLoadedCallback(TrackLoadedCallback callback);
   void setEOFCallback(EOFCallback callback);
   void setDataCallback(DataCallback callback);

@@ -7,6 +7,8 @@
 #include "MercurySession.h"
 #include "PlaybackState.h"
 #include "TrackPlayer.h"
+#include "TrackReference.h"
+#include "protobuf/spirc.pb.h"
 
 using namespace cspot;
 
@@ -20,7 +22,8 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
 
     if (!isNextTrackPreloaded && ref != nullptr) {
       isNextTrackPreloaded = true;
-      this->trackPlayer->loadTrackFromRef(ref, 0, true);
+      auto trackRef = TrackReference::fromTrackRef(ref);
+      this->trackPlayer->loadTrackFromRef(trackRef, 0, true);
     }
   });
 
@@ -39,7 +42,8 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
 
 void SpircHandler::subscribeToMercury() {
   auto responseLambda = [=](MercurySession::Response& res) {
-    if (res.fail) return;
+    if (res.fail)
+      return;
 
     sendCmd(MessageType_kMessageTypeHello);
     CSPOT_LOG(debug, "Sent kMessageTypeHello!");
@@ -48,7 +52,8 @@ void SpircHandler::subscribeToMercury() {
     this->ctx->config.countryCode = this->ctx->session->getCountryCode();
   };
   auto subscriptionLambda = [=](MercurySession::Response& res) {
-    if (res.fail) return;
+    if (res.fail)
+      return;
     CSPOT_LOG(debug, "Received subscription response");
 
     this->handleFrame(res.parts[0]);
@@ -58,6 +63,32 @@ void SpircHandler::subscribeToMercury() {
       MercurySession::RequestType::SUB,
       "hm://remote/user/" + ctx->config.username + "/", responseLambda,
       subscriptionLambda);
+}
+
+void SpircHandler::loadTrackFromURI(const std::string& uri) {
+  // {track/episode}:{gid}
+  bool isEpisode = uri.find("episode:") != std::string::npos;
+  auto gid = stringHexToBytes(uri.substr(uri.find(":") + 1));
+  auto trackRef = TrackReference::fromGID(gid, isEpisode);
+
+  isRequestedFromLoad = true;
+  isNextTrackPreloaded = false;
+
+  playbackState.setActive(true);
+
+  auto playbackRef = playbackState.getCurrentTrackRef();
+
+  if (playbackRef != nullptr) {
+    playbackState.updatePositionMs(playbackState.remoteFrame.state.position_ms);
+
+    auto ref = TrackReference::fromTrackRef(playbackRef);
+    this->trackPlayer->loadTrackFromRef(
+        ref, playbackState.remoteFrame.state.position_ms, true);
+    playbackState.setPlaybackState(PlaybackState::State::Loading);
+    this->nextTrackPosition = playbackState.remoteFrame.state.position_ms;
+  }
+
+  this->notify();
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -146,9 +177,9 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
         playbackState.updatePositionMs(
             playbackState.remoteFrame.state.position_ms);
 
+        auto ref = TrackReference::fromTrackRef(playbackRef);
         this->trackPlayer->loadTrackFromRef(
-            playbackState.getCurrentTrackRef(),
-            playbackState.remoteFrame.state.position_ms, true);
+            ref, playbackState.remoteFrame.state.position_ms, true);
         playbackState.setPlaybackState(PlaybackState::State::Loading);
         this->nextTrackPosition = playbackState.remoteFrame.state.position_ms;
       }
@@ -192,10 +223,8 @@ void SpircHandler::nextSong() {
   if (playbackState.nextTrack()) {
     isRequestedFromLoad = true;
     isNextTrackPreloaded = false;
-
-    this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrackRef(), 0,
-                                        true);
-
+    auto ref = TrackReference::fromTrackRef(playbackState.getCurrentTrackRef());
+    this->trackPlayer->loadTrackFromRef(ref, 0, true);
   } else {
     sendEvent(EventType::FLUSH);
     playbackState.updatePositionMs(0);
@@ -211,8 +240,8 @@ void SpircHandler::previousSong() {
   isNextTrackPreloaded = false;
 
   sendEvent(EventType::PREV);
-  this->trackPlayer->loadTrackFromRef(playbackState.getCurrentTrackRef(), 0,
-                                      true);
+  auto ref = TrackReference::fromTrackRef(playbackState.getCurrentTrackRef());
+  this->trackPlayer->loadTrackFromRef(ref, 0, true);
   this->nextTrackPosition = 0;
 
   notify();

@@ -23,6 +23,19 @@ uint64_t hton64(uint64_t value) {
     }
 }
 
+std::vector<uint8_t> stringHexToBytes(const std::string & s) {
+    std::vector<uint8_t> v;
+    v.reserve(s.length() / 2);
+
+    for (std::string::size_type i = 0; i < s.length(); i += 2) {
+        std::string byteString = s.substr(i, 2);
+        uint8_t byte = (uint8_t) strtol(byteString.c_str(), NULL, 16);
+        v.push_back(byte);
+    }
+
+    return v;
+}
+
 std::string bytesToHexString(const std::vector<uint8_t>& v) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
@@ -58,6 +71,28 @@ std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n)
                 num.insert(num.begin(), carry);
                 return num;
             }
+        }
+    }
+
+    return num;
+}
+
+std::vector<uint8_t> bigNumDivide(std::vector<uint8_t> num, int n)
+{
+    auto carry = 0;
+    for (int x = 0; x < num.size(); x++)
+    {
+        int res = num[x] + carry * 256;
+        if (res < n)
+        {
+            carry = res;
+            num[x] = 0;
+        }
+        else
+        {
+            // Carry the rest of the division
+            carry = res % n;
+            num[x] = res / n;
         }
     }
 

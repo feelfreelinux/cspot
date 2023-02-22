@@ -16,7 +16,7 @@ std::string ApResolve::fetchFirstApAddress()
 
     auto request = bell::HTTPClient::get("https://apresolve.spotify.com/");
     std::string_view responseStr = request->body();
-    std::cout << responseStr << std::endl;
+
     // parse json with nlohmann
     auto json = nlohmann::json::parse(responseStr);
     return json["ap_list"][0];

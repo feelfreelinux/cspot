@@ -4,6 +4,7 @@
 #include "CDNTrackStream.h"
 #include "Logger.h"
 #include "MercurySession.h"
+#include "TrackReference.h"
 #include "Utils.h"
 #include "protobuf/metadata.pb.h"
 
@@ -22,40 +23,19 @@ TrackProvider::~TrackProvider() {
   pb_release(Track_fields, &trackInfo);
 }
 
-std::shared_ptr<cspot::CDNTrackStream> TrackProvider::loadFromTrackRef(
-    TrackRef* ref) {
+std::shared_ptr<cspot::CDNTrackStream> TrackProvider::loadFromTrackRef(TrackReference& trackRef) {
   auto track = std::make_shared<cspot::CDNTrackStream>(this->accessKeyFetcher);
   this->currentTrackReference = track;
-
-  if (ref->gid != nullptr) {
-    // For tracks, the GID is already in the protobuf
-    gid = pbArrayToVector(ref->gid);
-    trackType = Type::TRACK;
-  } else if (ref->uri != nullptr) {
-    // Episode GID is being fetched via base62 encoded URI
-    auto uri = std::string(ref->uri);
-    auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
-
-    gid = {0};
-
-    for (int x = 0; x < uri.size(); x++) {
-      size_t d = alphabet.find(uri[x]);
-      gid = bigNumMultiply(gid, 62);
-      gid = bigNumAdd(gid, d);
-    }
-
-    trackType = Type::EPISODE;
-  }
+  this->trackIdInfo = trackRef;
 
   queryMetadata();
-
   return track;
 }
 
 void TrackProvider::queryMetadata() {
   std::string requestUrl = string_format(
-      "hm://metadata/3/%s/%s", trackType == Type::TRACK ? "track" : "episode",
-      bytesToHexString(gid).c_str());
+      "hm://metadata/3/%s/%s", trackIdInfo.type == TrackReference::Type::TRACK ? "track" : "episode",
+      bytesToHexString(trackIdInfo.gid).c_str());
   CSPOT_LOG(debug, "Requesting track metadata from %s", requestUrl.c_str());
 
   auto responseHandler = [=](MercurySession::Response& res) {
@@ -90,7 +70,6 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
         auto trackRef = this->currentTrackReference.lock();
         trackRef->status = CDNTrackStream::Status::FAILED;
         trackRef->trackReady->give();
-
       }
       return;
     }
@@ -125,7 +104,7 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
     auto imageId =
         pbArrayToVector(trackInfo.album.cover_group.image[0].file_id);
 
-    trackRef->trackInfo.trackId = bytesToHexString(gid);
+    trackRef->trackInfo.trackId = bytesToHexString(trackIdInfo.gid);
     trackRef->trackInfo.name = std::string(trackInfo.name);
     trackRef->trackInfo.album = std::string(trackInfo.album.name);
     trackRef->trackInfo.artist = std::string(trackInfo.artist[0].name);

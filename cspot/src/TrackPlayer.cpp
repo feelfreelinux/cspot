@@ -6,6 +6,7 @@
 #include <vector>
 #include "CDNTrackStream.h"
 #include "Logger.h"
+#include "TrackReference.h"
 #include "ivorbisfile.h"
 
 using namespace cspot;
@@ -29,7 +30,7 @@ static long vorbisTellCb(TrackPlayer* self) {
 }
 
 TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx)
-    : bell::Task("cspot_player", 32 * 1024, 5, 1) {
+    : bell::Task("cspot_player", 48 * 1024, 5, 1) {
   this->ctx = ctx;
   this->trackProvider = std::make_shared<cspot::TrackProvider>(ctx);
   this->playbackSemaphore = std::make_unique<bell::WrappedSemaphore>(5);
@@ -52,7 +53,7 @@ TrackPlayer::~TrackPlayer() {
   std::scoped_lock lock(runningMutex);
 }
 
-void TrackPlayer::loadTrackFromRef(TrackRef* ref, size_t positionMs,
+void TrackPlayer::loadTrackFromRef(TrackReference& ref, size_t positionMs,
                                    bool startAutomatically) {
   this->playbackPosition = positionMs;
   this->autoStart = startAutomatically;

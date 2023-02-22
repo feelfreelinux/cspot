@@ -48,6 +48,7 @@ class SpircHandler {
 
   void notifyAudioReachedPlayback();
   void setRemoteVolume(int volume);
+  void loadTrackFromURI(const std::string& uri);
 
   void disconnect();
 
