@@ -1,7 +1,7 @@
 [submodule "cspot/bell"]
 	path = cspot/bell
-	url = https://github.com/feelfreelinux/bell
-	branch = master
+	url = https://github.com/philippe44/bell
+	branch = Windows+fixes
 
 [submodule "cspot/mdnssvc"]
 	path = cspot/mdnssvc
