@@ -78,7 +78,11 @@ void PlainConnection::connect(const std::string& apAddress) {
       break;
     }
 
+#ifdef _WIN32
+    closesocket(this->apSock);
+#else
     ::close(this->apSock);
+#endif
     apSock = -1;
     throw std::runtime_error("Can't connect to spotify servers");
   }
@@ -182,6 +186,10 @@ void PlainConnection::close() {
 
   CSPOT_LOG(info, "Closing socket...");
   shutdown(this->apSock, SHUT_RDWR);
+#ifdef _WIN32
+  closesocket(this->apSock);
+#else
   ::close(this->apSock);
+#endif
   this->apSock = -1;
 }

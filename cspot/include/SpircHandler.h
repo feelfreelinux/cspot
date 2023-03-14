@@ -47,6 +47,7 @@ class SpircHandler {
   void previousSong();
 
   void notifyAudioReachedPlayback();
+  void updatePositionMs(uint32_t position);
   void setRemoteVolume(int volume);
   void loadTrackFromURI(const std::string& uri);
 

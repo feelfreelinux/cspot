@@ -5,23 +5,44 @@
 
 #include "BellUtils.h"
 #include "CentralAudioBuffer.h"
-#include "PortAudioSink.h"
 #include "SpircHandler.h"
+
+#if defined(CSPOT_ENABLE_ALSA_SINK)
+#include "ALSAAudioSink.h"
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+#include "PortAudioSink.h"
+#else
+#include "NamedPipeAudioSink.h"
+#endif
 
 CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
     : bell::Task("player", 1024, 0, 0) {
   this->handler = handler;
+#ifdef CSPOT_ENABLE_ALSA_SINK
+  this->audioSink = std::make_unique<ALSAAudioSink>();
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
   this->audioSink = std::make_unique<PortAudioSink>();
+#else
+  this->audioSink = std::make_unique<NamedPipeAudioSink>();
+#endif
+
+#if defined(BELL_SINK_PORTAUDIO)
+  this->audioSink = std::make_unique<PortAudioSink>();
+#elif defined(BELL_SINK_ALSA)
+  this->audioSink = std::make_unique<AlsaSink>();
+#endif
   this->audioSink->setParams(44100, 2, 16);
 
   this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(1024);
 
+#ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
+#endif
 
   auto hashFunc = std::hash<std::string_view>();
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
+      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId, size_t sequence) {
         auto hash = hashFunc(trackId);
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
@@ -75,9 +96,11 @@ void CliPlayer::runTask() {
       if (this->pauseRequested) {
         this->pauseRequested = false;
         std::cout << "Pause requsted!" << std::endl;
+#ifndef BELL_DISABLE_CODECS
         auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
             44100 / 2, false, [this]() { this->isPaused = true; });
         this->dsp->queryInstantEffect(std::move(effect));
+#endif
       }
 
       if (!chunk || chunk->pcmSize == 0) {
@@ -91,8 +114,10 @@ void CliPlayer::runTask() {
           this->handler->notifyAudioReachedPlayback();
         }
 
+#ifndef BELL_DISABLE_CODECS
         this->dsp->process(chunk->pcmData, chunk->pcmSize, 2, 44100,
                            bell::BitWidth::BW_16);
+#endif
         this->audioSink->feedPCMFrames(chunk->pcmData, chunk->pcmSize);
       }
     } else {

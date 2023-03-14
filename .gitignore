@@ -3,6 +3,7 @@ old/
 .DS_Store
 __pycache__/
 build/
+build*/
 py/
 authBlob.json
 config.json

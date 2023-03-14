@@ -16,11 +16,6 @@ endif()
 # Main library sources
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
 
-if(WIN32)
-    list(APPEND SOURCES "mdnssvc/mdns.c" "mdnssvc/mdnsd.c")
-    list(APPEND EXTRA_INCLUDES "mdnssvc")
-endif()	
-
 # Use externally specified bell library or the submodule
 if(CSPOT_EXTERNAL_BELL)
     list(APPEND EXTRA_LIBS ${CSPOT_EXTERNAL_BELL})
@@ -31,8 +26,11 @@ endif()
 
 # Add Apple Bonjour compatibility library for Linux
 if(UNIX AND NOT APPLE)
-    list(APPEND EXTRA_LIBS dns_sd)
-    # TODO: migrate from this to native linux mDNS
+	if(BELL_USE_BONJOUR)
+		list(APPEND EXTRA_LIBS dns_sd)
+	else()
+		list(APPEND EXTRA_LIBS avahi-client avahi-common)
+	endif()	
 endif()
 
 # Build protobuf code

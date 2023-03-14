@@ -7,7 +7,6 @@
 #include "CDNTrackStream.h"
 #include "Logger.h"
 #include "TrackReference.h"
-#include "ivorbisfile.h"
 
 using namespace cspot;
 
@@ -58,10 +57,11 @@ void TrackPlayer::loadTrackFromRef(TrackReference& ref, size_t positionMs,
   this->playbackPosition = positionMs;
   this->autoStart = startAutomatically;
 
-  this->playerStatus = Status::LOADING;
+  this->trackStatus = Status::LOADING;
   auto nextTrack = trackProvider->loadFromTrackRef(ref);
 
   stopTrack();
+  this->sequence++;
   this->currentTrackStream = nextTrack;
   this->playbackSemaphore->give();
 }
@@ -73,7 +73,11 @@ void TrackPlayer::stopTrack() {
 
 void TrackPlayer::seekMs(size_t ms) {
   std::scoped_lock lock(seekMutex);
+#ifdef BELL_VORBIS_FLOAT
+  ov_time_seek(&vorbisFile, (double)ms / 1000);
+#else
   ov_time_seek(&vorbisFile, ms);
+#endif
 }
 
 void TrackPlayer::runTask() {
@@ -106,15 +110,24 @@ void TrackPlayer::runTask() {
     int32_t r = ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
 
     if (playbackPosition > 0) {
+#ifdef BELL_VORBIS_FLOAT
+      ov_time_seek(&vorbisFile, (double)playbackPosition / 1000);
+#else
       ov_time_seek(&vorbisFile, playbackPosition);
+#endif
     }
 
     bool eof = false;
 
     while (!eof && currentSongPlaying) {
       seekMutex.lock();
+#ifdef BELL_VORBIS_FLOAT
+      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), 
+                         0, 2, 1, &currentSection);
+#else
       long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(),
                          &currentSection);
+#endif
       seekMutex.unlock();
       if (ret == 0) {
         CSPOT_LOG(info, "EOF");
@@ -131,7 +144,7 @@ void TrackPlayer::runTask() {
           while (!eof && currentSongPlaying && toWrite > 0) {
             auto written =
                 dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
-                             this->currentTrackStream->trackInfo.trackId);
+                             this->currentTrackStream->trackInfo.trackId, this->sequence);
             if (written == 0) {
               BELL_SLEEP_MS(10);
             }
@@ -141,6 +154,16 @@ void TrackPlayer::runTask() {
       }
     }
     ov_clear(&vorbisFile);
+
+    // With very large buffers, track N+1 can be downloaded while N has not aired yet and
+    // if we continue, the currentTrackStream will be emptied, causing a crash in
+    // notifyAudioReachedPlayback when it will look for trackInfo. A busy loop is never 
+    // ideal, but this low impact, infrequent and more simple than yet another semaphore
+    while (currentSongPlaying && this->trackStatus == TrackPlayer::Status::LOADING) {
+        BELL_SLEEP_MS(100);
+    }
+
+    this->trackStatus = Status::EMPTY;
     this->currentTrackStream.reset();
     this->playbackMutex.unlock();
 

@@ -2,7 +2,3 @@
 	path = cspot/bell
 	url = https://github.com/philippe44/bell
 	branch = Windows+fixes
-
-[submodule "cspot/mdnssvc"]
-	path = cspot/mdnssvc
-	url = https://github.com/philippe44/mdnssvc

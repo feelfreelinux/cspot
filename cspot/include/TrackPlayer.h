@@ -10,7 +10,11 @@
 #include "CSpotContext.h"
 #include "TrackProvider.h"
 #include "TrackReference.h"
+#ifdef BELL_VORBIS_FLOAT
+#include "vorbis/vorbisfile.h"
+#else
 #include "ivorbisfile.h"
+#endif
 
 namespace cspot {
 class TrackPlayer : bell::Task {
@@ -19,12 +23,12 @@ class TrackPlayer : bell::Task {
   ~TrackPlayer();
 
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view)> DataCallback;
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)> DataCallback;
   typedef std::function<void()> EOFCallback;
 
-  enum class Status { STOPPED, LOADING, PLAYING, PAUSED };
-  Status playerStatus;
-
+  enum class Status { EMPTY, LOADING, AIRING };
+  std::atomic<Status> trackStatus = Status::EMPTY;
+  
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
   void setTrackLoadedCallback(TrackLoadedCallback callback);
   void setEOFCallback(EOFCallback callback);
@@ -46,6 +50,7 @@ class TrackPlayer : bell::Task {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackProvider> trackProvider;
   std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
+  size_t sequence = std::time(nullptr);
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
 

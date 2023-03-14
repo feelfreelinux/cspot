@@ -31,7 +31,7 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
     this->currentTrackInfo = this->trackPlayer->getCurrentTrackInfo();
 
     if (isRequestedFromLoad) {
-      sendEvent(EventType::PLAYBACK_START);
+      sendEvent(EventType::PLAYBACK_START, (int) nextTrackPosition);
       setPause(false);
     }
   });
@@ -92,6 +92,11 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
+  // if track is already empty, we'll never see it airing
+  if (trackPlayer->trackStatus != cspot::TrackPlayer::Status::EMPTY) {
+    trackPlayer->trackStatus = cspot::TrackPlayer::Status::AIRING;
+  }
+   
   if (isRequestedFromLoad || isNextTrackPreloaded) {
     playbackState.updatePositionMs(nextTrackPosition);
     playbackState.setPlaybackState(PlaybackState::State::Playing);
@@ -111,6 +116,11 @@ void SpircHandler::notifyAudioReachedPlayback() {
   this->notify();
 
   sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
+}
+
+void SpircHandler::updatePositionMs(uint32_t position) {
+    playbackState.updatePositionMs(position);
+    notify();
 }
 
 void SpircHandler::disconnect() {
@@ -137,10 +147,22 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     }
     case MessageType_kMessageTypeSeek: {
-      CSPOT_LOG(debug, "Seek command");
-      sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
-      playbackState.updatePositionMs(playbackState.remoteFrame.position);
-      trackPlayer->seekMs(playbackState.remoteFrame.position);
+      if (trackPlayer->trackStatus == cspot::TrackPlayer::Status::AIRING) {
+          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
+          CSPOT_LOG(debug, "Seek command while streaming current");
+          playbackState.updatePositionMs(playbackState.remoteFrame.position);
+          trackPlayer->seekMs(playbackState.remoteFrame.position);
+      } else {
+          // as next track is already downloading (or the current one has not started yet) we 
+          // can't just reload the current one or it will trigger a track change detection. 
+          // Just restart the entire process
+          CSPOT_LOG(debug, "Seek command while streaming next or before started");
+          isRequestedFromLoad = true;
+          isNextTrackPreloaded = false;
+          auto ref = TrackReference::fromTrackRef(playbackState.getCurrentTrackRef());
+          this->trackPlayer->loadTrackFromRef(ref, playbackState.remoteFrame.position, true);
+          this->nextTrackPosition = playbackState.remoteFrame.position;
+      }
       notify();
       break;
     }
@@ -212,7 +234,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
 
 void SpircHandler::setRemoteVolume(int volume) {
   playbackState.setVolume(volume);
-  // notify();
+  notify();
 }
 
 void SpircHandler::notify() {
