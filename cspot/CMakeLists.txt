@@ -24,11 +24,6 @@ else()
     list(APPEND EXTRA_LIBS bell)
 endif()
 
-# Add Apple Bonjour compatibility library for Linux
-if(UNIX AND NOT APPLE)
-	list(APPEND EXTRA_LIBS avahi-client avahi-common)
-endif()
-
 # Build protobuf code
 set(NANOPB_OPTIONS "-I${CMAKE_CURRENT_SOURCE_DIR}")
 file(GLOB PROTOS protobuf/*.proto)
