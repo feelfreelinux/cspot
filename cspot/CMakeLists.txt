@@ -26,11 +26,7 @@ endif()
 
 # Add Apple Bonjour compatibility library for Linux
 if(UNIX AND NOT APPLE)
-	if(BELL_USE_BONJOUR)
-		list(APPEND EXTRA_LIBS dns_sd)
-	else()
-		list(APPEND EXTRA_LIBS avahi-client avahi-common)
-	endif()	
+	list(APPEND EXTRA_LIBS avahi-client avahi-common)
 endif()
 
 # Build protobuf code
