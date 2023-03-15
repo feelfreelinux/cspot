@@ -41,7 +41,7 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
 }
 
 void SpircHandler::subscribeToMercury() {
-  auto responseLambda = [=](MercurySession::Response& res) {
+  auto responseLambda = [this](MercurySession::Response& res) {
     if (res.fail)
       return;
 
@@ -51,7 +51,7 @@ void SpircHandler::subscribeToMercury() {
     // Assign country code
     this->ctx->config.countryCode = this->ctx->session->getCountryCode();
   };
-  auto subscriptionLambda = [=](MercurySession::Response& res) {
+  auto subscriptionLambda = [this](MercurySession::Response& res) {
     if (res.fail)
       return;
     CSPOT_LOG(debug, "Received subscription response");
