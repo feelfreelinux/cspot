@@ -163,7 +163,8 @@ void TrackPlayer::runTask() {
         BELL_SLEEP_MS(100);
     }
 
-    this->trackStatus = Status::EMPTY;
+    // always move back to LOADING (ensure proper seeking after last track has been loaded)
+    this->trackStatus = Status::LOADING;
     this->currentTrackStream.reset();
     this->playbackMutex.unlock();
 

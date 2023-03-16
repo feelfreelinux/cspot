@@ -92,10 +92,7 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
-  // if track is already empty, we'll never see it airing
-  if (trackPlayer->trackStatus != cspot::TrackPlayer::Status::EMPTY) {
-    trackPlayer->trackStatus = cspot::TrackPlayer::Status::AIRING;
-  }
+  trackPlayer->trackStatus = cspot::TrackPlayer::Status::AIRING;
    
   if (isRequestedFromLoad || isNextTrackPreloaded) {
     playbackState.updatePositionMs(nextTrackPosition);
