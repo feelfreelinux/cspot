@@ -25,9 +25,8 @@ class TrackPlayer : bell::Task {
   typedef std::function<void()> TrackLoadedCallback;
   typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)> DataCallback;
   typedef std::function<void()> EOFCallback;
-
-  enum class Status { LOADING, AIRING };
-  std::atomic<Status> trackStatus = Status::LOADING;
+    
+  std::atomic<bool> airing = false;
   
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
   void setTrackLoadedCallback(TrackLoadedCallback callback);

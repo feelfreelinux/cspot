@@ -92,7 +92,7 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
-  trackPlayer->trackStatus = cspot::TrackPlayer::Status::AIRING;
+  trackPlayer->airing = true;
    
   if (isRequestedFromLoad || isNextTrackPreloaded) {
     playbackState.updatePositionMs(nextTrackPosition);
@@ -144,7 +144,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     }
     case MessageType_kMessageTypeSeek: {
-      if (trackPlayer->trackStatus == cspot::TrackPlayer::Status::AIRING) {
+      if (trackPlayer->airing) {
           sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
           CSPOT_LOG(debug, "Seek command while streaming current");
           playbackState.updatePositionMs(playbackState.remoteFrame.position);

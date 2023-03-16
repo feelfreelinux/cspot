@@ -57,7 +57,7 @@ void TrackPlayer::loadTrackFromRef(TrackReference& ref, size_t positionMs,
   this->playbackPosition = positionMs;
   this->autoStart = startAutomatically;
 
-  this->trackStatus = Status::LOADING;
+  this->airing = false;
   auto nextTrack = trackProvider->loadFromTrackRef(ref);
 
   stopTrack();
@@ -159,12 +159,12 @@ void TrackPlayer::runTask() {
     // if we continue, the currentTrackStream will be emptied, causing a crash in
     // notifyAudioReachedPlayback when it will look for trackInfo. A busy loop is never 
     // ideal, but this low impact, infrequent and more simple than yet another semaphore
-    while (currentSongPlaying && this->trackStatus == TrackPlayer::Status::LOADING) {
+    while (currentSongPlaying && !this->airing) {
         BELL_SLEEP_MS(100);
     }
 
     // always move back to LOADING (ensure proper seeking after last track has been loaded)
-    this->trackStatus = Status::LOADING;
+    this->airing = false;
     this->currentTrackStream.reset();
     this->playbackMutex.unlock();
 
