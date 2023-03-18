@@ -26,11 +26,6 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
   this->audioSink = std::make_unique<NamedPipeAudioSink>();
 #endif
 
-#if defined(BELL_SINK_PORTAUDIO)
-  this->audioSink = std::make_unique<PortAudioSink>();
-#elif defined(BELL_SINK_ALSA)
-  this->audioSink = std::make_unique<AlsaSink>();
-#endif
   this->audioSink->setParams(44100, 2, 16);
 
   this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(1024);
