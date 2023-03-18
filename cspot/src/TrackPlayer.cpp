@@ -93,7 +93,9 @@ void TrackPlayer::runTask() {
     }
 
     CSPOT_LOG(info, "Player received a track, waiting for it to be ready...");
-    this->currentTrackStream->trackReady->wait();
+    
+    // when track changed many times and very quickly, we are stuck on never-given semaphore
+    while (this->currentTrackStream->trackReady->twait(250));
     CSPOT_LOG(info, "Got track");
 
     if (this->currentTrackStream->status == CDNTrackStream::Status::FAILED) {

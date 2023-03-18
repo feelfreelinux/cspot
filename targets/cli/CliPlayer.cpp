@@ -100,6 +100,8 @@ void CliPlayer::runTask() {
         auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
             44100 / 2, false, [this]() { this->isPaused = true; });
         this->dsp->queryInstantEffect(std::move(effect));
+#else 
+        this->isPaused = true;
 #endif
       }
 
