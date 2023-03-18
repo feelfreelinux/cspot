@@ -19,20 +19,17 @@
 namespace cspot {
 class TrackPlayer : bell::Task {
  public:
-  TrackPlayer(std::shared_ptr<cspot::Context> ctx);
-  ~TrackPlayer();
-
   typedef std::function<void()> TrackLoadedCallback;
   typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)> DataCallback;
   typedef std::function<void()> EOFCallback;
-    
-  std::atomic<bool> airing = false;
-  
-  void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
-  void setTrackLoadedCallback(TrackLoadedCallback callback);
-  void setEOFCallback(EOFCallback callback);
-  void setDataCallback(DataCallback callback);
+  typedef std::function<bool()> isAiringCallback;
 
+  TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback, EOFCallback, TrackLoadedCallback);
+  ~TrackPlayer();
+      
+  void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
+  void setDataCallback(DataCallback callback);
+  
   CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
   void stopTrack();
@@ -55,13 +52,14 @@ class TrackPlayer : bell::Task {
 
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;
-  EOFCallback eofCallback = nullptr;
+  EOFCallback eofCallback;
+  isAiringCallback isAiring;
 
   // Playback control
   std::atomic<bool> currentSongPlaying;
   std::mutex playbackMutex;
   std::mutex seekMutex;
-
+  
   // Vorbis related
   OggVorbis_File vorbisFile;
   ov_callbacks vorbisCallbacks;

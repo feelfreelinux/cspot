@@ -38,6 +38,7 @@ void AccessKeyFetcher::getAccessKey(AccessKeyFetcher::Callback callback) {
   ctx->session->execute(
       MercurySession::RequestType::GET, url,
       [this, timeProvider, callback](MercurySession::Response& res) {
+        if (res.fail) return;
         char* accessKeyJson = (char*)res.parts[0].data();
         auto accessJSON = std::string(accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
         auto jsonBody = nlohmann::json::parse(accessJSON);

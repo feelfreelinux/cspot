@@ -14,27 +14,36 @@ using namespace cspot;
 
 SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
     : playbackState(ctx) {
-  this->ctx = ctx;
-  this->trackPlayer = std::make_shared<TrackPlayer>(ctx);
 
-  this->trackPlayer->setEOFCallback([this]() {
-    auto ref = this->playbackState.getNextTrackRef();
+  auto isAiringCallback = [this]() {
+    return !(isNextTrackPreloaded || isRequestedFromLoad);
+  };
 
-    if (!isNextTrackPreloaded && ref != nullptr) {
-      isNextTrackPreloaded = true;
-      auto trackRef = TrackReference::fromTrackRef(ref);
-      this->trackPlayer->loadTrackFromRef(trackRef, 0, true);
-    }
-  });
+  auto EOFCallback = [this]() {
+      auto ref = this->playbackState.getNextTrackRef();
 
-  this->trackPlayer->setTrackLoadedCallback([this]() {
+      if (!isNextTrackPreloaded && !isRequestedFromLoad && ref != nullptr) {
+          isNextTrackPreloaded = true;
+          auto trackRef = TrackReference::fromTrackRef(ref);
+          this->trackPlayer->loadTrackFromRef(trackRef, 0, true);
+      }
+      
+      if (ref == nullptr) {
+          sendEvent(EventType::LAST);
+      }
+  };
+
+  auto trackLoadedCallback = [this]() {
     this->currentTrackInfo = this->trackPlayer->getCurrentTrackInfo();
 
     if (isRequestedFromLoad) {
-      sendEvent(EventType::PLAYBACK_START, (int) nextTrackPosition);
+      sendEvent(EventType::PLAYBACK_START, (int)nextTrackPosition);
       setPause(false);
     }
-  });
+  };
+
+  this->ctx = ctx;
+  this->trackPlayer = std::make_shared<TrackPlayer>(ctx, isAiringCallback, EOFCallback, trackLoadedCallback);
 
   // Subscribe to mercury on session ready
   ctx->session->setConnectedHandler([this]() { this->subscribeToMercury(); });
@@ -91,9 +100,7 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {
   this->notify();
 }
 
-void SpircHandler::notifyAudioReachedPlayback() {
-  trackPlayer->airing = true;
-   
+void SpircHandler::notifyAudioReachedPlayback() { 
   if (isRequestedFromLoad || isNextTrackPreloaded) {
     playbackState.updatePositionMs(nextTrackPosition);
     playbackState.setPlaybackState(PlaybackState::State::Playing);
@@ -144,15 +151,14 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     }
     case MessageType_kMessageTypeSeek: {
-      if (trackPlayer->airing) {
-          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
+      /* If next track is already downloading, we can't seek in the current one anymore. Also,
+       * when last track has been reached, we has to restart as we can't tell the difference */
+      if ((!isNextTrackPreloaded && this->playbackState.getNextTrackRef()) || isRequestedFromLoad) {
           CSPOT_LOG(debug, "Seek command while streaming current");
+          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
           playbackState.updatePositionMs(playbackState.remoteFrame.position);
           trackPlayer->seekMs(playbackState.remoteFrame.position);
       } else {
-          // as next track is already downloading (or the current one has not started yet) we 
-          // can't just reload the current one or it will trigger a track change detection. 
-          // Just restart the entire process
           CSPOT_LOG(debug, "Seek command while streaming next or before started");
           isRequestedFromLoad = true;
           isNextTrackPreloaded = false;
