@@ -29,7 +29,7 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
       }
       
       if (ref == nullptr) {
-          sendEvent(EventType::LAST);
+          sendEvent(EventType::DEPLETED);
       }
   };
 
