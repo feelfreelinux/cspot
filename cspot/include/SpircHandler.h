@@ -23,7 +23,7 @@ class SpircHandler {
     NEXT,
     PREV,
     SEEK,
-    LAST,
+    DEPLETED,
     FLUSH,
     PLAYBACK_START
   };
