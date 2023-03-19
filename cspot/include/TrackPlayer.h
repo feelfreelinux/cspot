@@ -10,26 +10,26 @@
 #include "CSpotContext.h"
 #include "TrackProvider.h"
 #include "TrackReference.h"
+#ifdef BELL_VORBIS_FLOAT
+#include "vorbis/vorbisfile.h"
+#else
 #include "ivorbisfile.h"
+#endif
 
 namespace cspot {
 class TrackPlayer : bell::Task {
  public:
-  TrackPlayer(std::shared_ptr<cspot::Context> ctx);
-  ~TrackPlayer();
-
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view)> DataCallback;
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)> DataCallback;
   typedef std::function<void()> EOFCallback;
+  typedef std::function<bool()> isAiringCallback;
 
-  enum class Status { STOPPED, LOADING, PLAYING, PAUSED };
-  Status playerStatus;
-
+  TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback, EOFCallback, TrackLoadedCallback);
+  ~TrackPlayer();
+      
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
-  void setTrackLoadedCallback(TrackLoadedCallback callback);
-  void setEOFCallback(EOFCallback callback);
   void setDataCallback(DataCallback callback);
-
+  
   CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
   void stopTrack();
@@ -46,18 +46,20 @@ class TrackPlayer : bell::Task {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackProvider> trackProvider;
   std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
+  size_t sequence = std::time(nullptr);
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
 
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;
-  EOFCallback eofCallback = nullptr;
+  EOFCallback eofCallback;
+  isAiringCallback isAiring;
 
   // Playback control
   std::atomic<bool> currentSongPlaying;
   std::mutex playbackMutex;
   std::mutex seekMutex;
-
+  
   // Vorbis related
   OggVorbis_File vorbisFile;
   ov_callbacks vorbisCallbacks;

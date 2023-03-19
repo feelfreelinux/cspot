@@ -38,7 +38,7 @@ void TrackProvider::queryMetadata() {
       bytesToHexString(trackIdInfo.gid).c_str());
   CSPOT_LOG(debug, "Requesting track metadata from %s", requestUrl.c_str());
 
-  auto responseHandler = [=](MercurySession::Response& res) {
+  auto responseHandler = [this](MercurySession::Response& res) {
     this->onMetadataResponse(res);
   };
 

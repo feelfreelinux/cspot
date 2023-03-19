@@ -21,7 +21,7 @@ endif()
 # Main target sources
 file(GLOB SOURCES "*.cpp")
 
-find_package( portaudio REQUIRED )
+find_package(portaudio REQUIRED )
 include_directories( ${PORTAUDIO_INCLUDE_DIRS} )
 set(THINGS_TO_LINK ${THINGS_TO_LINK} ${PORTAUDIO_LIBRARIES})
 
@@ -33,7 +33,7 @@ unset(USE_PORTAUDIO CACHE)
 
 if(USE_ALSA)
     add_definitions(-DCSPOT_ENABLE_ALSA_SINK)
-    set(BELL_USE_ALSA ON)
+    set(BELL_SINK_ALSA ON)
 endif(USE_ALSA)
 unset(USE_ALSA CACHE)
 

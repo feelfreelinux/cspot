@@ -19,14 +19,6 @@
 #include "LoginBlob.h"
 #include "URLParser.h"
 
-#ifdef CSPOT_ENABLE_ALSA_SINK
-#include "ALSAAudioSink.h"
-#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-#include "PortAudioSink.h"
-#else
-#include "NamedPipeAudioSink.h"
-#endif
-
 #include "Logger.h"
 
 class ZeroconfAuthenticator {
@@ -39,7 +31,7 @@ class ZeroconfAuthenticator {
 
   // Use bell's HTTP server to handle the authentication, although anything can be used
   std::unique_ptr<bell::BellHTTPServer> server;
-  std::shared_ptr<LoginBlob> blob;
+  std::shared_ptr<cspot::LoginBlob> blob;
 
   std::function<void()> onAuthSuccess;
 
@@ -128,7 +120,7 @@ int main(int argc, char** argv) {
     }
 
     // Create a login blob, pass a device name
-    auto loginBlob = std::make_shared<LoginBlob>("CSpot player");
+    auto loginBlob = std::make_shared<cspot::LoginBlob>("CSpot player");
 
     // Login using Command line arguments
     if (!args->username.empty()) {

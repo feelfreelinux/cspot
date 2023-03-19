@@ -5,9 +5,13 @@
 using namespace cspot;
 
 LoginBlob::LoginBlob(std::string name) {
+  char hash[32];
+  sprintf(hash, "%016zu", std::hash<std::string>{}(name));
+  // base is 142137fd329622137a14901634264e6f332e2411
+  this->deviceId = std::string("142137fd329622137a149016") + std::string(hash);
   this->crypto = std::make_unique<Crypto>();
   this->name = name;
-  this->deviceId = "142137fd329622137a14901634264e6f332e2411";
+  
   this->crypto->dhInit();
 }
 
