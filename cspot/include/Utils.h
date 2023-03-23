@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "sys/socket.h"
 #include <netdb.h>
+#include <netinet/in.h>
 #endif
 #include <cstdint>
 #include <cstring>
