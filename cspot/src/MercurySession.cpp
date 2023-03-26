@@ -110,7 +110,7 @@ std::string MercurySession::getCountryCode() {
 void MercurySession::handlePacket() {
   Packet packet = {};
 
-  this->packetQueue.wtpop(packet, 10);
+  this->packetQueue.wtpop(packet, 200);
 
   if (executeEstabilishedCallback && this->connectionReadyCallback != nullptr) {
     executeEstabilishedCallback = false;
@@ -167,7 +167,8 @@ void MercurySession::handlePacket() {
 }
 
 void MercurySession::failAllPending() {
-  Response response = {.fail = true};
+  Response response = { };
+  response.fail = true;
 
   // Fail all callbacks
   for (auto& it : this->callbacks) {
