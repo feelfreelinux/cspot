@@ -38,8 +38,14 @@ void CDNTrackStream::fetchFile(const std::vector<uint8_t>& trackId,
 
     std::string_view result = req->body();
 
+#ifdef BELL_ONLY_CJSON
+    cJSON* jsonResult = cJSON_Parse(result.data());
+    std::string cdnUrl = cJSON_GetArrayItem(cJSON_GetObjectItem(jsonResult, "cdnurl"), 0)->valuestring;
+    cJSON_Delete(jsonResult);
+#else
     auto jsonResult = nlohmann::json::parse(result);
     std::string cdnUrl = jsonResult["cdnurl"][0];
+#endif
     if (this->status != Status::FAILED) {
 
       this->cdnUrl = cdnUrl;

@@ -3,7 +3,9 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#ifndef BELL_ONLY_CJSON
 #include <nlohmann/json.hpp>
+#endif
 #include <vector>
 
 #include "ConstantParameters.h"

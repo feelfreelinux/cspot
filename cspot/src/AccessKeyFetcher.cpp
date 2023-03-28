@@ -41,13 +41,24 @@ void AccessKeyFetcher::getAccessKey(AccessKeyFetcher::Callback callback) {
         if (res.fail) return;
         char* accessKeyJson = (char*)res.parts[0].data();
         auto accessJSON = std::string(accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
+#ifdef BELL_ONLY_CJSON
+        cJSON* jsonBody = cJSON_Parse(accessJSON.c_str());
+        this->accessKey = cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring;
+        int expiresIn = cJSON_GetObjectItem(jsonBody, "expiresIn")->valueint;
+#else
         auto jsonBody = nlohmann::json::parse(accessJSON);
         this->accessKey = jsonBody["accessToken"];
         int expiresIn = jsonBody["expiresIn"];
+#endif        
         expiresIn = expiresIn / 2;  // Refresh token before it expires
 
         this->expiresAt =
             timeProvider->getSyncedTimestamp() + (expiresIn * 1000);
+#ifdef BELL_ONLY_CJSON
+        callback(cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring);
+        cJSON_Delete(jsonBody);
+#else            
         callback(jsonBody["accessToken"]);
+#endif    
       });
 }

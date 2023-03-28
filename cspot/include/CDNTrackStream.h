@@ -10,7 +10,6 @@
 #include "CSpotContext.h"
 #include "AccessKeyFetcher.h"
 
-
 namespace cspot {
 
 class CDNTrackStream {

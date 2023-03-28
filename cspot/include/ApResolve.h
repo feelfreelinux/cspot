@@ -4,7 +4,11 @@
 #include <string>
 
 #include "HTTPClient.h"
+#ifdef BELL_ONLY_CJSON
+#include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"
+#endif
 
 namespace cspot {
 class ApResolve {
