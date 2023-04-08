@@ -28,12 +28,11 @@ struct TrackReference {
       // Episode GID is being fetched via base62 encoded URI
       auto uri = std::string(ref->uri);
       auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
-
       trackRef.gid = {0};
 
       std::string_view alphabet(base62Alphabet);
-      for (int x = 0; x < uri.size(); x++) {
-        size_t d = alphabet.find(uri[x]);
+      for (int x = 0; x < idString.size(); x++) {
+        size_t d = alphabet.find(idString[x]);
         trackRef.gid = bigNumMultiply(trackRef.gid, 62);
         trackRef.gid = bigNumAdd(trackRef.gid, d);
       }
