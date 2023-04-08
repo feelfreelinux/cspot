@@ -29,12 +29,10 @@ struct Context {
     ctx->timeProvider = std::make_shared<TimeProvider>();
 
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
-    ctx->config = {
-        .deviceId = blob->getDeviceId(),
-        .deviceName = blob->getDeviceName(),
-        .volume = 0,
-        .username = blob->getUserName()
-    };
+    ctx->config.deviceId = blob->getDeviceId();
+    ctx->config.deviceName = blob->getDeviceName();
+    ctx->config.volume = 0;
+    ctx->config.username = blob->getUserName();
 
     return ctx;
   }

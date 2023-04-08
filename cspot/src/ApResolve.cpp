@@ -18,6 +18,13 @@ std::string ApResolve::fetchFirstApAddress()
     std::string_view responseStr = request->body();
 
     // parse json with nlohmann
+#if BELL_ONLY_CJSON
+   cJSON* json = cJSON_Parse(responseStr.data());
+   auto ap_string = std::string(cJSON_GetArrayItem(cJSON_GetObjectItem(json, "ap_list"), 0)->valuestring);
+   cJSON_Delete(json);
+   return ap_string;
+#else    
     auto json = nlohmann::json::parse(responseStr);
     return json["ap_list"][0];
+#endif    
 }

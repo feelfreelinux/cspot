@@ -150,7 +150,7 @@ void TrackPlayer::runTask() {
                 dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
                              this->currentTrackStream->trackInfo.trackId, this->sequence);
             if (written == 0) {
-              BELL_SLEEP_MS(10);
+              BELL_SLEEP_MS(50);
             }
             toWrite -= written;
           }

@@ -77,12 +77,11 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
 
   std::vector<uint8_t> trackId;
   std::vector<uint8_t> fileId;
-  AudioFormat format = AudioFormat_OGG_VORBIS_160;
-
+  
   if (altIndex < 0) {
     trackId = pbArrayToVector(trackInfo.gid);
     for (int x = 0; x < trackInfo.file_count; x++) {
-      if (trackInfo.file[x].format == format) {
+      if (trackInfo.file[x].format == ctx->config.audioFormat) {
         fileId = pbArrayToVector(trackInfo.file[x].file_id);
         break;  // If file found stop searching
       }
@@ -90,7 +89,7 @@ void TrackProvider::onMetadataResponse(MercurySession::Response& res) {
   } else {
     trackId = pbArrayToVector(trackInfo.alternative[altIndex].gid);
     for (int x = 0; x < trackInfo.alternative[altIndex].file_count; x++) {
-      if (trackInfo.alternative[altIndex].file[x].format == format) {
+      if (trackInfo.alternative[altIndex].file[x].format == ctx->config.audioFormat) {
         fileId =
             pbArrayToVector(trackInfo.alternative[altIndex].file[x].file_id);
         break;  // If file found stop searching

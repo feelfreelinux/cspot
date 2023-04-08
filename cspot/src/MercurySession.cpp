@@ -110,7 +110,7 @@ std::string MercurySession::getCountryCode() {
 void MercurySession::handlePacket() {
   Packet packet = {};
 
-  this->packetQueue.wtpop(packet, 10);
+  this->packetQueue.wtpop(packet, 200);
 
   if (executeEstabilishedCallback && this->connectionReadyCallback != nullptr) {
     executeEstabilishedCallback = false;
@@ -120,9 +120,9 @@ void MercurySession::handlePacket() {
   switch (static_cast<RequestType>(packet.command)) {
     case RequestType::COUNTRY_CODE_RESPONSE: {
       this->countryCode = std::string();
-      this->countryCode.reserve(2);
+      this->countryCode.resize(2);
       memcpy(this->countryCode.data(), packet.data.data(), 2);
-      CSPOT_LOG(debug, "Received country code");
+      CSPOT_LOG(debug, "Received country code %s", this->countryCode.c_str());
       break;
     }
     case RequestType::AUDIO_KEY_FAILURE_RESPONSE:
@@ -167,7 +167,8 @@ void MercurySession::handlePacket() {
 }
 
 void MercurySession::failAllPending() {
-  Response response = {.fail = true};
+  Response response = { };
+  response.fail = true;
 
   // Fail all callbacks
   for (auto& it : this->callbacks) {
