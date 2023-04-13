@@ -1,9 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-#include <vector>
-
-#include "Utils.h"
+#include <stdint.h>  // for uint8_t
+#include <vector>    // for vector
 
 namespace cspot {
 class TimeProvider {

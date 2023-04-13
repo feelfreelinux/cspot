@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.3)
 
 project(cspotcli)
 
@@ -7,6 +7,11 @@ option(USE_ALSA "Enable ALSA" OFF)
 option(USE_PORTAUDIO "Enable PortAudio" OFF)
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake Build Type")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 

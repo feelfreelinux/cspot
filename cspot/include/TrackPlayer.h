@@ -1,22 +1,31 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <atomic>
-#include <BellUtils.h>
-#include <WrappedSemaphore.h>
-#include "CDNTrackStream.h"
-#include "CSpotContext.h"
-#include "TrackProvider.h"
-#include "TrackReference.h"
+#include <atomic>            // for atomic
+#include <cstdint>           // for uint8_t, int64_t
+#include <ctime>             // for size_t, time
+#include <functional>        // for function
+#include <memory>            // for shared_ptr, unique_ptr
+#include <mutex>             // for mutex
+#include <string_view>       // for string_view
+#include <vector>            // for vector
+
+#include "BellTask.h"        // for Task
+#include "CDNTrackStream.h"  // for CDNTrackStream, CDNTrackStream::TrackInfo
+
+namespace bell {
+class WrappedSemaphore;
+}  // namespace bell
 #ifdef BELL_VORBIS_FLOAT
 #include "vorbis/vorbisfile.h"
 #else
-#include "ivorbisfile.h"
+#include "ivorbisfile.h"     // for OggVorbis_File, ov_callbacks
 #endif
 
 namespace cspot {
+class TrackProvider;
+struct Context;
+struct TrackReference;
+
 class TrackPlayer : bell::Task {
  public:
   typedef std::function<void()> TrackLoadedCallback;

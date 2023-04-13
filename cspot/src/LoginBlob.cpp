@@ -1,6 +1,15 @@
 #include "LoginBlob.h"
-#include "ConstantParameters.h"
-#include "Logger.h"
+
+#include <stdio.h>                           // for sprintf
+#include <initializer_list>                  // for initializer_list
+
+#include "BellLogger.h"                      // for AbstractLogger
+#include "ConstantParameters.h"              // for brandName, cspot, protoc...
+#include "Logger.h"                          // for CSPOT_LOG
+#include "nlohmann/detail/json_pointer.hpp"  // for json_pointer<>::string_t
+#include "nlohmann/json.hpp"                 // for basic_json<>::object_t
+#include "nlohmann/json_fwd.hpp"             // for json
+#include "protobuf/authentication.pb.h"      // for AuthenticationType_AUTHE...
 #ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
 #endif

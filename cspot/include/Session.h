@@ -1,20 +1,16 @@
 #pragma once
 
-#include <algorithm>
-#include <functional>
-#include <memory>
-#include <vector>
+#include <stdint.h>  // for uint8_t
+#include <memory>    // for shared_ptr, unique_ptr
+#include <string>    // for string
+#include <vector>    // for vector
 
-#include "ApResolve.h"
-#include "AuthChallenges.h"
-#include "ConstantParameters.h"
-#include "Logger.h"
-#include "LoginBlob.h"
-#include "Packet.h"
-#include "PlainConnection.h"
-#include "ShannonConnection.h"
-#include "Utils.h"
-#include "protobuf/mercury.pb.h"
+namespace cspot {
+class AuthChallenges;
+class LoginBlob;
+class PlainConnection;
+class ShannonConnection;
+}  // namespace cspot
 
 #define LOGIN_REQUEST_COMMAND 0xAB
 #define AUTH_SUCCESSFUL_COMMAND 0xAC

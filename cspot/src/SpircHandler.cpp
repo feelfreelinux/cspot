@@ -1,14 +1,22 @@
 #include "SpircHandler.h"
-#include <memory>
-#include "AccessKeyFetcher.h"
-#include "BellUtils.h"
-#include "CSpotContext.h"
-#include "Logger.h"
-#include "MercurySession.h"
-#include "PlaybackState.h"
-#include "TrackPlayer.h"
-#include "TrackReference.h"
-#include "protobuf/spirc.pb.h"
+
+#include <cstdint>              // for uint8_t
+#include <memory>               // for shared_ptr, make_unique, unique_ptr
+#include <type_traits>          // for remove_extent_t
+#include <utility>              // for move
+
+#include "BellLogger.h"         // for AbstractLogger
+#include "CSpotContext.h"       // for Context::ConfigState, Context (ptr only)
+#include "Logger.h"             // for CSPOT_LOG
+#include "MercurySession.h"     // for MercurySession, MercurySession::Response
+#include "NanoPBHelper.h"       // for pbDecode
+#include "Packet.h"             // for cspot
+#include "PlaybackState.h"      // for PlaybackState, PlaybackState::State
+#include "TrackPlayer.h"        // for TrackPlayer
+#include "TrackReference.h"     // for TrackReference
+#include "Utils.h"              // for stringHexToBytes
+#include "pb_decode.h"          // for pb_release
+#include "protobuf/spirc.pb.h"  // for Frame, State, Frame_fields, MessageTy...
 
 using namespace cspot;
 

@@ -1,7 +1,20 @@
 #include "PlaybackState.h"
-#include <memory>
-#include "CSpotContext.h"
-#include "Logger.h"
+
+#include <string.h>              // for strdup, memcpy, strcpy, strlen
+#include <cstdint>               // for uint8_t
+#include <cstdlib>               // for free, NULL, realloc, rand
+#include <memory>                // for shared_ptr
+#include <type_traits>           // for remove_extent_t
+#include <utility>               // for swap
+
+#include "BellLogger.h"          // for AbstractLogger
+#include "CSpotContext.h"        // for Context::ConfigState, Context (ptr o...
+#include "ConstantParameters.h"  // for protocolVersion, swVersion
+#include "Logger.h"              // for CSPOT_LOG
+#include "NanoPBHelper.h"        // for pbEncode, pbPutString
+#include "Packet.h"              // for cspot
+#include "pb.h"                  // for pb_bytes_array_t, PB_BYTES_ARRAY_T_A...
+#include "pb_decode.h"           // for pb_release
 
 using namespace cspot;
 

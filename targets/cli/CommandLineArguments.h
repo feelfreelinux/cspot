@@ -1,9 +1,8 @@
 #ifndef COMMANDLINEARGUMENTS_H
 #define COMMANDLINEARGUMENTS_H
-#include <string>
-#include <memory>
-#include <stdexcept>
-#include <protobuf/metadata.pb.h>
+#include <protobuf/metadata.pb.h>  // for AudioFormat
+#include <memory>                  // for shared_ptr
+#include <string>                  // for string, basic_string
 
 /**
  * Represents the command line arguments passed to the program.

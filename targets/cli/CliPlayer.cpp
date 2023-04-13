@@ -1,18 +1,29 @@
 #include "CliPlayer.h"
-#include <functional>
-#include <memory>
-#include <mutex>
 
-#include "BellUtils.h"
-#include "CentralAudioBuffer.h"
-#include "SpircHandler.h"
+#include <cstdint>      // for uint8_t
+#include <functional>   // for __base
+#include <iostream>     // for operator<<, basic_ostream, endl, cout
+#include <memory>       // for shared_ptr, make_shared, make_unique
+#include <mutex>        // for scoped_lock
+#include <string_view>  // for hash, string_view
+#include <type_traits>  // for remove_extent_t
+#include <utility>      // for move
+#include <variant>      // for get
+#include <vector>       // for vector
+
+#include "BellDSP.h"             // for BellDSP, BellDSP::FadeEffect, BellDS...
+#include "BellUtils.h"           // for BELL_SLEEP_MS
+#include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
+#include "SpircHandler.h"        // for SpircHandler, SpircHandler::EventType
+#include "TrackPlayer.h"         // for TrackPlayer
+#include "StreamInfo.h"  // for BitWidth, BitWidth::BW_16
 
 #if defined(CSPOT_ENABLE_ALSA_SINK)
 #include "ALSAAudioSink.h"
 #elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
 #include "PortAudioSink.h"
 #else
-#include "NamedPipeAudioSink.h"
+#include "NamedPipeAudioSink.h"  // for NamedPipeAudioSink
 #endif
 
 CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
@@ -37,7 +48,8 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
   auto hashFunc = std::hash<std::string_view>();
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId, size_t sequence) {
+      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
+                        size_t sequence) {
         auto hash = hashFunc(trackId);
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
@@ -95,7 +107,7 @@ void CliPlayer::runTask() {
         auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
             44100 / 2, false, [this]() { this->isPaused = true; });
         this->dsp->queryInstantEffect(std::move(effect));
-#else 
+#else
         this->isPaused = true;
 #endif
       }

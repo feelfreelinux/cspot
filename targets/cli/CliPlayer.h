@@ -1,12 +1,22 @@
 #pragma once
 
-#include <memory>
-#include <mutex>
-#include "BellTask.h"
-#include "CentralAudioBuffer.h"
-#include "SpircHandler.h"
-#include "BellDSP.h"
-#include "AudioSink.h"
+#include <stddef.h>     // for size_t
+#include <stdint.h>     // for uint8_t
+#include <atomic>       // for atomic
+#include <memory>       // for shared_ptr, unique_ptr
+#include <mutex>        // for mutex
+#include <string>       // for string
+
+#include "AudioSink.h"  // for AudioSink
+#include "BellTask.h"   // for Task
+
+namespace bell {
+class BellDSP;
+class CentralAudioBuffer;
+}  // namespace bell
+namespace cspot {
+class SpircHandler;
+}  // namespace cspot
 
 class CliPlayer : public bell::Task {
  public:

@@ -1,5 +1,10 @@
 #include "CommandLineArguments.h"
 
+#include <stdexcept>               // for invalid_argument
+#include <type_traits>             // for remove_extent_t
+
+#include "protobuf/metadata.pb.h"  // for AudioFormat_OGG_VORBIS_160, AudioF...
+
 CommandLineArguments::CommandLineArguments(std::string u, std::string p, bool shouldShowHelp) : username(u), password(p), shouldShowHelp(shouldShowHelp) {}
 
 std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc, char **argv)

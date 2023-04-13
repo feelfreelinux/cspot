@@ -1,15 +1,18 @@
 #pragma once
 
-#include <memory>
+#include <stdint.h>                // for uint8_t
+#include <memory>                  // for shared_ptr, unique_ptr, weak_ptr
+#include <vector>                  // for vector
 
-#include "AccessKeyFetcher.h"
-#include "CDNTrackStream.h"
-#include "CSpotContext.h"
-#include "TrackReference.h"
-#include "protobuf/metadata.pb.h"
-#include "protobuf/spirc.pb.h"
+#include "MercurySession.h"        // for MercurySession
+#include "TrackReference.h"        // for TrackReference
+#include "protobuf/metadata.pb.h"  // for Episode, Restriction, Track
 
 namespace cspot {
+class AccessKeyFetcher;
+class CDNTrackStream;
+struct Context;
+
 class TrackProvider {
  public:
   TrackProvider(std::shared_ptr<cspot::Context> ctx);

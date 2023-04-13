@@ -1,9 +1,7 @@
 #include "Shannon.h"
-// #include <bit>
-#include <stdint.h> // for uint32_t
-#include <limits.h> // for CHAR_BIT
-// #define NDEBUG
-#include <assert.h>
+
+#include <limits.h>  // for CHAR_BIT
+#include <stddef.h>  // for size_t
 
 using std::size_t;
 

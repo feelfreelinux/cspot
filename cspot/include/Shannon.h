@@ -1,8 +1,9 @@
 #ifndef SHANNON_H
 #define SHANNON_H
 
-#include <cstdint>
-#include <vector>
+#include <cstdint>  // for uint32_t, uint8_t
+#include <vector>   // for vector
+
 class Shannon
 {
 public:

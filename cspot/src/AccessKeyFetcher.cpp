@@ -1,7 +1,20 @@
 #include "AccessKeyFetcher.h"
-#include <cstring>
-#include "Logger.h"
-#include "Utils.h"
+
+#include <cstring>           // for strrchr
+#include <initializer_list>  // for initializer_list
+#include <map>               // for operator!=, operator==
+#include <type_traits>       // for remove_extent_t
+#include <vector>            // for vector
+
+#include "BellLogger.h"           // for AbstractLogger
+#include "CSpotContext.h"         // for Context
+#include "Logger.h"               // for CSPOT_LOG
+#include "MercurySession.h"       // for MercurySession, MercurySession::Res...
+#include "Packet.h"               // for cspot
+#include "TimeProvider.h"         // for TimeProvider
+#include "Utils.h"                // for string_format
+#include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
+#include "nlohmann/json_fwd.hpp"  // for json
 
 using namespace cspot;
 
@@ -38,18 +51,21 @@ void AccessKeyFetcher::getAccessKey(AccessKeyFetcher::Callback callback) {
   ctx->session->execute(
       MercurySession::RequestType::GET, url,
       [this, timeProvider, callback](MercurySession::Response& res) {
-        if (res.fail) return;
+        if (res.fail)
+          return;
         char* accessKeyJson = (char*)res.parts[0].data();
-        auto accessJSON = std::string(accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
+        auto accessJSON = std::string(
+            accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
 #ifdef BELL_ONLY_CJSON
         cJSON* jsonBody = cJSON_Parse(accessJSON.c_str());
-        this->accessKey = cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring;
+        this->accessKey =
+            cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring;
         int expiresIn = cJSON_GetObjectItem(jsonBody, "expiresIn")->valueint;
 #else
         auto jsonBody = nlohmann::json::parse(accessJSON);
         this->accessKey = jsonBody["accessToken"];
         int expiresIn = jsonBody["expiresIn"];
-#endif        
+#endif
         expiresIn = expiresIn / 2;  // Refresh token before it expires
 
         this->expiresAt =
@@ -57,8 +73,8 @@ void AccessKeyFetcher::getAccessKey(AccessKeyFetcher::Callback callback) {
 #ifdef BELL_ONLY_CJSON
         callback(cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring);
         cJSON_Delete(jsonBody);
-#else            
+#else
         callback(jsonBody["accessToken"]);
-#endif    
+#endif
       });
 }

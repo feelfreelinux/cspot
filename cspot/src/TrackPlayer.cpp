@@ -1,12 +1,22 @@
 #include "TrackPlayer.h"
-#include <cstddef>
-#include <fstream>
-#include <memory>
-#include <mutex>
-#include <vector>
-#include "CDNTrackStream.h"
-#include "Logger.h"
-#include "TrackReference.h"
+
+#include <mutex>               // for mutex, scoped_lock
+#include <string>              // for string
+#include <type_traits>         // for remove_extent_t
+#include <vector>              // for vector, vector<>::value_type
+
+#include "BellLogger.h"        // for AbstractLogger
+#include "BellUtils.h"         // for BELL_SLEEP_MS
+#include "CDNTrackStream.h"    // for CDNTrackStream, CDNTrackStream::TrackInfo
+#include "Logger.h"            // for CSPOT_LOG
+#include "Packet.h"            // for cspot
+#include "TrackProvider.h"     // for TrackProvider
+#include "WrappedSemaphore.h"  // for WrappedSemaphore
+
+namespace cspot {
+struct Context;
+struct TrackReference;
+}  // namespace cspot
 
 using namespace cspot;
 
