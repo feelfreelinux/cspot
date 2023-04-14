@@ -1,10 +1,10 @@
 #ifndef SHANNONCONNECTION_H
 #define SHANNONCONNECTION_H
 
-#include <cstdint>   // for uint8_t, uint32_t
-#include <memory>    // for shared_ptr, unique_ptr
-#include <mutex>     // for mutex
-#include <vector>    // for vector
+#include <cstdint>  // for uint8_t, uint32_t
+#include <memory>   // for shared_ptr, unique_ptr
+#include <mutex>    // for mutex
+#include <vector>   // for vector
 
 #include "Packet.h"  // for Packet
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdint.h>             // for uint8_t, uint32_t
-#include <memory>               // for shared_ptr
-#include <string>               // for string
-#include <vector>               // for vector
+#include <stdint.h>  // for uint8_t, uint32_t
+#include <memory>    // for shared_ptr
+#include <string>    // for string
+#include <vector>    // for vector
 
 #include "protobuf/spirc.pb.h"  // for Frame, TrackRef, CapabilityType, Mess...
 

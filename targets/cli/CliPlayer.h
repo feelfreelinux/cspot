@@ -1,11 +1,11 @@
 #pragma once
 
-#include <stddef.h>     // for size_t
-#include <stdint.h>     // for uint8_t
-#include <atomic>       // for atomic
-#include <memory>       // for shared_ptr, unique_ptr
-#include <mutex>        // for mutex
-#include <string>       // for string
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint8_t
+#include <atomic>    // for atomic
+#include <memory>    // for shared_ptr, unique_ptr
+#include <mutex>     // for mutex
+#include <string>    // for string
 
 #include "AudioSink.h"  // for AudioSink
 #include "BellTask.h"   // for Task
@@ -22,7 +22,8 @@ class CliPlayer : public bell::Task {
  public:
   CliPlayer(std::shared_ptr<cspot::SpircHandler> spircHandler);
   void disconnect();
-private:
+
+ private:
   std::string currentTrackId;
   std::shared_ptr<cspot::SpircHandler> handler;
   std::shared_ptr<bell::BellDSP> dsp;

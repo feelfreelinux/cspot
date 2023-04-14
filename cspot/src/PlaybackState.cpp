@@ -1,11 +1,11 @@
 #include "PlaybackState.h"
 
-#include <string.h>              // for strdup, memcpy, strcpy, strlen
-#include <cstdint>               // for uint8_t
-#include <cstdlib>               // for free, NULL, realloc, rand
-#include <memory>                // for shared_ptr
-#include <type_traits>           // for remove_extent_t
-#include <utility>               // for swap
+#include <string.h>     // for strdup, memcpy, strcpy, strlen
+#include <cstdint>      // for uint8_t
+#include <cstdlib>      // for free, NULL, realloc, rand
+#include <memory>       // for shared_ptr
+#include <type_traits>  // for remove_extent_t
+#include <utility>      // for swap
 
 #include "BellLogger.h"          // for AbstractLogger
 #include "CSpotContext.h"        // for Context::ConfigState, Context (ptr o...
@@ -251,9 +251,10 @@ TrackRef* PlaybackState::getCurrentTrackRef() {
 }
 
 TrackRef* PlaybackState::getNextTrackRef() {
-  if ((innerFrame.state.playing_track_index + 1) >= innerFrame.state.track_count) {
+  if ((innerFrame.state.playing_track_index + 1) >=
+      innerFrame.state.track_count) {
     if (innerFrame.state.repeat) {
-        return &innerFrame.state.track[0];
+      return &innerFrame.state.track[0];
     }
     return nullptr;
   }

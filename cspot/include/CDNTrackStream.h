@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstddef>       // for size_t
-#include <cstdint>       // for uint8_t
-#include <memory>        // for shared_ptr, unique_ptr
-#include <string>        // for string
-#include <vector>        // for vector
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint8_t
+#include <memory>   // for shared_ptr, unique_ptr
+#include <string>   // for string
+#include <vector>   // for vector
 
 #include "Crypto.h"      // for Crypto
 #include "HTTPClient.h"  // for HTTPClient
@@ -55,7 +55,7 @@ class CDNTrackStream {
 
  private:
   const int OPUS_HEADER_SIZE = 8 * 1024;
-  const int OPUS_FOOTER_PREFFERED = 1024 * 12; // 12K should be safe
+  const int OPUS_FOOTER_PREFFERED = 1024 * 12;  // 12K should be safe
   const int SEEK_MARGIN_SIZE = 1024 * 4;
 
   const int HTTP_BUFFER_SIZE = 1024 * 14;
@@ -79,7 +79,7 @@ class CDNTrackStream {
   std::unique_ptr<bell::HTTPClient::Response> httpConnection;
   bool isConnected = false;
 
-  size_t position = 0; // Spotify header size
+  size_t position = 0;  // Spotify header size
   size_t totalFileSize = 0;
   size_t lastRequestPosition = 0;
   size_t lastRequestCapacity = 0;

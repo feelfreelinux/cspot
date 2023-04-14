@@ -1,25 +1,25 @@
-#include <functional>              // for __base, function
-#include <map>                     // for operator!=, map, map<>::mapped_type
-#include <stdexcept>               // for invalid_argument
-#include <type_traits>             // for remove_extent_t
-#include <vector>                  // for vector
+#include <functional>   // for __base, function
+#include <map>          // for operator!=, map, map<>::mapped_type
+#include <stdexcept>    // for invalid_argument
+#include <type_traits>  // for remove_extent_t
+#include <vector>       // for vector
 
-#include "BellHTTPServer.h"        // for BellHTTPServer
-#include "BellLogger.h"            // for setDefaultLogger, AbstractLogger
-#include "CSpotContext.h"          // for Context, Context::ConfigState
-#include "CliPlayer.h"             // for CliPlayer
-#include "MDNSService.h"           // for MDNSService
-#include "SpircHandler.h"          // for SpircHandler
-#include "WrappedSemaphore.h"      // for WrappedSemaphore
-#include "civetweb.h"              // for mg_header, mg_get_request_info
-#include "nlohmann/json.hpp"       // for basic_json<>::object_t, basic_json
-#include "nlohmann/json_fwd.hpp"   // for json
+#include "BellHTTPServer.h"       // for BellHTTPServer
+#include "BellLogger.h"           // for setDefaultLogger, AbstractLogger
+#include "CSpotContext.h"         // for Context, Context::ConfigState
+#include "CliPlayer.h"            // for CliPlayer
+#include "MDNSService.h"          // for MDNSService
+#include "SpircHandler.h"         // for SpircHandler
+#include "WrappedSemaphore.h"     // for WrappedSemaphore
+#include "civetweb.h"             // for mg_header, mg_get_request_info
+#include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
+#include "nlohmann/json_fwd.hpp"  // for json
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#include <iostream>                // for operator<<, cout, ostream, basic_o...
-#include <memory>                  // for shared_ptr, make_shared, unique_ptr
-#include <string>                  // for string, char_traits, operator<
+#include <iostream>  // for operator<<, cout, ostream, basic_o...
+#include <memory>    // for shared_ptr, make_shared, unique_ptr
+#include <string>    // for string, char_traits, operator<
 
 #include "CommandLineArguments.h"  // for CommandLineArguments
 #include "Logger.h"                // for CSPOT_LOG

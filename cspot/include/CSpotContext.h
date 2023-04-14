@@ -2,10 +2,10 @@
 
 #include <memory>
 
+#include "LoginBlob.h"
 #include "MercurySession.h"
 #include "TimeProvider.h"
 #include "protobuf/metadata.pb.h"
-#include "LoginBlob.h"
 
 namespace cspot {
 struct Context {
@@ -25,7 +25,8 @@ struct Context {
   std::shared_ptr<TimeProvider> timeProvider;
   std::shared_ptr<cspot::MercurySession> session;
 
-  static std::shared_ptr<Context> createFromBlob(std::shared_ptr<LoginBlob> blob) {
+  static std::shared_ptr<Context> createFromBlob(
+      std::shared_ptr<LoginBlob> blob) {
     auto ctx = std::make_shared<Context>();
     ctx->timeProvider = std::make_shared<TimeProvider>();
 
@@ -37,6 +38,5 @@ struct Context {
 
     return ctx;
   }
-
 };
 }  // namespace cspot

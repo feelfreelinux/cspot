@@ -1,9 +1,9 @@
 #include "TrackPlayer.h"
 
-#include <mutex>               // for mutex, scoped_lock
-#include <string>              // for string
-#include <type_traits>         // for remove_extent_t
-#include <vector>              // for vector, vector<>::value_type
+#include <mutex>        // for mutex, scoped_lock
+#include <string>       // for string
+#include <type_traits>  // for remove_extent_t
+#include <vector>       // for vector, vector<>::value_type
 
 #include "BellLogger.h"        // for AbstractLogger
 #include "BellUtils.h"         // for BELL_SLEEP_MS
@@ -38,7 +38,9 @@ static long vorbisTellCb(TrackPlayer* self) {
   return self->_vorbisTell();
 }
 
-TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback isAiring, EOFCallback eof, TrackLoadedCallback trackLoaded)
+TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx,
+                         isAiringCallback isAiring, EOFCallback eof,
+                         TrackLoadedCallback trackLoaded)
     : bell::Task("cspot_player", 48 * 1024, 5, 1) {
   this->ctx = ctx;
   this->isAiring = isAiring;
@@ -103,9 +105,10 @@ void TrackPlayer::runTask() {
     }
 
     CSPOT_LOG(info, "Player received a track, waiting for it to be ready...");
-    
+
     // when track changed many times and very quickly, we are stuck on never-given semaphore
-    while (this->currentTrackStream->trackReady->twait(250));
+    while (this->currentTrackStream->trackReady->twait(250))
+      ;
     CSPOT_LOG(info, "Got track");
 
     if (this->currentTrackStream->status == CDNTrackStream::Status::FAILED) {
@@ -136,8 +139,8 @@ void TrackPlayer::runTask() {
     while (!eof && currentSongPlaying) {
       seekMutex.lock();
 #ifdef BELL_VORBIS_FLOAT
-      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), 
-                         0, 2, 1, &currentSection);
+      long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(), 0,
+                         2, 1, &currentSection);
 #else
       long ret = ov_read(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(),
                          &currentSection);
@@ -156,9 +159,9 @@ void TrackPlayer::runTask() {
           auto toWrite = ret;
 
           while (!eof && currentSongPlaying && toWrite > 0) {
-            auto written =
-                dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
-                             this->currentTrackStream->trackInfo.trackId, this->sequence);
+            auto written = dataCallback(
+                pcmBuffer.data() + (ret - toWrite), toWrite,
+                this->currentTrackStream->trackInfo.trackId, this->sequence);
             if (written == 0) {
               BELL_SLEEP_MS(50);
             }
@@ -171,10 +174,10 @@ void TrackPlayer::runTask() {
 
     // With very large buffers, track N+1 can be downloaded while N has not aired yet and
     // if we continue, the currentTrackStream will be emptied, causing a crash in
-    // notifyAudioReachedPlayback when it will look for trackInfo. A busy loop is never 
+    // notifyAudioReachedPlayback when it will look for trackInfo. A busy loop is never
     // ideal, but this low impact, infrequent and more simple than yet another semaphore
     while (currentSongPlaying && !isAiring()) {
-        BELL_SLEEP_MS(100);
+      BELL_SLEEP_MS(100);
     }
 
     // always move back to LOADING (ensure proper seeking after last track has been loaded)

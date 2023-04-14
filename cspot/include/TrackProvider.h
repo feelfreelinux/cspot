@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdint.h>                // for uint8_t
-#include <memory>                  // for shared_ptr, unique_ptr, weak_ptr
-#include <vector>                  // for vector
+#include <stdint.h>  // for uint8_t
+#include <memory>    // for shared_ptr, unique_ptr, weak_ptr
+#include <vector>    // for vector
 
 #include "MercurySession.h"        // for MercurySession
 #include "TrackReference.h"        // for TrackReference

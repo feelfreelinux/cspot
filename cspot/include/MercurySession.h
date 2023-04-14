@@ -1,13 +1,13 @@
 #pragma once
 
-#include <atomic>                 // for atomic
-#include <cstdint>                // for uint8_t, uint64_t, uint32_t
-#include <functional>             // for function
-#include <memory>                 // for shared_ptr
-#include <mutex>                  // for mutex
-#include <string>                 // for string
-#include <unordered_map>          // for unordered_map
-#include <vector>                 // for vector
+#include <atomic>         // for atomic
+#include <cstdint>        // for uint8_t, uint64_t, uint32_t
+#include <functional>     // for function
+#include <memory>         // for shared_ptr
+#include <mutex>          // for mutex
+#include <string>         // for string
+#include <unordered_map>  // for unordered_map
+#include <vector>         // for vector
 
 #include "BellTask.h"             // for Task
 #include "Packet.h"               // for Packet
@@ -15,7 +15,7 @@
 #include "Session.h"              // for Session
 #include "protobuf/mercury.pb.h"  // for Header
 
-namespace cspot { 
+namespace cspot {
 class TimeProvider;
 
 class MercurySession : public bell::Task, public cspot::Session {
@@ -33,7 +33,8 @@ class MercurySession : public bell::Task, public cspot::Session {
   };
 
   typedef std::function<void(Response&)> ResponseCallback;
-  typedef std::function<void(bool, const std::vector<uint8_t>&)> AudioKeyCallback;
+  typedef std::function<void(bool, const std::vector<uint8_t>&)>
+      AudioKeyCallback;
   typedef std::function<void()> ConnectionEstabilishedCallback;
 
   enum class RequestType : uint8_t {

@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <cstdio>     // for snprintf, size_t
-#include <vector>     // for vector
+#include <cstdio>  // for snprintf, size_t
+#include <vector>  // for vector
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -55,7 +55,6 @@ std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n);
 
 unsigned char h2int(char c);
 
-
 std::string urlDecode(std::string str);
 
 /**
@@ -64,7 +63,7 @@ std::string urlDecode(std::string str);
  * @param s string containing hex data
  * @return std::vector<uint8_t> vector containing binary data
  */
-std::vector<uint8_t> stringHexToBytes(const std::string &s);
+std::vector<uint8_t> stringHexToBytes(const std::string& s);
 
 /**
  * @brief Converts provided bytes into a human readable hex string
@@ -72,7 +71,7 @@ std::vector<uint8_t> stringHexToBytes(const std::string &s);
  * @param bytes vector containing binary data
  * @return std::string string containing hex representation of inputted data
  */
-std::string bytesToHexString(const std::vector<uint8_t> &bytes);
+std::string bytesToHexString(const std::vector<uint8_t>& bytes);
 
 /**
  * @brief Extracts given type from binary data
@@ -83,8 +82,7 @@ std::string bytesToHexString(const std::vector<uint8_t> &bytes);
  * @return T extracted type
  */
 template <typename T>
-T extract(const std::vector<unsigned char> &v, int pos)
-{
+T extract(const std::vector<unsigned char>& v, int pos) {
   T value;
   memcpy(&value, &v[pos], sizeof(T));
   return value;
@@ -98,22 +96,25 @@ T extract(const std::vector<unsigned char> &v, int pos)
  * @return std::vector<uint8_t> resulting vector containing binary data
  */
 template <typename T>
-std::vector<uint8_t> pack(T data)
-{
-     std::vector<std::uint8_t> rawData( (std::uint8_t*)&data, (std::uint8_t*)&(data) + sizeof(T));
+std::vector<uint8_t> pack(T data) {
+  std::vector<std::uint8_t> rawData((std::uint8_t*)&data,
+                                    (std::uint8_t*)&(data) + sizeof(T));
 
-     return rawData;
+  return rawData;
 }
 
-template<typename ... Args>
-std::string string_format( const std::string& format, Args ... args )
-{
-    int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-    if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
-    auto size = static_cast<size_t>( size_s );
-    std::unique_ptr<char[]> buf( new char[ size ] );
-    std::snprintf( buf.get(), size, format.c_str(), args ... );
-    return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+template <typename... Args>
+std::string string_format(const std::string& format, Args... args) {
+  int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) +
+               1;  // Extra space for '\0'
+  if (size_s <= 0) {
+    throw std::runtime_error("Error during formatting.");
+  }
+  auto size = static_cast<size_t>(size_s);
+  std::unique_ptr<char[]> buf(new char[size]);
+  std::snprintf(buf.get(), size, format.c_str(), args...);
+  return std::string(buf.get(),
+                     buf.get() + size - 1);  // We don't want the '\0' inside
 }
 
 #endif

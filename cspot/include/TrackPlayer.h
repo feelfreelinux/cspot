@@ -1,13 +1,13 @@
 #pragma once
 
-#include <atomic>            // for atomic
-#include <cstdint>           // for uint8_t, int64_t
-#include <ctime>             // for size_t, time
-#include <functional>        // for function
-#include <memory>            // for shared_ptr, unique_ptr
-#include <mutex>             // for mutex
-#include <string_view>       // for string_view
-#include <vector>            // for vector
+#include <atomic>       // for atomic
+#include <cstdint>      // for uint8_t, int64_t
+#include <ctime>        // for size_t, time
+#include <functional>   // for function
+#include <memory>       // for shared_ptr, unique_ptr
+#include <mutex>        // for mutex
+#include <string_view>  // for string_view
+#include <vector>       // for vector
 
 #include "BellTask.h"        // for Task
 #include "CDNTrackStream.h"  // for CDNTrackStream, CDNTrackStream::TrackInfo
@@ -18,7 +18,7 @@ class WrappedSemaphore;
 #ifdef BELL_VORBIS_FLOAT
 #include "vorbis/vorbisfile.h"
 #else
-#include "ivorbisfile.h"     // for OggVorbis_File, ov_callbacks
+#include "ivorbisfile.h"  // for OggVorbis_File, ov_callbacks
 #endif
 
 namespace cspot {
@@ -29,16 +29,19 @@ struct TrackReference;
 class TrackPlayer : bell::Task {
  public:
   typedef std::function<void()> TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)> DataCallback;
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)>
+      DataCallback;
   typedef std::function<void()> EOFCallback;
   typedef std::function<bool()> isAiringCallback;
 
-  TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback, EOFCallback, TrackLoadedCallback);
+  TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback,
+              EOFCallback, TrackLoadedCallback);
   ~TrackPlayer();
-      
-  void loadTrackFromRef(TrackReference& ref, size_t playbackMs, bool startAutomatically);
+
+  void loadTrackFromRef(TrackReference& ref, size_t playbackMs,
+                        bool startAutomatically);
   void setDataCallback(DataCallback callback);
-  
+
   CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
   void stopTrack();
@@ -68,7 +71,7 @@ class TrackPlayer : bell::Task {
   std::atomic<bool> currentSongPlaying;
   std::mutex playbackMutex;
   std::mutex seekMutex;
-  
+
   // Vorbis related
   OggVorbis_File vorbisFile;
   ov_callbacks vorbisCallbacks;

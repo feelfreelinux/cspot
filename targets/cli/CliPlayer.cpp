@@ -15,8 +15,8 @@
 #include "BellUtils.h"           // for BELL_SLEEP_MS
 #include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
 #include "SpircHandler.h"        // for SpircHandler, SpircHandler::EventType
+#include "StreamInfo.h"          // for BitWidth, BitWidth::BW_16
 #include "TrackPlayer.h"         // for TrackPlayer
-#include "StreamInfo.h"  // for BitWidth, BitWidth::BW_16
 
 #if defined(CSPOT_ENABLE_ALSA_SINK)
 #include "ALSAAudioSink.h"

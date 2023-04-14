@@ -1,7 +1,7 @@
 #include "LoginBlob.h"
 
-#include <stdio.h>                           // for sprintf
-#include <initializer_list>                  // for initializer_list
+#include <stdio.h>           // for sprintf
+#include <initializer_list>  // for initializer_list
 
 #include "BellLogger.h"                      // for AbstractLogger
 #include "ConstantParameters.h"              // for brandName, cspot, protoc...
@@ -23,7 +23,7 @@ LoginBlob::LoginBlob(std::string name) {
   this->deviceId = std::string("142137fd329622137a149016") + std::string(hash);
   this->crypto = std::make_unique<Crypto>();
   this->name = name;
-  
+
   this->crypto->dhInit();
 }
 
@@ -141,7 +141,8 @@ void LoginBlob::loadJson(const std::string& json) {
   cJSON* root = cJSON_Parse(json.c_str());
   this->authType = cJSON_GetObjectItem(root, "authType")->valueint;
   this->username = cJSON_GetObjectItem(root, "username")->valuestring;
-  std::string authDataObject = cJSON_GetObjectItem(root, "authData")->valuestring;
+  std::string authDataObject =
+      cJSON_GetObjectItem(root, "authData")->valuestring;
   cJSON_Delete(root);
 #else
   auto root = nlohmann::json::parse(json);
@@ -150,23 +151,24 @@ void LoginBlob::loadJson(const std::string& json) {
   std::string authDataObject = root["authData"];
 
   this->authData = crypto->base64Decode(authDataObject);
-#endif  
+#endif
 }
 
 std::string LoginBlob::toJson() {
 #ifdef BELL_ONLY_CJSON
-  cJSON* json_obj = cJSON_CreateObject();  
-  cJSON_AddStringToObject(json_obj, "authData", crypto->base64Encode(authData).c_str());
+  cJSON* json_obj = cJSON_CreateObject();
+  cJSON_AddStringToObject(json_obj, "authData",
+                          crypto->base64Encode(authData).c_str());
   cJSON_AddNumberToObject(json_obj, "authType", this->authType);
   cJSON_AddStringToObject(json_obj, "username", this->username.c_str());
-  
-  char *str = cJSON_PrintUnformatted(json_obj);
-  cJSON_Delete(json_obj); 
+
+  char* str = cJSON_PrintUnformatted(json_obj);
+  cJSON_Delete(json_obj);
   std::string json_objStr(str);
   free(str);
-  
+
   return json_objStr;
-#else  
+#else
   nlohmann::json obj;
   obj["authData"] = crypto->base64Encode(authData);
   obj["authType"] = this->authType;
@@ -199,7 +201,7 @@ std::string LoginBlob::buildZeroconfInfo() {
 
   auto encodedKey = crypto->base64Encode(crypto->publicKey);
 #ifdef BELL_ONLY_CJSON
-  cJSON* json_obj = cJSON_CreateObject();  
+  cJSON* json_obj = cJSON_CreateObject();
   cJSON_AddNumberToObject(json_obj, "status", 101);
   cJSON_AddStringToObject(json_obj, "statusString", "OK");
   cJSON_AddStringToObject(json_obj, "version", cspot::protocolVersion);
@@ -213,20 +215,21 @@ std::string LoginBlob::buildZeroconfInfo() {
   cJSON_AddStringToObject(json_obj, "tokenType", "default");
   cJSON_AddStringToObject(json_obj, "groupStatus", "NONE");
   cJSON_AddStringToObject(json_obj, "resolverVersion", "0");
-  cJSON_AddStringToObject(json_obj, "scope", "streaming,client-authorization-universal");  
-  cJSON_AddStringToObject(json_obj, "activeUser", "");  
-  cJSON_AddStringToObject(json_obj, "deviceID", deviceId.c_str());  
-  cJSON_AddStringToObject(json_obj, "remoteName", name.c_str());  
-  cJSON_AddStringToObject(json_obj, "publicKey", encodedKey.c_str());  
-  cJSON_AddStringToObject(json_obj, "deviceType", "deviceType");  
-  
-  char *str = cJSON_PrintUnformatted(json_obj);
-  cJSON_Delete(json_obj); 
+  cJSON_AddStringToObject(json_obj, "scope",
+                          "streaming,client-authorization-universal");
+  cJSON_AddStringToObject(json_obj, "activeUser", "");
+  cJSON_AddStringToObject(json_obj, "deviceID", deviceId.c_str());
+  cJSON_AddStringToObject(json_obj, "remoteName", name.c_str());
+  cJSON_AddStringToObject(json_obj, "publicKey", encodedKey.c_str());
+  cJSON_AddStringToObject(json_obj, "deviceType", "deviceType");
+
+  char* str = cJSON_PrintUnformatted(json_obj);
+  cJSON_Delete(json_obj);
   std::string json_objStr(str);
   free(str);
-  
+
   return json_objStr;
-#else 
+#else
   nlohmann::json obj;
   obj["status"] = 101;
   obj["statusString"] = "OK";

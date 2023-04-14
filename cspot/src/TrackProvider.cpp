@@ -1,12 +1,12 @@
 #include "TrackProvider.h"
 
-#include <assert.h>                // for assert
-#include <string.h>                // for strlen
-#include <cstdint>                 // for uint8_t
-#include <functional>              // for __base
-#include <memory>                  // for shared_ptr, weak_ptr, make_shared
-#include <string>                  // for string, operator+
-#include <type_traits>             // for remove_extent_t
+#include <assert.h>     // for assert
+#include <string.h>     // for strlen
+#include <cstdint>      // for uint8_t
+#include <functional>   // for __base
+#include <memory>       // for shared_ptr, weak_ptr, make_shared
+#include <string>       // for string, operator+
+#include <type_traits>  // for remove_extent_t
 
 #include "AccessKeyFetcher.h"      // for AccessKeyFetcher
 #include "BellLogger.h"            // for AbstractLogger

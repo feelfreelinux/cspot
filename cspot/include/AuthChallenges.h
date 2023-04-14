@@ -1,10 +1,9 @@
 #pragma once
 
-
-#include <cstdint>                       // for uint8_t
-#include <memory>                        // for unique_ptr
-#include <string>                        // for string
-#include <vector>                        // for vector
+#include <cstdint>  // for uint8_t
+#include <memory>   // for unique_ptr
+#include <string>   // for string
+#include <vector>   // for vector
 
 #include "Crypto.h"                      // for Crypto
 #include "protobuf/authentication.pb.h"  // for ClientResponseEncrypted

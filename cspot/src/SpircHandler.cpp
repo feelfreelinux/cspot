@@ -1,9 +1,9 @@
 #include "SpircHandler.h"
 
-#include <cstdint>              // for uint8_t
-#include <memory>               // for shared_ptr, make_unique, unique_ptr
-#include <type_traits>          // for remove_extent_t
-#include <utility>              // for move
+#include <cstdint>      // for uint8_t
+#include <memory>       // for shared_ptr, make_unique, unique_ptr
+#include <type_traits>  // for remove_extent_t
+#include <utility>      // for move
 
 #include "BellLogger.h"         // for AbstractLogger
 #include "CSpotContext.h"       // for Context::ConfigState, Context (ptr only)
@@ -28,17 +28,17 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
   };
 
   auto EOFCallback = [this]() {
-      auto ref = this->playbackState.getNextTrackRef();
+    auto ref = this->playbackState.getNextTrackRef();
 
-      if (!isNextTrackPreloaded && !isRequestedFromLoad && ref != nullptr) {
-          isNextTrackPreloaded = true;
-          auto trackRef = TrackReference::fromTrackRef(ref);
-          this->trackPlayer->loadTrackFromRef(trackRef, 0, true);
-      }
-      
-      if (ref == nullptr) {
-          sendEvent(EventType::DEPLETED);
-      }
+    if (!isNextTrackPreloaded && !isRequestedFromLoad && ref != nullptr) {
+      isNextTrackPreloaded = true;
+      auto trackRef = TrackReference::fromTrackRef(ref);
+      this->trackPlayer->loadTrackFromRef(trackRef, 0, true);
+    }
+
+    if (ref == nullptr) {
+      sendEvent(EventType::DEPLETED);
+    }
   };
 
   auto trackLoadedCallback = [this]() {
@@ -51,7 +51,8 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx)
   };
 
   this->ctx = ctx;
-  this->trackPlayer = std::make_shared<TrackPlayer>(ctx, isAiringCallback, EOFCallback, trackLoadedCallback);
+  this->trackPlayer = std::make_shared<TrackPlayer>(
+      ctx, isAiringCallback, EOFCallback, trackLoadedCallback);
 
   // Subscribe to mercury on session ready
   ctx->session->setConnectedHandler([this]() { this->subscribeToMercury(); });
@@ -108,7 +109,7 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {
   this->notify();
 }
 
-void SpircHandler::notifyAudioReachedPlayback() { 
+void SpircHandler::notifyAudioReachedPlayback() {
   if (isRequestedFromLoad || isNextTrackPreloaded) {
     playbackState.updatePositionMs(nextTrackPosition);
     playbackState.setPlaybackState(PlaybackState::State::Playing);
@@ -131,8 +132,8 @@ void SpircHandler::notifyAudioReachedPlayback() {
 }
 
 void SpircHandler::updatePositionMs(uint32_t position) {
-    playbackState.updatePositionMs(position);
-    notify();
+  playbackState.updatePositionMs(position);
+  notify();
 }
 
 void SpircHandler::disconnect() {
@@ -161,18 +162,21 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     case MessageType_kMessageTypeSeek: {
       /* If next track is already downloading, we can't seek in the current one anymore. Also,
        * when last track has been reached, we has to restart as we can't tell the difference */
-      if ((!isNextTrackPreloaded && this->playbackState.getNextTrackRef()) || isRequestedFromLoad) {
-          CSPOT_LOG(debug, "Seek command while streaming current");
-          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
-          playbackState.updatePositionMs(playbackState.remoteFrame.position);
-          trackPlayer->seekMs(playbackState.remoteFrame.position);
+      if ((!isNextTrackPreloaded && this->playbackState.getNextTrackRef()) ||
+          isRequestedFromLoad) {
+        CSPOT_LOG(debug, "Seek command while streaming current");
+        sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
+        playbackState.updatePositionMs(playbackState.remoteFrame.position);
+        trackPlayer->seekMs(playbackState.remoteFrame.position);
       } else {
-          CSPOT_LOG(debug, "Seek command while streaming next or before started");
-          isRequestedFromLoad = true;
-          isNextTrackPreloaded = false;
-          auto ref = TrackReference::fromTrackRef(playbackState.getCurrentTrackRef());
-          this->trackPlayer->loadTrackFromRef(ref, playbackState.remoteFrame.position, true);
-          this->nextTrackPosition = playbackState.remoteFrame.position;
+        CSPOT_LOG(debug, "Seek command while streaming next or before started");
+        isRequestedFromLoad = true;
+        isNextTrackPreloaded = false;
+        auto ref =
+            TrackReference::fromTrackRef(playbackState.getCurrentTrackRef());
+        this->trackPlayer->loadTrackFromRef(
+            ref, playbackState.remoteFrame.position, true);
+        this->nextTrackPosition = playbackState.remoteFrame.position;
       }
       notify();
       break;

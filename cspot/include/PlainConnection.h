@@ -6,7 +6,7 @@
 
 #include "win32shim.h"
 #else
-#include <unistd.h>    // for size_t
+#include <unistd.h>  // for size_t
 #endif
 #include <cstdint>     // for uint8_t
 #include <functional>  // for function
@@ -37,8 +37,8 @@ class PlainConnection {
   void readBlock(const uint8_t* dst, size_t size);
   size_t writeBlock(const std::vector<uint8_t>& data);
 
-  private:
-    int apSock;
+ private:
+  int apSock;
 };
 }  // namespace cspot
 

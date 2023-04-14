@@ -1,8 +1,8 @@
 #include "AuthChallenges.h"
 
-#include <algorithm>       // for copy
-#include <climits>         // for CHAR_BIT
-#include <random>          // for default_random_engine, independent_bits_en...
+#include <algorithm>  // for copy
+#include <climits>    // for CHAR_BIT
+#include <random>     // for default_random_engine, independent_bits_en...
 
 #include "NanoPBHelper.h"  // for pbPutString, pbEncode, pbDecode
 #include "pb.h"            // for pb_byte_t
@@ -94,9 +94,9 @@ std::vector<uint8_t> AuthChallenges::solveApHello(
 
   // Get send and receive keys
   this->shanSendKey = std::vector<uint8_t>(resultData.begin() + 0x14,
-                                      resultData.begin() + 0x34);
+                                           resultData.begin() + 0x34);
   this->shanRecvKey = std::vector<uint8_t>(resultData.begin() + 0x34,
-                                      resultData.begin() + 0x54);
+                                           resultData.begin() + 0x54);
 
   return pbEncode(ClientResponsePlaintext_fields, &clientResPlaintext);
 }
