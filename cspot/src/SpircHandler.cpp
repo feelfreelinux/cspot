@@ -163,9 +163,9 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
        * when last track has been reached, we has to restart as we can't tell the difference */
       if ((!isNextTrackPreloaded && this->playbackState.getNextTrackRef()) || isRequestedFromLoad) {
           CSPOT_LOG(debug, "Seek command while streaming current");
-          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);
           playbackState.updatePositionMs(playbackState.remoteFrame.position);
           trackPlayer->seekMs(playbackState.remoteFrame.position);
+          sendEvent(EventType::SEEK, (int)playbackState.remoteFrame.position);		  
       } else {
           CSPOT_LOG(debug, "Seek command while streaming next or before started");
           isRequestedFromLoad = true;

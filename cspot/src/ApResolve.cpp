@@ -7,8 +7,12 @@
 #include <vector>                 // for vector
 
 #include "HTTPClient.h"           // for HTTPClient, HTTPClient::Response
+#ifdef BELL_ONLY_CJSON
+#include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
 #include "nlohmann/json_fwd.hpp"  // for json
+#endif
 
 using namespace cspot;
 
@@ -28,7 +32,7 @@ std::string ApResolve::fetchFirstApAddress()
     std::string_view responseStr = request->body();
 
     // parse json with nlohmann
-#if BELL_ONLY_CJSON
+#ifdef BELL_ONLY_CJSON
    cJSON* json = cJSON_Parse(responseStr.data());
    auto ap_string = std::string(cJSON_GetArrayItem(cJSON_GetObjectItem(json, "ap_list"), 0)->valuestring);
    cJSON_Delete(json);

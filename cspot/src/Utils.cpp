@@ -6,8 +6,10 @@
 #include <sstream>      // for stringstream
 #include <string>       // for string
 #include <type_traits>  // for enable_if<>::type
-
-#include "i386/endian.h"  // for htonl
+#include <chrono>
+#ifndef _WIN32
+#include <arpa/inet.h>
+#endif
 
 unsigned long long getCurrentTimestamp() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(

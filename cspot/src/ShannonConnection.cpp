@@ -2,13 +2,16 @@
 
 #include <type_traits>  // for remove_extent_t
 
+#ifndef _WIN32
+#include <arpa/inet.h>
+#endif
+
 #include "BellLogger.h"       // for AbstractLogger
 #include "Logger.h"           // for CSPOT_LOG
 #include "Packet.h"           // for Packet, cspot
 #include "PlainConnection.h"  // for PlainConnection
 #include "Shannon.h"          // for Shannon
 #include "Utils.h"            // for pack, extract
-#include "i386/endian.h"      // for htonl, htons, ntohs
 
 using namespace cspot;
 

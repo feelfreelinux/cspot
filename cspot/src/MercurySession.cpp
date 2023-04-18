@@ -7,6 +7,10 @@
 #include <type_traits>  // for remove_extent_t, __underlying_type_impl<>:...
 #include <utility>      // for pair
 
+#ifndef _WIN32
+#include <arpa/inet.h>
+#endif
+
 #include "BellLogger.h"         // for AbstractLogger
 #include "BellTask.h"           // for Task
 #include "BellUtils.h"          // for BELL_SLEEP_MS
@@ -16,7 +20,6 @@
 #include "ShannonConnection.h"  // for ShannonConnection
 #include "TimeProvider.h"       // for TimeProvider
 #include "Utils.h"              // for extract, pack, hton64
-#include "i386/endian.h"        // for htons, ntohs, htonl, ntohl
 
 using namespace cspot;
 
