@@ -1,18 +1,14 @@
 #pragma once
 
-#include <NanoPBHelper.h>
-#include <memory>
-#include <string>
-#include <vector>
-#include "CSpotContext.h"
-#include "ConstantParameters.h"
-#include "CspotAssert.h"
-#include "TimeProvider.h"
-#include "Utils.h"
+#include <stdint.h>             // for uint8_t, uint32_t
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include <vector>               // for vector
 
-#include "protobuf/spirc.pb.h"
+#include "protobuf/spirc.pb.h"  // for Frame, TrackRef, CapabilityType, Mess...
 
 namespace cspot {
+struct Context;
 
 class PlaybackState {
  private:

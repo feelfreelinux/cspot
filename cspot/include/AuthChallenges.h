@@ -1,20 +1,14 @@
 #pragma once
 
 
-#include <algorithm>
-#include <climits>
-#include <functional>
-#include <memory>
-#include <random>
-#include <vector>
+#include <cstdint>                       // for uint8_t
+#include <memory>                        // for unique_ptr
+#include <string>                        // for string
+#include <vector>                        // for vector
 
-#include "Crypto.h"
-#include "Logger.h"
-#include "NanoPBHelper.h"
-#include "Utils.h"
-
-#include "protobuf/authentication.pb.h"
-#include "protobuf/keyexchange.pb.h"
+#include "Crypto.h"                      // for Crypto
+#include "protobuf/authentication.pb.h"  // for ClientResponseEncrypted
+#include "protobuf/keyexchange.pb.h"     // for APResponseMessage, ClientHello
 
 namespace cspot {
 class AuthChallenges {

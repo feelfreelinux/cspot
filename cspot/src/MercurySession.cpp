@@ -1,11 +1,24 @@
 #include "MercurySession.h"
-#include <memory>
-#include <mutex>
-#include "BellLogger.h"
-#include "BellTask.h"
-#include "BellUtils.h"
-#include "CSpotContext.h"
-#include "Logger.h"
+
+#include <string.h>     // for memcpy
+#include <memory>       // for shared_ptr
+#include <mutex>        // for scoped_lock
+#include <stdexcept>    // for runtime_error
+#include <type_traits>  // for remove_extent_t, __underlying_type_impl<>:...
+#include <utility>      // for pair
+
+#include "BellLogger.h"         // for AbstractLogger
+#include "BellTask.h"           // for Task
+#include "BellUtils.h"          // for BELL_SLEEP_MS
+#include "Logger.h"             // for CSPOT_LOG
+#include "NanoPBHelper.h"       // for pbPutString, pbDecode, pbEncode
+#include "PlainConnection.h"    // for PlainConnection
+#include "ShannonConnection.h"  // for ShannonConnection
+#include "TimeProvider.h"       // for TimeProvider
+#include "Utils.h"              // for extract, pack, hton64
+#ifndef _WIN32
+#include "i386/endian.h"        // for htons, ntohs, htonl, ntohl
+#endif
 
 using namespace cspot;
 
@@ -167,7 +180,7 @@ void MercurySession::handlePacket() {
 }
 
 void MercurySession::failAllPending() {
-  Response response = { };
+  Response response = {};
   response.fail = true;
 
   // Fail all callbacks

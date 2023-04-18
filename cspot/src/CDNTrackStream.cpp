@@ -1,5 +1,22 @@
 #include "CDNTrackStream.h"
 
+#include <string.h>          // for memcpy
+#include <functional>        // for __base
+#include <initializer_list>  // for initializer_list
+#include <map>               // for operator!=, operator==
+#include <string_view>       // for string_view
+#include <type_traits>       // for remove_extent_t
+
+#include "AccessKeyFetcher.h"     // for AccessKeyFetcher
+#include "BellLogger.h"           // for AbstractLogger
+#include "Logger.h"               // for CSPOT_LOG
+#include "Packet.h"               // for cspot
+#include "SocketStream.h"         // for SocketStream
+#include "Utils.h"                // for bigNumAdd, bytesToHexString, string...
+#include "WrappedSemaphore.h"     // for WrappedSemaphore
+#include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
+#include "nlohmann/json_fwd.hpp"  // for json
+
 using namespace cspot;
 
 CDNTrackStream::CDNTrackStream(
@@ -10,8 +27,7 @@ CDNTrackStream::CDNTrackStream(
   this->crypto = std::make_unique<Crypto>();
 }
 
-CDNTrackStream::~CDNTrackStream() {
-}
+CDNTrackStream::~CDNTrackStream() {}
 
 void CDNTrackStream::fail() {
   this->status = Status::FAILED;
@@ -40,7 +56,9 @@ void CDNTrackStream::fetchFile(const std::vector<uint8_t>& trackId,
 
 #ifdef BELL_ONLY_CJSON
     cJSON* jsonResult = cJSON_Parse(result.data());
-    std::string cdnUrl = cJSON_GetArrayItem(cJSON_GetObjectItem(jsonResult, "cdnurl"), 0)->valuestring;
+    std::string cdnUrl =
+        cJSON_GetArrayItem(cJSON_GetObjectItem(jsonResult, "cdnurl"), 0)
+            ->valuestring;
     cJSON_Delete(jsonResult);
 #else
     auto jsonResult = nlohmann::json::parse(result);

@@ -3,19 +3,15 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
 #include "win32shim.h"
 #else
-#include <netdb.h>
-#include <unistd.h>
-#include "sys/socket.h"
-#include <netinet/in.h>
+#include <unistd.h>    // for size_t
 #endif
-#include <cstdint>
-#include <functional>
-#include <string>
-#include <vector>
-#include "Packet.h"
-#include "Utils.h"
+#include <cstdint>     // for uint8_t
+#include <functional>  // for function
+#include <string>      // for string
+#include <vector>      // for vector
 
 typedef std::function<bool()> timeoutCallback;
 

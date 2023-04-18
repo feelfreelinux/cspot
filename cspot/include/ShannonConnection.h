@@ -1,18 +1,18 @@
 #ifndef SHANNONCONNECTION_H
 #define SHANNONCONNECTION_H
 
-#include <sys/types.h>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
+#include <cstdint>   // for uint8_t, uint32_t
+#include <memory>    // for shared_ptr, unique_ptr
+#include <mutex>     // for mutex
+#include <vector>    // for vector
 
-#include "Packet.h"
-#include "PlainConnection.h"
-#include "Shannon.h"
-#include <mutex>
-#include "Utils.h"
-#include "Logger.h"
+#include "Packet.h"  // for Packet
+
+class Shannon;
+namespace cspot {
+
+class PlainConnection;
+}  // namespace cspot
 
 #define MAC_SIZE 4
 namespace cspot {

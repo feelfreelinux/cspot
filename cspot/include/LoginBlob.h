@@ -1,17 +1,12 @@
 #pragma once
 
-#include <iostream>
-#include <map>
-#include <memory>
-#ifndef BELL_ONLY_CJSON
-#include <nlohmann/json.hpp>
-#endif
-#include <vector>
+#include <cstdint>   // for uint8_t, uint32_t
+#include <map>       // for map
+#include <memory>    // for unique_ptr
+#include <string>    // for string
+#include <vector>    // for vector
 
-#include "ConstantParameters.h"
-#include "Crypto.h"
-
-#include "protobuf/authentication.pb.h"
+#include "Crypto.h"  // for CryptoMbedTLS, Crypto
 
 namespace cspot {
 class LoginBlob {

@@ -1,27 +1,20 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <vector>
+#include <cstdio>     // for snprintf, size_t
+#include <vector>     // for vector
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
 #include "win32shim.h"
 #else
-#include <unistd.h>
-#include "sys/socket.h"
-#include <netdb.h>
-#include <netinet/in.h>
+
 #endif
-#include <cstdint>
-#include <cstring>
-#include <memory>
-#include <chrono>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <memory>
-#include <string>
-#include <stdexcept>
+#include <cstdint>    // for uint8_t, uint64_t
+#include <cstring>    // for memcpy
+#include <memory>     // for unique_ptr
+#include <stdexcept>  // for runtime_error
+#include <string>     // for string
 
 #define HMAC_SHA1_BLOCKSIZE 64
 

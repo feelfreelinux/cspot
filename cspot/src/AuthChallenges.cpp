@@ -1,5 +1,13 @@
 #include "AuthChallenges.h"
 
+#include <algorithm>       // for copy
+#include <climits>         // for CHAR_BIT
+#include <random>          // for default_random_engine, independent_bits_en...
+
+#include "NanoPBHelper.h"  // for pbPutString, pbEncode, pbDecode
+#include "pb.h"            // for pb_byte_t
+#include "pb_decode.h"     // for pb_release
+
 using namespace cspot;
 using random_bytes_engine =
     std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;

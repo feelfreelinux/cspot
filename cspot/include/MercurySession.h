@@ -1,22 +1,23 @@
 #pragma once
 
-#include <atomic>
-#include <functional>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include "BellTask.h"
-#include "Logger.h"
-#include "NanoPBHelper.h"
-#include "Packet.h"
-#include "Queue.h"
-#include "Session.h"
-#include "TimeProvider.h"
-#include "Utils.h"
-#include "protobuf/mercury.pb.h"
+#include <atomic>                 // for atomic
+#include <cstdint>                // for uint8_t, uint64_t, uint32_t
+#include <functional>             // for function
+#include <memory>                 // for shared_ptr
+#include <mutex>                  // for mutex
+#include <string>                 // for string
+#include <unordered_map>          // for unordered_map
+#include <vector>                 // for vector
+
+#include "BellTask.h"             // for Task
+#include "Packet.h"               // for Packet
+#include "Queue.h"                // for Queue
+#include "Session.h"              // for Session
+#include "protobuf/mercury.pb.h"  // for Header
 
 namespace cspot { 
+class TimeProvider;
+
 class MercurySession : public bell::Task, public cspot::Session {
  public:
   MercurySession(std::shared_ptr<cspot::TimeProvider> timeProvider);

@@ -1,16 +1,20 @@
 #pragma once
 
-#include <cstddef>
-#include <memory>
-#include "Crypto.h"
-#include "WrappedSemaphore.h"
+#include <cstddef>       // for size_t
+#include <cstdint>       // for uint8_t
+#include <memory>        // for shared_ptr, unique_ptr
+#include <string>        // for string
+#include <vector>        // for vector
 
-#include "Logger.h"
-#include "Utils.h"
-#include "CSpotContext.h"
-#include "AccessKeyFetcher.h"
+#include "Crypto.h"      // for Crypto
+#include "HTTPClient.h"  // for HTTPClient
+
+namespace bell {
+class WrappedSemaphore;
+}  // namespace bell
 
 namespace cspot {
+class AccessKeyFetcher;
 
 class CDNTrackStream {
 

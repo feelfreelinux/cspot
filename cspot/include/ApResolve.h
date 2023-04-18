@@ -1,13 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <string>
-
-#include "HTTPClient.h"
+#include <string>  // for string
 #ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
 #else
-#include "nlohmann/json.hpp"
 #endif
 
 namespace cspot {

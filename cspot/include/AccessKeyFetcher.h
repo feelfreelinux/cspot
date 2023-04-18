@@ -1,12 +1,12 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-
-#include "CSpotContext.h"
-#include "Utils.h"
+#include <functional>  // for function
+#include <memory>      // for shared_ptr
+#include <string>      // for string
 
 namespace cspot {
+struct Context;
+
 class AccessKeyFetcher {
  public:
   AccessKeyFetcher(std::shared_ptr<cspot::Context> ctx);

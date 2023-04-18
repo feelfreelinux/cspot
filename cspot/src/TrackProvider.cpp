@@ -1,12 +1,26 @@
 #include "TrackProvider.h"
-#include <memory>
-#include "AccessKeyFetcher.h"
-#include "CDNTrackStream.h"
-#include "Logger.h"
-#include "MercurySession.h"
-#include "TrackReference.h"
-#include "Utils.h"
-#include "protobuf/metadata.pb.h"
+
+#include <assert.h>                // for assert
+#include <string.h>                // for strlen
+#include <cstdint>                 // for uint8_t
+#include <functional>              // for __base
+#include <memory>                  // for shared_ptr, weak_ptr, make_shared
+#include <string>                  // for string, operator+
+#include <type_traits>             // for remove_extent_t
+
+#include "AccessKeyFetcher.h"      // for AccessKeyFetcher
+#include "BellLogger.h"            // for AbstractLogger
+#include "CDNTrackStream.h"        // for CDNTrackStream, CDNTrackStream::Tr...
+#include "CSpotContext.h"          // for Context::ConfigState, Context (ptr...
+#include "Logger.h"                // for CSPOT_LOG
+#include "MercurySession.h"        // for MercurySession, MercurySession::Da...
+#include "NanoPBHelper.h"          // for pbArrayToVector, pbDecode
+#include "Packet.h"                // for cspot
+#include "TrackReference.h"        // for TrackReference, TrackReference::Type
+#include "Utils.h"                 // for bytesToHexString, string_format
+#include "WrappedSemaphore.h"      // for WrappedSemaphore
+#include "pb_decode.h"             // for pb_release
+#include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
 
 using namespace cspot;
 

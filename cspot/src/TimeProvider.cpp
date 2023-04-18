@@ -1,5 +1,11 @@
 #include "TimeProvider.h"
-#include "Logger.h"
+
+#include "BellLogger.h"   // for AbstractLogger
+#include "Logger.h"       // for CSPOT_LOG
+#include "Utils.h"        // for extract, getCurrentTimestamp
+#ifndef _WIN32
+#include "i386/endian.h"  // for ntohl
+#endif
 
 using namespace cspot;
 

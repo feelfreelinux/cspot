@@ -5,6 +5,7 @@
 #include "MercurySession.h"
 #include "TimeProvider.h"
 #include "protobuf/metadata.pb.h"
+#include "LoginBlob.h"
 
 namespace cspot {
 struct Context {
