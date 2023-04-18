@@ -23,11 +23,13 @@ class TrackProvider {
   std::unique_ptr<cspot::CDNTrackStream> cdnStream;
 
   Track trackInfo;
+  Episode episodeInfo;
   std::weak_ptr<CDNTrackStream> currentTrackReference;
   TrackReference trackIdInfo;
 
   void queryMetadata();
   void onMetadataResponse(MercurySession::Response& res);
+  bool doRestrictionsApply(Restriction* restrictions, int count);
   void fetchFile(const std::vector<uint8_t>& fileId,
                  const std::vector<uint8_t>& trackId);
   bool canPlayTrack(int index);
