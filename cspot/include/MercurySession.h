@@ -83,7 +83,11 @@ class MercurySession : public bell::Task, public cspot::Session {
     return this->executeSubscription(type, uri, callback, nullptr, parts);
   }
 
-  void requestAudioKey(const std::vector<uint8_t>& trackId,
+  void unregister(uint64_t sequenceId);
+
+  void unregisterAudioKey(uint32_t sequenceId);
+
+  uint32_t requestAudioKey(const std::vector<uint8_t>& trackId,
                        const std::vector<uint8_t>& fileId,
                        AudioKeyCallback audioCallback);
 
@@ -109,7 +113,7 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   std::unordered_map<uint64_t, ResponseCallback> callbacks;
   std::unordered_map<std::string, ResponseCallback> subscriptions;
-  AudioKeyCallback audioKeyCallback;
+  std::unordered_map<uint32_t, AudioKeyCallback> audioKeyCallbacks;
 
   uint64_t sequenceId = 1;
   uint32_t audioKeySequence = 1;

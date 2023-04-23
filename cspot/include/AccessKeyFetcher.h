@@ -4,6 +4,9 @@
 #include <memory>      // for shared_ptr
 #include <string>      // for string
 
+namespace bell {
+class WrappedSemaphore;
+};
 namespace cspot {
 struct Context;
 
@@ -14,7 +17,11 @@ class AccessKeyFetcher {
 
   typedef std::function<void(std::string)> Callback;
 
-  void getAccessKey(Callback callback);
+  bool isExpired();
+
+  std::string getAccessKey();
+
+  void updateAccessKey();
 
  private:
   const std::string CLIENT_ID =
@@ -24,8 +31,9 @@ class AccessKeyFetcher {
       "recently-played";  // Required access scopes
 
   std::shared_ptr<cspot::Context> ctx;
+  std::shared_ptr<bell::WrappedSemaphore> updateSemaphore;
 
-  bool isExpired();
+  std::atomic<bool> keyPending;
   std::string accessKey;
   long long int expiresAt;
 };

@@ -7,12 +7,13 @@
 #include <variant>     // for variant
 #include <vector>      // for vector
 
-#include "CDNTrackStream.h"     // for CDNTrackStream, CDNTrackStream::Track...
-#include "PlaybackState.h"      // for PlaybackState
+#include "CDNAudioFile.h"     // for CDNTrackStream, CDNTrackStream::Track...
+#include "TrackQueue.h"
 #include "protobuf/spirc.pb.h"  // for MessageType
 
 namespace cspot {
 class TrackPlayer;
+class TrackQueue;
 struct Context;
 
 class SpircHandler {
@@ -31,7 +32,7 @@ class SpircHandler {
     FLUSH,
     PLAYBACK_START
   };
-  typedef std::variant<CDNTrackStream::TrackInfo, int, bool> EventData;
+  typedef std::variant<CDNAudioFile::TrackInfo, int, bool> EventData;
 
   struct Event {
     EventType eventType;
@@ -60,15 +61,12 @@ class SpircHandler {
  private:
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackPlayer> trackPlayer;
+  std::shared_ptr<cspot::TrackQueue> trackQueue;
 
   EventHandler eventHandler = nullptr;
 
-  cspot::PlaybackState playbackState;
-  CDNTrackStream::TrackInfo currentTrackInfo;
+  std::shared_ptr<cspot::PlaybackState> playbackState;
 
-  bool isTrackFresh = true;
-  bool isRequestedFromLoad = false;
-  bool isNextTrackPreloaded = false;
   uint32_t nextTrackPosition = 0;
 
   void sendCmd(MessageType typ);

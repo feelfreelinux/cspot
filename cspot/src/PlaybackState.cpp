@@ -15,6 +15,7 @@
 #include "Packet.h"              // for cspot
 #include "pb.h"                  // for pb_bytes_array_t, PB_BYTES_ARRAY_T_A...
 #include "pb_decode.h"           // for pb_release
+#include "protobuf/spirc.pb.h"
 
 using namespace cspot;
 
@@ -59,6 +60,7 @@ PlaybackState::PlaybackState(std::shared_ptr<cspot::Context> ctx) {
   addCapability(CapabilityType_kDeviceType, 4);
   addCapability(CapabilityType_kGaiaEqConnectId, 1);
   addCapability(CapabilityType_kSupportsLogout, 0);
+  addCapability(CapabilityType_kSupportsPlaylistV2, 1);
   addCapability(CapabilityType_kIsObservable, 1);
   addCapability(CapabilityType_kVolumeSteps, 64);
   addCapability(CapabilityType_kSupportedContexts, -1,
@@ -66,8 +68,8 @@ PlaybackState::PlaybackState(std::shared_ptr<cspot::Context> ctx) {
                                           "inbox", "toplist", "starred",
                                           "publishedstarred", "track"}));
   addCapability(CapabilityType_kSupportedTypes, -1,
-                std::vector<std::string>({"audio/local", "audio/track",
-                                          "audio/episode", "local", "track"}));
+                std::vector<std::string>(
+                    {"audio/track", "audio/episode", "audio/episode+track"}));
   innerFrame.device_state.capabilities_count = 8;
 }
 

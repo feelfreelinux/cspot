@@ -142,10 +142,10 @@ void PlainConnection::readBlock(const uint8_t* dst, size_t size) {
       switch (getErrno()) {
         case EAGAIN:
         case ETIMEDOUT:
-          // if (timeoutHandler()) {
-          //   CSPOT_LOG(error, "Connection lost, will need to reconnect...");
-          //   throw std::runtime_error("Reconnection required");
-          // }
+          if (timeoutHandler()) {
+            CSPOT_LOG(error, "Connection lost, will need to reconnect...");
+            throw std::runtime_error("Reconnection required");
+          }
           goto READ;
         case EINTR:
           break;
@@ -172,9 +172,9 @@ size_t PlainConnection::writeBlock(const std::vector<uint8_t>& data) {
       switch (getErrno()) {
         case EAGAIN:
         case ETIMEDOUT:
-          // if (timeoutHandler()) {
-          //   throw std::runtime_error("Reconnection required");
-          // }
+          if (timeoutHandler()) {
+            throw std::runtime_error("Reconnection required");
+          }
           goto WRITE;
         case EINTR:
           break;

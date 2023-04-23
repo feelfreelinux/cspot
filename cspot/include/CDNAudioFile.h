@@ -16,13 +16,13 @@ class WrappedSemaphore;
 namespace cspot {
 class AccessKeyFetcher;
 
-class CDNTrackStream {
+class CDNAudioFile {
 
  public:
-  CDNTrackStream(std::shared_ptr<cspot::AccessKeyFetcher>);
-  ~CDNTrackStream();
+  CDNAudioFile(const std::string& cdnUrl, const std::vector<uint8_t>& audioKey);
+  ~CDNAudioFile();
 
-  enum class Status { INITIALIZING, HAS_DATA, HAS_URL, FAILED };
+  enum class Status { HAS_DATA, HAS_URL, FAILED };
 
   struct TrackInfo {
     std::string trackId;
@@ -36,10 +36,6 @@ class CDNTrackStream {
   TrackInfo trackInfo;
 
   Status status;
-  std::unique_ptr<bell::WrappedSemaphore> trackReady;
-
-  void fetchFile(const std::vector<uint8_t>& trackId,
-                 const std::vector<uint8_t>& audioKey);
 
   void fail();
 
@@ -74,8 +70,6 @@ class CDNTrackStream {
                                            0x3f, 0x63, 0x0d, 0x93};
   std::unique_ptr<Crypto> crypto;
 
-  std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
-
   std::unique_ptr<bell::HTTPClient::Response> httpConnection;
   bool isConnected = false;
 
@@ -87,7 +81,6 @@ class CDNTrackStream {
   bool enableRequestMargin = false;
 
   std::string cdnUrl;
-  std::vector<uint8_t> trackId;
   std::vector<uint8_t> audioKey;
 
   void decrypt(uint8_t* dst, size_t nbytes, size_t pos);

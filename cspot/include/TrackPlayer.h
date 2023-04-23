@@ -9,8 +9,8 @@
 #include <string_view>  // for string_view
 #include <vector>       // for vector
 
-#include "BellTask.h"        // for Task
-#include "CDNTrackStream.h"  // for CDNTrackStream, CDNTrackStream::TrackInfo
+#include "BellTask.h"  // for Task
+#include "CDNAudioFile.h"
 
 namespace bell {
 class WrappedSemaphore;
@@ -23,28 +23,32 @@ class WrappedSemaphore;
 
 namespace cspot {
 class TrackProvider;
+class TrackQueue;
 struct Context;
 struct TrackReference;
 
 class TrackPlayer : bell::Task {
  public:
+  // Callback types
   typedef std::function<void()> TrackLoadedCallback;
   typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)>
       DataCallback;
   typedef std::function<void()> EOFCallback;
   typedef std::function<bool()> isAiringCallback;
 
-  TrackPlayer(std::shared_ptr<cspot::Context> ctx, isAiringCallback,
-              EOFCallback, TrackLoadedCallback);
+  TrackPlayer(std::shared_ptr<cspot::Context> ctx,
+              std::shared_ptr<cspot::TrackQueue> trackQueue,
+              isAiringCallback callback, EOFCallback eofCallback,
+              TrackLoadedCallback loadedCallback);
   ~TrackPlayer();
 
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs,
                         bool startAutomatically);
   void setDataCallback(DataCallback callback);
 
-  CDNTrackStream::TrackInfo getCurrentTrackInfo();
+  // CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
-  void stopTrack();
+  void resetState();
 
   // Vorbis codec callbacks
   size_t _vorbisRead(void* ptr, size_t size, size_t nmemb);
@@ -56,8 +60,10 @@ class TrackPlayer : bell::Task {
 
  private:
   std::shared_ptr<cspot::Context> ctx;
-  std::shared_ptr<cspot::TrackProvider> trackProvider;
-  std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
+  std::shared_ptr<cspot::TrackQueue> trackQueue;
+  std::shared_ptr<cspot::CDNAudioFile> currentTrackStream;
+
+  // std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
   size_t sequence = std::time(nullptr);
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
@@ -81,6 +87,10 @@ class TrackPlayer : bell::Task {
   size_t playbackPosition = 0;
   bool autoStart = false;
   std::atomic<bool> isRunning = true;
+  std::atomic<bool> resetAheadRequested = false;
+  std::atomic<size_t> pendingSeekPositionMs = 0;
+  std::atomic<int> trackOffset = 0;
+
   std::mutex runningMutex;
 
   void runTask() override;
