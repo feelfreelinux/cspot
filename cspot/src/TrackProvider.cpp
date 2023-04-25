@@ -31,11 +31,12 @@ TrackProvider::TrackProvider(std::shared_ptr<cspot::Context> ctx) {
       std::make_unique<cspot::CDNTrackStream>(this->accessKeyFetcher);
 
   this->trackInfo = {};
+  this->episodeInfo = {};
 }
 
 TrackProvider::~TrackProvider() {
   pb_release(Track_fields, &trackInfo);
-  pb_release(Episode_fields, &trackInfo);
+  pb_release(Episode_fields, &episodeInfo);
 }
 
 std::shared_ptr<cspot::CDNTrackStream> TrackProvider::loadFromTrackRef(
