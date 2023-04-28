@@ -14,32 +14,20 @@
 #include "BellDSP.h"             // for BellDSP, BellDSP::FadeEffect, BellDS...
 #include "BellUtils.h"           // for BELL_SLEEP_MS
 #include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
+#include "Logger.h"
 #include "SpircHandler.h"        // for SpircHandler, SpircHandler::EventType
 #include "StreamInfo.h"          // for BitWidth, BitWidth::BW_16
 #include "TrackPlayer.h"         // for TrackPlayer
 
-#if defined(CSPOT_ENABLE_ALSA_SINK)
-#include "ALSAAudioSink.h"
-#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-#include "PortAudioSink.h"
-#else
-#include "NamedPipeAudioSink.h"  // for NamedPipeAudioSink
-#endif
 
-CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
+CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::SpircHandler> handler)
     : bell::Task("player", 1024, 0, 0) {
   this->handler = handler;
-#ifdef CSPOT_ENABLE_ALSA_SINK
-  this->audioSink = std::make_unique<ALSAAudioSink>();
-#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
-  this->audioSink = std::make_unique<PortAudioSink>();
-#else
-  this->audioSink = std::make_unique<NamedPipeAudioSink>();
-#endif
+  this->audioSink = std::move(sink);
 
-  this->audioSink->setParams(44100, 2, 16);
+  // this->audioSink->setParams(44100, 2, 16);
 
-  this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(1024);
+  this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(2 * 1024);
 
 #ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
@@ -47,10 +35,18 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
 
   auto hashFunc = std::hash<std::string_view>();
 
+  bool oldData = false;
+  size_t bufId = 0;
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
+      [this, &hashFunc, &bufId, &oldData](uint8_t* data, size_t bytes, std::string_view trackId,
                         size_t sequence) {
+
         auto hash = hashFunc(trackId);
+        if (hash != bufId) {
+          oldData = false;
+          bufId = hash;
+          CSPOT_LOG(info, "Track changed, flushing buffer %s", trackId.data());
+        }
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
       });
@@ -58,18 +54,21 @@ CliPlayer::CliPlayer(std::shared_ptr<cspot::SpircHandler> handler)
   this->isPaused = false;
 
   this->handler->setEventHandler(
-      [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
+      [this, &oldData](std::unique_ptr<cspot::SpircHandler::Event> event) {
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {
               this->pauseRequested = true;
             } else {
               this->isPaused = false;
+              this->pauseRequested = false;
             }
             break;
           case cspot::SpircHandler::EventType::FLUSH:
+          {
             this->centralAudioBuffer->clearBuffer();
             break;
+          }
           case cspot::SpircHandler::EventType::DISC:
             this->centralAudioBuffer->clearBuffer();
             break;

@@ -20,7 +20,8 @@ class SpircHandler;
 
 class CliPlayer : public bell::Task {
  public:
-  CliPlayer(std::shared_ptr<cspot::SpircHandler> spircHandler);
+  CliPlayer(std::unique_ptr<AudioSink> sink,
+            std::shared_ptr<cspot::SpircHandler> spircHandler);
   void disconnect();
 
  private:

@@ -26,10 +26,6 @@ CDNAudioFile::CDNAudioFile(const std::string& cdnUrl,
   this->crypto = std::make_unique<Crypto>();
 }
 
-CDNAudioFile::~CDNAudioFile() {}
-
-void CDNAudioFile::fail() {}
-
 size_t CDNAudioFile::getPosition() {
   return this->position;
 }
@@ -71,7 +67,6 @@ void CDNAudioFile::openStream() {
   this->position = 0;
   this->lastRequestPosition = 0;
   this->lastRequestCapacity = 0;
-  this->isConnected = true;
 }
 
 size_t CDNAudioFile::readBytes(uint8_t* dst, size_t bytes) {

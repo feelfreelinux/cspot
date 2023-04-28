@@ -20,33 +20,36 @@ class CDNAudioFile {
 
  public:
   CDNAudioFile(const std::string& cdnUrl, const std::vector<uint8_t>& audioKey);
-  ~CDNAudioFile();
 
-  enum class Status { HAS_DATA, HAS_URL, FAILED };
-
-  struct TrackInfo {
-    std::string trackId;
-    std::string name;
-    std::string album;
-    std::string artist;
-    std::string imageUrl;
-    int duration;
-  };
-
-  TrackInfo trackInfo;
-
-  Status status;
-
-  void fail();
-
+  /**
+  * @brief Opens connection to the provided cdn url, and fetches track metadata.
+  */
   void openStream();
 
+  /**
+  * @brief Read and decrypt part of the cdn stream
+  *
+  * @param dst buffer where to read received data to
+  * @param amount of bytes to read
+  *
+  * @returns amount of bytes read
+  */
   size_t readBytes(uint8_t* dst, size_t bytes);
 
+  /**
+  * @brief Returns current position in CDN stream
+  */
   size_t getPosition();
 
+  /**
+  * @brief returns total size of the audio file in bytes
+  */
   size_t getSize();
 
+  /**
+  * @brief Seeks the track to provided position
+  * @param position position where to seek the track
+  */
   void seek(size_t position);
 
  private:
@@ -71,9 +74,8 @@ class CDNAudioFile {
   std::unique_ptr<Crypto> crypto;
 
   std::unique_ptr<bell::HTTPClient::Response> httpConnection;
-  bool isConnected = false;
 
-  size_t position = 0;  // Spotify header size
+  size_t position = 0;
   size_t totalFileSize = 0;
   size_t lastRequestPosition = 0;
   size_t lastRequestCapacity = 0;

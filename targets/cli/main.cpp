@@ -25,6 +25,14 @@
 #include "Logger.h"                // for CSPOT_LOG
 #include "LoginBlob.h"             // for LoginBlob
 
+#if defined(CSPOT_ENABLE_ALSA_SINK)
+#include "ALSAAudioSink.h"
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+#include "PortAudioSink.h"
+#else
+#include "NamedPipeAudioSink.h"  // for NamedPipeAudioSink
+#endif
+
 class ZeroconfAuthenticator {
  public:
   ZeroconfAuthenticator(){};
@@ -68,6 +76,8 @@ class ZeroconfAuthenticator {
           queryMap[hd[i].name] = hd[i].value;
         }
 
+        CSPOT_LOG(info, "Received zeroauth POST data");
+
         // Pass user's credentials to the blob
         blob->loadZeroconfQuery(queryMap);
 
@@ -95,6 +105,16 @@ int main(int argc, char** argv) {
     exit(1);
 #endif
   bell::setDefaultLogger();
+  bell::enableTimestampLogging();
+#ifdef CSPOT_ENABLE_ALSA_SINK
+  auto audioSink = std::make_unique<ALSAAudioSink>();
+#elif defined(CSPOT_ENABLE_PORTAUDIO_SINK)
+  std::unique_ptr<AudioSink> audioSink = std::make_unique<PortAudioSink>();
+#else
+  auto audioSink = std::make_unique<NamedPipeAudioSink>();
+#endif
+
+  audioSink->setParams(44100, 2, 16);
 
   // Semaphore, main thread waits for this to be signaled before signing in
   auto loggedInSemaphore = std::make_shared<bell::WrappedSemaphore>(1);
@@ -161,7 +181,7 @@ int main(int argc, char** argv) {
       ctx->session->startTask();
 
       // Create a player, pass the handler
-      auto player = std::make_shared<CliPlayer>(handler);
+      auto player = std::make_shared<CliPlayer>(std::move(audioSink), handler);
 
       // If we wanted to handle multiple devices, we would halt this loop
       // when a new zeroconf login is requested, and reinitialize the session

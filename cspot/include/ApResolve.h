@@ -8,17 +8,16 @@
 
 namespace cspot {
 class ApResolve {
- private:
-  std::string apOverride;
-
  public:
   ApResolve(std::string apOverride);
 
   /**
-     * @brief Connects to spotify's servers and returns first valid ap address
-     * 
-     * @return std::string Address in form of url:port
-     */
+   * @brief Connects to spotify's servers and returns first valid ap address
+   * @returns std::string Address in form of url:port
+   */
   std::string fetchFirstApAddress();
+
+ private:
+  std::string apOverride;
 };
 }  // namespace cspot

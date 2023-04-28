@@ -32,7 +32,7 @@ class SpircHandler {
     FLUSH,
     PLAYBACK_START
   };
-  typedef std::variant<CDNAudioFile::TrackInfo, int, bool> EventData;
+  typedef std::variant<int, bool> EventData;
 
   struct Event {
     EventType eventType;
@@ -48,8 +48,9 @@ class SpircHandler {
 
   void setPause(bool pause);
 
-  void nextSong();
   void previousSong();
+
+  void nextSong();
 
   void notifyAudioReachedPlayback();
   void updatePositionMs(uint32_t position);
@@ -67,13 +68,12 @@ class SpircHandler {
 
   std::shared_ptr<cspot::PlaybackState> playbackState;
 
-  uint32_t nextTrackPosition = 0;
-
   void sendCmd(MessageType typ);
 
   void sendEvent(EventType type);
   void sendEvent(EventType type, EventData data);
 
+  void skipSong(TrackQueue::SkipDirection dir);
   void handleFrame(std::vector<uint8_t>& data);
   void notify();
 };

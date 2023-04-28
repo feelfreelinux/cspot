@@ -11,10 +11,12 @@
 
 #include "BellTask.h"  // for Task
 #include "CDNAudioFile.h"
+#include "TrackQueue.h"
 
 namespace bell {
 class WrappedSemaphore;
 }  // namespace bell
+
 #ifdef BELL_VORBIS_FLOAT
 #include "vorbis/vorbisfile.h"
 #else
@@ -30,7 +32,7 @@ struct TrackReference;
 class TrackPlayer : bell::Task {
  public:
   // Callback types
-  typedef std::function<void()> TrackLoadedCallback;
+  typedef std::function<void(std::shared_ptr<QueuedTrack>)> TrackLoadedCallback;
   typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)>
       DataCallback;
   typedef std::function<void()> EOFCallback;
@@ -38,8 +40,7 @@ class TrackPlayer : bell::Task {
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,
               std::shared_ptr<cspot::TrackQueue> trackQueue,
-              isAiringCallback callback, EOFCallback eofCallback,
-              TrackLoadedCallback loadedCallback);
+              EOFCallback eofCallback, TrackLoadedCallback loadedCallback);
   ~TrackPlayer();
 
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs,
@@ -56,7 +57,8 @@ class TrackPlayer : bell::Task {
   int _vorbisSeek(int64_t offset, int whence);
   long _vorbisTell();
 
-  void destroy();
+  void stop();
+  void start();
 
  private:
   std::shared_ptr<cspot::Context> ctx;
@@ -71,25 +73,25 @@ class TrackPlayer : bell::Task {
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;
   EOFCallback eofCallback;
-  isAiringCallback isAiring;
 
   // Playback control
   std::atomic<bool> currentSongPlaying;
   std::mutex playbackMutex;
-  std::mutex seekMutex;
+  std::mutex dataOutMutex;
 
   // Vorbis related
   OggVorbis_File vorbisFile;
   ov_callbacks vorbisCallbacks;
   int currentSection;
+
   std::vector<uint8_t> pcmBuffer = std::vector<uint8_t>(1024);
 
-  size_t playbackPosition = 0;
   bool autoStart = false;
-  std::atomic<bool> isRunning = true;
-  std::atomic<bool> resetAheadRequested = false;
+
+  std::atomic<bool> isRunning = false;
+  std::atomic<bool> pendingReset = false;
+  std::atomic<bool> inFuture = false;
   std::atomic<size_t> pendingSeekPositionMs = 0;
-  std::atomic<int> trackOffset = 0;
 
   std::mutex runningMutex;
 

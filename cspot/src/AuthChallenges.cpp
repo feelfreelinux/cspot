@@ -125,5 +125,6 @@ std::vector<uint8_t> AuthChallenges::prepareClientHello() {
   // Generate the random nonce
   auto nonce = crypto->generateVectorWithRandomData(16);
   std::copy(nonce.begin(), nonce.end(), clientHello.client_nonce);
+
   return pbEncode(ClientHello_fields, &clientHello);
 }

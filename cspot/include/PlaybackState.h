@@ -5,6 +5,7 @@
 #include <string>    // for string
 #include <vector>    // for vector
 
+#include "TrackReference.h"
 #include "protobuf/spirc.pb.h"  // for Frame, TrackRef, CapabilityType, Mess...
 
 namespace cspot {
@@ -13,8 +14,10 @@ struct Context;
 class PlaybackState {
  private:
   std::shared_ptr<cspot::Context> ctx;
+
   uint32_t seqNum = 0;
   uint8_t capabilityIndex = 0;
+
   std::vector<uint8_t> frameData;
 
   void addCapability(
@@ -24,6 +27,9 @@ class PlaybackState {
  public:
   Frame innerFrame;
   Frame remoteFrame;
+
+  std::vector<TrackReference> remoteTracks;
+
   enum class State { Playing, Stopped, Loading, Paused };
 
   /**
@@ -74,56 +80,9 @@ class PlaybackState {
   void setVolume(uint32_t volume);
 
   /**
-     * @brief Enables queue shuffling.
-     *
-     * Sets shuffle parameter on local frame, and in case shuffling is enabled,
-     * it will randomize the entire local queue.
-     *
-     * @param shuffle whenever should shuffle
+   * @brief Updates local track queue from remote data.
      */
-  void setShuffle(bool shuffle);
-
-  /**
-     * @brief Enables repeat
-     *
-     * @param repeat should repeat param
-     */
-  void setRepeat(bool repeat);
-
-  /**
-     * @brief Updates local track queue from remote data.
-     */
-  void updateTracks();
-
-  /**
-     * @brief Changes playback to next queued track.
-     *
-     * Will go back to first track if current track is last track in queue.
-     * In that case, it will pause if repeat is disabled.
-     */
-  bool nextTrack();
-
-  /**
-     * @brief Changes playback to previous queued track.
-     *
-     * Will stop if current track is the first track in queue and repeat is disabled.
-     * If repeat is enabled, it will loop back to the last track in queue.
-     */
-  void prevTrack();
-
-  /**
-       * @brief Gets the current track reference.
-       *
-       * @return std::shared_ptr<TrackReference> pointer to track reference
-       */
-  TrackRef* getCurrentTrackRef();
-
-  /**
-    * @brief Gets reference to next track in queue, or nullptr if there is no next track.
-    *
-    * @return std::shared_ptr<TrackReference> pointer to track reference
-    */
-  TrackRef* getNextTrackRef();
+  void syncWithRemote();
 
   /**
      * @brief Encodes current frame into binary data via protobuf.
@@ -132,5 +91,7 @@ class PlaybackState {
      * @return std::vector<uint8_t> binary frame data
      */
   std::vector<uint8_t> encodeCurrentFrame(MessageType typ);
+
+  bool decodeRemoteFrame(std::vector<uint8_t>& data);
 };
 }  // namespace cspot

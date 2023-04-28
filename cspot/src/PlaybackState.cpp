@@ -1,8 +1,9 @@
 #include "PlaybackState.h"
 
-#include <string.h>     // for strdup, memcpy, strcpy, strlen
-#include <cstdint>      // for uint8_t
-#include <cstdlib>      // for free, NULL, realloc, rand
+#include <string.h>  // for strdup, memcpy, strcpy, strlen
+#include <cstdint>   // for uint8_t
+#include <cstdlib>   // for free, NULL, realloc, rand
+#include <cstring>
 #include <memory>       // for shared_ptr
 #include <type_traits>  // for remove_extent_t
 #include <utility>      // for swap
@@ -23,6 +24,13 @@ PlaybackState::PlaybackState(std::shared_ptr<cspot::Context> ctx) {
   this->ctx = ctx;
   innerFrame = {};
   remoteFrame = {};
+
+  // Prepare callbacks for decoding of remote frame track data
+  remoteFrame.state.track.funcs.decode = &TrackReference::pbDecodeTrackList;
+  remoteFrame.state.track.arg = &remoteTracks;
+
+  innerFrame.ident = strdup(ctx->config.deviceId.c_str());
+  innerFrame.protocol_version = strdup(protocolVersion);
 
   // Prepare default state
   innerFrame.state.has_position_ms = true;
@@ -52,8 +60,6 @@ PlaybackState::PlaybackState(std::shared_ptr<cspot::Context> ctx) {
   innerFrame.device_state.has_volume = true;
 
   innerFrame.device_state.name = strdup(ctx->config.deviceName.c_str());
-
-  innerFrame.state.track_count = 0;
 
   // Prepare player's capabilities
   addCapability(CapabilityType_kCanBePlayer, 1);
@@ -104,32 +110,18 @@ void PlaybackState::setPlaybackState(const PlaybackState::State state) {
   }
 }
 
+void PlaybackState::syncWithRemote() {
+  innerFrame.state.context_uri = (char*)realloc(
+      innerFrame.state.context_uri, strlen(remoteFrame.state.context_uri) + 1);
+
+  strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
+
+  innerFrame.state.has_playing_track_index = true;
+  innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
+}
+
 bool PlaybackState::isActive() {
   return innerFrame.device_state.is_active;
-}
-
-bool PlaybackState::nextTrack() {
-  innerFrame.state.playing_track_index++;
-
-  if (innerFrame.state.playing_track_index >= innerFrame.state.track_count) {
-
-    innerFrame.state.playing_track_index = 0;
-
-    if (!innerFrame.state.repeat) {
-      setPlaybackState(State::Paused);
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void PlaybackState::prevTrack() {
-  if (innerFrame.state.playing_track_index > 0) {
-    innerFrame.state.playing_track_index--;
-  } else if (innerFrame.state.repeat) {
-    innerFrame.state.playing_track_index = innerFrame.state.track_count - 1;
-  }
 }
 
 void PlaybackState::setActive(bool isActive) {
@@ -147,132 +139,25 @@ void PlaybackState::updatePositionMs(uint32_t position) {
       ctx->timeProvider->getSyncedTimestamp();
 }
 
-#define FREE(ptr) \
-  {               \
-    free(ptr);    \
-    ptr = NULL;   \
-  }
-#define STRDUP(dst, src) \
-  if (src != NULL) {     \
-    dst = strdup(src);   \
-  } else {               \
-    FREE(dst);           \
-  }  // strdup null pointer safe
-
-void PlaybackState::updateTracks() {
-  CSPOT_LOG(info, "---- Track count %d", remoteFrame.state.track_count);
-  CSPOT_LOG(info, "---- Inner track count %d", innerFrame.state.track_count);
-  CSPOT_LOG(info, "--- Context URI %s", remoteFrame.state.context_uri);
-
-  // free unused tracks
-  if (innerFrame.state.track_count > remoteFrame.state.track_count) {
-    for (uint16_t i = remoteFrame.state.track_count;
-         i < innerFrame.state.track_count; ++i) {
-      FREE(innerFrame.state.track[i].gid);
-      FREE(innerFrame.state.track[i].uri);
-      FREE(innerFrame.state.track[i].context);
-    }
-  }
-
-  // reallocate memory for new tracks
-  innerFrame.state.track = (TrackRef*)realloc(
-      innerFrame.state.track, sizeof(TrackRef) * remoteFrame.state.track_count);
-
-  for (uint16_t i = 0; i < remoteFrame.state.track_count; ++i) {
-    if (i >= innerFrame.state.track_count) {
-      innerFrame.state.track[i].gid = NULL;
-      innerFrame.state.track[i].uri = NULL;
-      innerFrame.state.track[i].context = NULL;
-    }
-
-    if (remoteFrame.state.track[i].gid != NULL) {
-      uint16_t gid_size = remoteFrame.state.track[i].gid->size;
-      innerFrame.state.track[i].gid = (pb_bytes_array_t*)realloc(
-          innerFrame.state.track[i].gid, PB_BYTES_ARRAY_T_ALLOCSIZE(gid_size));
-
-      memcpy(innerFrame.state.track[i].gid->bytes,
-             remoteFrame.state.track[i].gid->bytes, gid_size);
-      innerFrame.state.track[i].gid->size = gid_size;
-    }
-    innerFrame.state.track[i].has_queued =
-        remoteFrame.state.track[i].has_queued;
-    innerFrame.state.track[i].queued = remoteFrame.state.track[i].queued;
-
-    STRDUP(innerFrame.state.track[i].uri, remoteFrame.state.track[i].uri);
-    STRDUP(innerFrame.state.track[i].context,
-           remoteFrame.state.track[i].context);
-  }
-
-  innerFrame.state.context_uri = (char*)realloc(
-      innerFrame.state.context_uri, strlen(remoteFrame.state.context_uri) + 1);
-  strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
-
-  innerFrame.state.track_count = remoteFrame.state.track_count;
-  innerFrame.state.has_playing_track_index = true;
-  innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
-
-  if (remoteFrame.state.repeat) {
-    setRepeat(true);
-  }
-
-  if (remoteFrame.state.shuffle) {
-    setShuffle(true);
-  }
-}
-
 void PlaybackState::setVolume(uint32_t volume) {
   innerFrame.device_state.volume = volume;
   ctx->config.volume = volume;
 }
 
-void PlaybackState::setShuffle(bool shuffle) {
-  innerFrame.state.shuffle = shuffle;
-  if (shuffle) {
-    // Put current song at the begining
-    std::swap(innerFrame.state.track[0],
-              innerFrame.state.track[innerFrame.state.playing_track_index]);
+bool PlaybackState::decodeRemoteFrame(std::vector<uint8_t>& data) {
+  pb_release(Frame_fields, &remoteFrame);
 
-    // Shuffle current tracks
-    for (int x = 1; x < innerFrame.state.track_count - 1; x++) {
-      auto j = x + (std::rand() % (innerFrame.state.track_count - x));
-      std::swap(innerFrame.state.track[j], innerFrame.state.track[x]);
-    }
-    innerFrame.state.playing_track_index = 0;
-  }
-}
+  remoteTracks.clear();
 
-void PlaybackState::setRepeat(bool repeat) {
-  innerFrame.state.repeat = repeat;
-}
+  pbDecode(remoteFrame, Frame_fields, data);
 
-TrackRef* PlaybackState::getCurrentTrackRef() {
-  if (innerFrame.state.playing_track_index >= innerFrame.state.track_count) {
-    return nullptr;
-  }
-  return &innerFrame.state.track[innerFrame.state.playing_track_index];
-}
-
-TrackRef* PlaybackState::getNextTrackRef() {
-  if ((innerFrame.state.playing_track_index + 1) >=
-      innerFrame.state.track_count) {
-    if (innerFrame.state.repeat) {
-      return &innerFrame.state.track[0];
-    }
-    return nullptr;
-  }
-
-  return &innerFrame.state.track[innerFrame.state.playing_track_index + 1];
+  return true;
 }
 
 std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ) {
-  free(innerFrame.ident);
-  free(innerFrame.protocol_version);
-
   // Prepare current frame info
   innerFrame.version = 1;
-  innerFrame.ident = strdup(ctx->config.deviceId.c_str());
   innerFrame.seq_nr = this->seqNum;
-  innerFrame.protocol_version = strdup(protocolVersion);
   innerFrame.typ = typ;
   innerFrame.state_update_id = ctx->timeProvider->getSyncedTimestamp();
   innerFrame.has_version = true;
@@ -284,6 +169,7 @@ std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ) {
   innerFrame.has_state_update_id = true;
 
   this->seqNum += 1;
+
   return pbEncode(Frame_fields, &innerFrame);
 }
 
@@ -311,5 +197,6 @@ void PlaybackState::addCapability(CapabilityType typ, int intValue,
 
   this->innerFrame.device_state.capabilities[capabilityIndex]
       .stringValue_count = stringValue.size();
+
   this->capabilityIndex += 1;
 }

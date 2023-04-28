@@ -19,12 +19,17 @@
 
 using namespace cspot;
 
-AccessKeyFetcher::AccessKeyFetcher(std::shared_ptr<cspot::Context> ctx) {
-  this->ctx = ctx;
+static std::string CLIENT_ID =
+    "65b708073fc0480ea92a077233ca87bd";  // Spotify web client's client id
+
+static std::string SCOPES =
+    "streaming,user-library-read,user-library-modify,user-top-read,user-read-"
+    "recently-played";  // Required access scopes
+
+AccessKeyFetcher::AccessKeyFetcher(std::shared_ptr<cspot::Context> ctx)
+    : ctx(ctx) {
   this->updateSemaphore = std::make_shared<bell::WrappedSemaphore>();
 }
-
-AccessKeyFetcher::~AccessKeyFetcher() {}
 
 bool AccessKeyFetcher::isExpired() {
   if (accessKey.empty()) {
@@ -50,6 +55,7 @@ std::string AccessKeyFetcher::getAccessKey() {
 
 void AccessKeyFetcher::updateAccessKey() {
   if (keyPending) {
+    // Already pending refresh request
     return;
   }
 
@@ -68,8 +74,7 @@ void AccessKeyFetcher::updateAccessKey() {
         if (res.fail)
           return;
         char* accessKeyJson = (char*)res.parts[0].data();
-        auto accessJSON = std::string(
-            accessKeyJson, strrchr(accessKeyJson, '}') - accessKeyJson + 1);
+        auto accessJSON = std::string(accessKeyJson);
 #ifdef BELL_ONLY_CJSON
         cJSON* jsonBody = cJSON_Parse(accessJSON.c_str());
         this->accessKey =
