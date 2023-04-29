@@ -7,7 +7,8 @@
 #include <string>       // for string
 #include <type_traits>  // for enable_if<>::type
 
-#include "i386/endian.h"  // for htonl
+#include <netdb.h>
+#include <chrono>
 
 unsigned long long getCurrentTimestamp() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(

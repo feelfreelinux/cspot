@@ -74,7 +74,7 @@ bool canPlayTrack(Track& trackInfo, int altIndex, const char* country) {
 QueuedTrack::QueuedTrack(TrackReference& ref,
                          std::shared_ptr<cspot::Context> ctx,
                          uint32_t requestedPosition)
-    : ctx(ctx), requestedPosition(requestedPosition) {
+    : requestedPosition(requestedPosition), ctx(ctx) {
   this->ref = ref;
 
   loadedSemaphore = std::make_shared<bell::WrappedSemaphore>();
@@ -105,7 +105,7 @@ std::shared_ptr<cspot::CDNAudioFile> QueuedTrack::getAudioFile() {
 void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
   int alternativeCount, filesCount = 0;
   bool canPlay = false;
-  AudioFile* selectedFiles;
+  AudioFile* selectedFiles = nullptr;
 
   const char* countryCode = ctx->config.countryCode.c_str();
 
@@ -304,7 +304,7 @@ void QueuedTrack::stepLoadMetadata(
 
 TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
                        std::shared_ptr<cspot::PlaybackState> state)
-    : bell::Task("CSpotTrackQueue", 1024, 0, 0),
+    : bell::Task("CSpotTrackQueue", 1024 * 32, 0, 1),
       playbackState(state),
       ctx(ctx) {
   accessKeyFetcher = std::make_shared<cspot::AccessKeyFetcher>(ctx);
@@ -466,8 +466,8 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   bool canSkipNext = currentTracks.size() > currentTracksIndex + 1;
   bool canSkipPrev = currentTracksIndex > 0;
 
-  if (dir == SkipDirection::NEXT && canSkipNext ||
-      dir == SkipDirection::PREV && canSkipPrev) {
+  if ((dir == SkipDirection::NEXT && canSkipNext) ||
+      (dir == SkipDirection::PREV && canSkipPrev)) {
     std::scoped_lock lock(tracksMutex);
     if (dir == SkipDirection::NEXT) {
       preloadedTracks.pop_front();

@@ -4,7 +4,9 @@
 #include <deque>     // for deque
 #include <memory>    // for shared_ptr
 #include <mutex>     // for mutex
+#include <variant>   // for variant
 #include <vector>    // for vector
+#include <atomic>
 
 #include "BellTask.h"
 #include "PlaybackState.h"

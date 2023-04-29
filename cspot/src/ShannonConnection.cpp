@@ -8,7 +8,7 @@
 #include "PlainConnection.h"  // for PlainConnection
 #include "Shannon.h"          // for Shannon
 #include "Utils.h"            // for pack, extract
-#include "i386/endian.h"      // for htonl, htons, ntohs
+#include <netdb.h>
 
 using namespace cspot;
 

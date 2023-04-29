@@ -16,7 +16,7 @@
 #include "Logger.h"       // for CSPOT_LOG
 #include "Packet.h"       // for cspot
 #include "Utils.h"        // for extract, pack
-#include "i386/endian.h"  // for htonl, ntohl
+#include <netdb.h>
 
 using namespace cspot;
 

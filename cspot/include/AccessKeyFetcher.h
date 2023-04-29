@@ -3,6 +3,7 @@
 #include <functional>  // for function
 #include <memory>      // for shared_ptr
 #include <string>      // for string
+#include <atomic>
 
 namespace bell {
 class WrappedSemaphore;
