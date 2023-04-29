@@ -46,12 +46,18 @@ class ZeroconfAuthenticator {
   std::shared_ptr<cspot::LoginBlob> blob;
 
   std::function<void()> onAuthSuccess;
+  std::function<void()> onClose;
 
   void registerHandlers() {
     this->server = std::make_unique<bell::BellHTTPServer>(serverPort);
 
     server->registerGet("/spotify_info", [this](struct mg_connection* conn) {
       return this->server->makeJsonResponse(this->blob->buildZeroconfInfo());
+    });
+
+    server->registerGet("/close", [this](struct mg_connection* conn) {
+      this->onClose();
+      return this->server->makeEmptyResponse();
     });
 
     server->registerPost("/spotify_info", [this](struct mg_connection* conn) {
@@ -120,6 +126,11 @@ int main(int argc, char** argv) {
   auto loggedInSemaphore = std::make_shared<bell::WrappedSemaphore>(1);
 
   auto zeroconfServer = std::make_unique<ZeroconfAuthenticator>();
+  std::atomic<bool> isRunning = true;
+
+  zeroconfServer->onClose = [&isRunning]() {
+    isRunning = false;
+  };
 
   try {
     auto args = CommandLineArguments::parse(argc, argv);
@@ -185,7 +196,7 @@ int main(int argc, char** argv) {
 
       // If we wanted to handle multiple devices, we would halt this loop
       // when a new zeroconf login is requested, and reinitialize the session
-      while (true) {
+      while (isRunning) {
         ctx->session->handlePacket();
       }
 

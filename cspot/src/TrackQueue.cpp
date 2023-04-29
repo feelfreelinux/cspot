@@ -315,6 +315,8 @@ TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
   playbackState->innerFrame.state.track.funcs.encode =
       &TrackReference::pbEncodeTrackList;
   playbackState->innerFrame.state.track.arg = &currentTracks;
+  pbTrack = Track_init_zero;
+  pbEpisode = Episode_init_zero;
 
   // Start the task
   startTask();
@@ -324,12 +326,6 @@ TrackQueue::~TrackQueue() {
   stopTask();
 
   std::scoped_lock lock(tracksMutex);
-
-  for (auto& track : preloadedTracks) {
-    if (track != nullptr) {
-      track->expire();
-    }
-  }
 
   pb_release(Track_fields, &pbTrack);
   pb_release(Episode_fields, &pbEpisode);

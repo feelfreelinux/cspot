@@ -45,7 +45,11 @@ unset(USE_ALSA CACHE)
 # Import cspot library
 add_subdirectory("../../cspot" ${CMAKE_CURRENT_BINARY_DIR}/cspot)
 
+
+
 # Configure the target
 add_executable(cspotcli ${SOURCES})
 target_link_libraries(cspotcli PUBLIC cspot ${EXTRA_LIBS}  ${THINGS_TO_LINK})
+target_link_options(cspotcli PUBLIC -fsanitize=address)
+target_compile_options(cspotcli PUBLIC -fsanitize=address -fno-omit-frame-pointer -O1)
 target_include_directories(cspotcli PRIVATE "." ${EXTRA_INCLUDES})

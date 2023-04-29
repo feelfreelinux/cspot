@@ -35,18 +35,11 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::Spi
 
   auto hashFunc = std::hash<std::string_view>();
 
-  bool oldData = false;
-  size_t bufId = 0;
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc, &bufId, &oldData](uint8_t* data, size_t bytes, std::string_view trackId,
+      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
                         size_t sequence) {
 
         auto hash = hashFunc(trackId);
-        if (hash != bufId) {
-          oldData = false;
-          bufId = hash;
-          CSPOT_LOG(info, "Track changed, flushing buffer %s", trackId.data());
-        }
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
       });
@@ -54,7 +47,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::Spi
   this->isPaused = false;
 
   this->handler->setEventHandler(
-      [this, &oldData](std::unique_ptr<cspot::SpircHandler::Event> event) {
+      [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {

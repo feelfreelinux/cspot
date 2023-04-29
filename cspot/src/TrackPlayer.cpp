@@ -243,7 +243,7 @@ void TrackPlayer::runTask() {
       CSPOT_LOG(info, "Playing done");
 
       // always move back to LOADING (ensure proper seeking after last track has been loaded)
-      this->currentTrackStream.reset();
+      currentTrackStream = nullptr;
     }
 
     if (eof) {

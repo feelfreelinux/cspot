@@ -3,6 +3,7 @@
 #include <pb_encode.h>
 #include <string_view>
 #include <vector>
+#include <optional>
 #include "NanoPBHelper.h"
 #include "pb_decode.h"
 #include "protobuf/spirc.pb.h"

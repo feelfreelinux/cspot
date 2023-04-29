@@ -73,8 +73,7 @@ void AccessKeyFetcher::updateAccessKey() {
       [this, timeProvider](MercurySession::Response& res) {
         if (res.fail)
           return;
-        char* accessKeyJson = (char*)res.parts[0].data();
-        auto accessJSON = std::string(accessKeyJson);
+        auto accessJSON = std::string((char*)res.parts[0].data(), res.parts[0].size());
 #ifdef BELL_ONLY_CJSON
         cJSON* jsonBody = cJSON_Parse(accessJSON.c_str());
         this->accessKey =
