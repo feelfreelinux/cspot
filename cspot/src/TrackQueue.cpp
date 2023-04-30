@@ -14,9 +14,12 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "WrappedSemaphore.h"
+#ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
 #include "nlohmann/json_fwd.hpp"  // for json
+#endif
 #include "protobuf/metadata.pb.h"
 
 using namespace cspot;
