@@ -7,6 +7,7 @@
 #include <variant>   // for variant
 #include <vector>    // for vector
 #include <atomic>
+#include <functional>
 
 #include "BellTask.h"
 #include "PlaybackState.h"
@@ -15,13 +16,13 @@
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
 
 namespace bell {
-struct WrappedSemaphore;
+class WrappedSemaphore;
 };
 
 namespace cspot {
 struct Context;
-struct AccessKeyFetcher;
-struct CDNAudioFile;
+class AccessKeyFetcher;
+class CDNAudioFile;
 class QueuedTrack {
  public:
   QueuedTrack(TrackReference& ref, std::shared_ptr<cspot::Context> ctx,

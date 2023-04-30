@@ -1,5 +1,6 @@
 #include "PlainConnection.h"
 
+#ifndef _WIN32
 #include <netdb.h>       // for addrinfo, freeaddrinfo, getaddrinfo
 #include <netinet/in.h>  // for IPPROTO_IP, IPPROTO_TCP
 #include <sys/errno.h>   // for EAGAIN, EINTR, ETIMEDOUT, errno
@@ -7,16 +8,15 @@
 #include <sys/time.h>    // for timeval
 #include <cstring>       // for memset
 #include <stdexcept>     // for runtime_error
-#ifdef _WIN32
-#include <ws2tcpip.h>
-#else
 #include <netinet/tcp.h>  // for TCP_NODELAY
+#include <netdb.h>
+#else
+#include <ws2tcpip.h>
 #endif
 #include "BellLogger.h"   // for AbstractLogger
 #include "Logger.h"       // for CSPOT_LOG
 #include "Packet.h"       // for cspot
 #include "Utils.h"        // for extract, pack
-#include <netdb.h>
 
 using namespace cspot;
 
