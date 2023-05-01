@@ -13,7 +13,6 @@
 
 namespace cspot {
 class TrackPlayer;
-class TrackQueue;
 struct Context;
 
 class SpircHandler {
@@ -32,7 +31,8 @@ class SpircHandler {
     FLUSH,
     PLAYBACK_START
   };
-  typedef std::variant<int, bool> EventData;
+
+  typedef std::variant<TrackInfo, int, bool> EventData;
 
   struct Event {
     EventType eventType;

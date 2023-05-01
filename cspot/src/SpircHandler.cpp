@@ -25,15 +25,6 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
   this->playbackState = std::make_shared<PlaybackState>(ctx);
   this->trackQueue = std::make_shared<cspot::TrackQueue>(ctx, playbackState);
 
-  this->trackQueue->onPlaybackEvent = [this](
-                                          TrackQueue::PlaybackEvent event,
-                                          std::shared_ptr<QueuedTrack> track) {
-    switch (event) {
-      case TrackQueue::PlaybackEvent::FIRST_LOADED: {
-        break;
-      }
-    }
-  };
   auto EOFCallback = [this]() {
     if (trackQueue->isFinished()) {
       sendEvent(EventType::DEPLETED);
@@ -45,8 +36,9 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     playbackState->updatePositionMs(track->requestedPosition);
 
     this->notify();
-    sendEvent(EventType::PLAYBACK_START);
-    CSPOT_LOG(info, "Loaded event");
+
+    // Send playback start event, unpause
+    sendEvent(EventType::PLAYBACK_START, (int) track->requestedPosition);
     sendEvent(EventType::PLAY_PAUSE, false);
   };
 
@@ -86,14 +78,15 @@ void SpircHandler::subscribeToMercury() {
 void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 
 void SpircHandler::notifyAudioReachedPlayback() {
+  static int offset = 0;
+
+  // get HEAD track
+  auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
+
   // Do not execute when meta is already updated
   if (trackQueue->notifyPending) {
     trackQueue->notifyPending = false;
 
-    static int offset = 0;
-
-    // get HEAD track
-    auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
     playbackState->updatePositionMs(currentTrack->requestedPosition);
 
     // Reset position in queued track
@@ -105,7 +98,7 @@ void SpircHandler::notifyAudioReachedPlayback() {
 
   this->notify();
 
-  // sendEvent(EventType::TRACK_INFO, this->trackPlayer->getCurrentTrackInfo());
+  sendEvent(EventType::TRACK_INFO, currentTrack->trackInfo);
 }
 
 void SpircHandler::updatePositionMs(uint32_t position) {
@@ -131,7 +124,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
           playbackState->remoteFrame.device_state.is_active) {
         CSPOT_LOG(debug, "Another player took control, pausing playback");
         playbackState->setActive(false);
-        
+
         this->trackPlayer->stop();
         sendEvent(EventType::DISC);
       }
@@ -185,7 +178,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       playbackState->syncWithRemote();
 
       // Update track list in case we have a new one
-      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms, true);
+      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
+                               true);
 
       this->notify();
 
@@ -197,7 +191,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       CSPOT_LOG(debug, "Got replace frame");
       playbackState->syncWithRemote();
 
-      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms, false);
+      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
+                               false);
       this->notify();
 
       trackPlayer->resetState();

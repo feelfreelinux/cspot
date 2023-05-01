@@ -1,11 +1,6 @@
 #pragma once
 
 #include <stddef.h>  // for size_t
-#include <deque>     // for deque
-#include <memory>    // for shared_ptr
-#include <mutex>     // for mutex
-#include <variant>   // for variant
-#include <vector>    // for vector
 #include <atomic>
 #include <functional>
 
@@ -21,8 +16,18 @@ class WrappedSemaphore;
 
 namespace cspot {
 struct Context;
-class AccessKeyFetcher;
-class CDNAudioFile;
+struct AccessKeyFetcher;
+struct CDNAudioFile;
+
+// Used in got track info event
+struct TrackInfo {
+  std::string name, album, artist, imageUrl, trackId;
+  uint32_t duration;
+
+  void loadPbTrack(Track* pbTrack, const std::vector<uint8_t>& gid);
+  void loadPbEpisode(Episode* pbEpisode, const std::vector<uint8_t>& gid);
+};
+
 class QueuedTrack {
  public:
   QueuedTrack(TrackReference& ref, std::shared_ptr<cspot::Context> ctx,
@@ -39,14 +44,13 @@ class QueuedTrack {
     FAILED
   };
 
-  State state;
-
-  TrackReference ref;
-
   std::shared_ptr<bell::WrappedSemaphore> loadedSemaphore;
 
-  uint32_t requestedPosition;
+  State state = State::QUEUED;  // Current state of the track
+  TrackReference ref;           // Holds GID, URI and Context
+  TrackInfo trackInfo;  // Full track information fetched from spotify, name etc
 
+  uint32_t requestedPosition;
   std::string identifier;
 
   // Will return nullptr if the track is not ready
@@ -83,35 +87,19 @@ class TrackQueue : public bell::Task {
              std::shared_ptr<cspot::PlaybackState> playbackState);
   ~TrackQueue();
 
-  enum class PlaybackEvent {
-    FIRST_LOADED,
-  };
-
   enum class SkipDirection { NEXT, PREV };
 
-  using PlaybackEventData = std::variant<bool>;
-  using PlaybackEventHandler =
-      std::function<void(PlaybackEvent, std::shared_ptr<QueuedTrack>)>;
-
   std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
-
-  PlaybackEventHandler onPlaybackEvent = nullptr;
-
   std::atomic<bool> notifyPending = false;
 
-  void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
-  int getTrackRelativePosition(std::shared_ptr<QueuedTrack> track);
 
   void runTask() override;
-
   void stopTask();
 
   bool hasTracks();
-
   bool isFinished();
-
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
-
+  void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
 
@@ -124,9 +112,7 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
-
   std::vector<TrackReference> currentTracks;
-
   std::mutex tracksMutex, runningMutex;
 
   // PB data
@@ -140,9 +126,6 @@ class TrackQueue : public bell::Task {
   bool isRunning = false;
 
   void processTrack(std::shared_ptr<QueuedTrack> track);
-
   bool queueNextTrack(int offset = 0, uint32_t positionMs = 0);
-
-  void syncWithState();
 };
 }  // namespace cspot

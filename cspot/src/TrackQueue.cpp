@@ -74,6 +74,48 @@ bool canPlayTrack(Track& trackInfo, int altIndex, const char* country) {
 }
 }  // namespace TrackDataUtils
 
+void TrackInfo::loadPbTrack(Track* pbTrack, const std::vector<uint8_t>& gid) {
+  // Generate ID based on GID
+  trackId = bytesToHexString(gid);
+
+  name = std::string(pbTrack->name);
+
+  if (pbTrack->artist_count > 0) {
+    // Handle artist data
+    artist = std::string(pbTrack->artist[0].name);
+  }
+
+  if (pbTrack->has_album) {
+    // Handle album data
+    album = std::string(pbTrack->album.name);
+
+    if (pbTrack->album.has_cover_group &&
+        pbTrack->album.cover_group.image_count > 0) {
+      auto imageId =
+          pbArrayToVector(pbTrack->album.cover_group.image[0].file_id);
+      imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId);
+    }
+  }
+
+  duration = pbTrack->duration;
+}
+
+void TrackInfo::loadPbEpisode(Episode* pbEpisode,
+                              const std::vector<uint8_t>& gid) {
+  // Generate ID based on GID
+  trackId = bytesToHexString(gid);
+
+  name = std::string(pbEpisode->name);
+
+  if (pbEpisode->covers->image_count > 0) {
+    // Handle episode info
+    auto imageId = pbArrayToVector(pbEpisode->covers->image[0].file_id);
+    imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId);
+  }
+
+  duration = pbEpisode->duration;
+}
+
 QueuedTrack::QueuedTrack(TrackReference& ref,
                          std::shared_ptr<cspot::Context> ctx,
                          uint32_t requestedPosition)
@@ -139,6 +181,11 @@ void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
       filesCount = pbTrack->file_count;
       trackId = pbArrayToVector(pbTrack->gid);
     }
+
+    if (trackId.size() > 0) {
+      // Load track information
+      trackInfo.loadPbTrack(pbTrack, trackId);
+    }
   } else {
     // Handle episodes
     CSPOT_LOG(info, "Episode name: %s", pbEpisode->name);
@@ -154,6 +201,9 @@ void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
       selectedFiles = pbEpisode->file;
       filesCount = pbEpisode->file_count;
       trackId = pbArrayToVector(pbEpisode->gid);
+
+      // Load track information
+      trackInfo.loadPbEpisode(pbEpisode, trackId);
     }
   }
 
@@ -261,9 +311,6 @@ void QueuedTrack::expire() {
 void QueuedTrack::stepLoadMetadata(
     Track* pbTrack, Episode* pbEpisode, std::mutex& trackListMutex,
     std::shared_ptr<bell::WrappedSemaphore> updateSemaphore) {
-  // Request metadata
-  // accessKeyFetcher->getAccessKey(
-  //     [this](std::string key) { this->accessKey = key; });
 
   // Prepare request ID
   std::string requestUrl = string_format(
@@ -433,13 +480,6 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
           // Queue a new track to preload
           queueNextTrack(preloadedTracks.size());
         }
-
-        if (track == preloadedTracks[0] && notifyPending) {
-          // First track in queue loaded, notify the playback state
-          if (onPlaybackEvent) {
-            onPlaybackEvent(PlaybackEvent::FIRST_LOADED, track);
-          }
-        }
       }
       break;
     default:
@@ -514,14 +554,6 @@ bool TrackQueue::isFinished() {
   std::scoped_lock lock(tracksMutex);
   return currentTracksIndex >= currentTracks.size() - 1;
 }
-
-int TrackQueue::getTrackRelativePosition(std::shared_ptr<QueuedTrack> track) {
-  std::scoped_lock lock(tracksMutex);
-
-  return -1;
-}
-
-void TrackQueue::syncWithState() {}
 
 void TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
   std::scoped_lock lock(tracksMutex);
