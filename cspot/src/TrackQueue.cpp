@@ -433,12 +433,12 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     return preloadedTracks[0];
   }
 
-  if (preloadedTracks.size() == 1 && preloadedTracks[0] == prevTrack) {
-    offset = -1;
+  // if (currentTracksIndex + preloadedTracks.size() >= currentTracks.size()) {
+  //   offset = -1;
 
-    // Last track in queue
-    return nullptr;
-  }
+  //   // Last track in queue
+  //   return nullptr;
+  // }
 
   auto prevTrackIter =
       std::find(preloadedTracks.begin(), preloadedTracks.end(), prevTrack);
