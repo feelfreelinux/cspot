@@ -436,7 +436,7 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
   if (preloadedTracks.size() == 1 && preloadedTracks[0] == prevTrack) {
     offset = -1;
 
-    // Last track
+    // Last track in queue
     return nullptr;
   }
 
@@ -446,13 +446,12 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
   if (prevTrackIter != preloadedTracks.end()) {
     // Get offset of next track
     offset = prevTrackIter - preloadedTracks.begin() + 1;
-    ;
   } else {
     offset = 0;
   }
 
   if (offset >= preloadedTracks.size()) {
-    // Last track
+    // Last track in preloaded queue
     return nullptr;
   }
 

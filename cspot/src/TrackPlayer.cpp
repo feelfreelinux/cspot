@@ -107,7 +107,7 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
-  std::shared_ptr<QueuedTrack> track = nullptr;
+  std::shared_ptr<QueuedTrack> track, newTrack = nullptr;
 
   int trackOffset = 0;
   bool eof = false;
@@ -138,12 +138,19 @@ void TrackPlayer::runTask() {
       continue;
     }
 
-    track = trackQueue->consumeTrack(track, trackOffset);
+    newTrack = trackQueue->consumeTrack(track, trackOffset);
 
-    if (track == nullptr) {
-      BELL_SLEEP_MS(50);
+    if (newTrack == nullptr) {
+      if (trackOffset == -1) {
+        // Reset required
+        track = nullptr;
+      }
+
+      BELL_SLEEP_MS(100);
       continue;
     }
+
+    track = newTrack;
 
     inFuture = trackOffset > 0;
 

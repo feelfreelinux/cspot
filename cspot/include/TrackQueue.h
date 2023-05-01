@@ -108,7 +108,7 @@ class TrackQueue : public bell::Task {
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
 
  private:
-  static const int MAX_TRACKS_PRELOAD = 2;
+  static const int MAX_TRACKS_PRELOAD = 3;
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
   std::shared_ptr<PlaybackState> playbackState;
