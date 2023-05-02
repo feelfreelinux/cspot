@@ -444,26 +444,25 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     return preloadedTracks[0];
   }
 
-  if (preloadedTracks.size() == 1 && preloadedTracks[0] == prevTrack) {
-    offset = -1;
+  // if (currentTracksIndex + preloadedTracks.size() >= currentTracks.size()) {
+  //   offset = -1;
 
-    // Last track
-    return nullptr;
-  }
+  //   // Last track in queue
+  //   return nullptr;
+  // }
 
   auto prevTrackIter =
       std::find(preloadedTracks.begin(), preloadedTracks.end(), prevTrack);
 
   if (prevTrackIter != preloadedTracks.end()) {
     // Get offset of next track
-    offset = prevTrackIter - preloadedTracks.begin() + 1; 
-    ;
+    offset = prevTrackIter - preloadedTracks.begin() + 1;
   } else {
     offset = 0;
   }
   
   if (offset >= preloadedTracks.size()) {
-    // Last track
+    // Last track in preloaded queue
     return nullptr;
   }
 

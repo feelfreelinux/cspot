@@ -15,19 +15,20 @@
 #include "BellUtils.h"           // for BELL_SLEEP_MS
 #include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
 #include "Logger.h"
-#include "SpircHandler.h"        // for SpircHandler, SpircHandler::EventType
-#include "StreamInfo.h"          // for BitWidth, BitWidth::BW_16
-#include "TrackPlayer.h"         // for TrackPlayer
+#include "SpircHandler.h"  // for SpircHandler, SpircHandler::EventType
+#include "StreamInfo.h"    // for BitWidth, BitWidth::BW_16
+#include "TrackPlayer.h"   // for TrackPlayer
 
-
-CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::SpircHandler> handler)
+CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
+                     std::shared_ptr<cspot::SpircHandler> handler)
     : bell::Task("player", 1024, 0, 0) {
   this->handler = handler;
   this->audioSink = std::move(sink);
 
   // this->audioSink->setParams(44100, 2, 16);
 
-  this->centralAudioBuffer = std::make_shared<bell::CentralAudioBuffer>(2 * 1024);
+  this->centralAudioBuffer =
+      std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
 
 #ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
@@ -38,7 +39,6 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::Spi
   this->handler->getTrackPlayer()->setDataCallback(
       [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
                         size_t sequence) {
-
         auto hash = hashFunc(trackId);
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
@@ -57,8 +57,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink, std::shared_ptr<cspot::Spi
               this->pauseRequested = false;
             }
             break;
-          case cspot::SpircHandler::EventType::FLUSH:
-          {
+          case cspot::SpircHandler::EventType::FLUSH: {
             this->centralAudioBuffer->clearBuffer();
             break;
           }
