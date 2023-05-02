@@ -460,7 +460,7 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
   } else {
     offset = 0;
   }
-  
+
   if (offset >= preloadedTracks.size()) {
     // Last track in preloaded queue
     return nullptr;
