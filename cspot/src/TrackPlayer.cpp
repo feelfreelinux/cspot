@@ -166,7 +166,6 @@ void TrackPlayer::runTask() {
 
     CSPOT_LOG(info, "Got track ID=%s", track->identifier.c_str());
 
-    sequence++;
     currentSongPlaying = true;
 
     {
@@ -235,8 +234,7 @@ void TrackPlayer::runTask() {
                   break;
 
                 written =
-                    dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
-                                 track->identifier, this->sequence);
+                    dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite, track->identifier);
               }
               if (written == 0) {
                 BELL_SLEEP_MS(50);
