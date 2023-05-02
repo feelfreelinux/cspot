@@ -381,6 +381,14 @@ TrackQueue::~TrackQueue() {
   pb_release(Episode_fields, &pbEpisode);
 }
 
+TrackInfo TrackQueue::getTrackInfo(std::string_view identifier) {
+  for (auto& track : preloadedTracks) {
+    if (track->identifier == identifier)
+      return track->trackInfo;
+  }
+  return TrackInfo{};
+}
+
 void TrackQueue::runTask() {
   isRunning = true;
 
@@ -448,12 +456,12 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
 
   if (prevTrackIter != preloadedTracks.end()) {
     // Get offset of next track
-    offset = prevTrackIter - preloadedTracks.begin() + 1;
+    offset = prevTrackIter - preloadedTracks.begin() + 1; 
     ;
   } else {
     offset = 0;
   }
-
+  
   if (offset >= preloadedTracks.size()) {
     // Last track
     return nullptr;

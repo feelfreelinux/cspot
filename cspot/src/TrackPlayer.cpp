@@ -159,6 +159,7 @@ void TrackPlayer::runTask() {
 
     CSPOT_LOG(info, "Got track ID=%s", track->identifier.c_str());
 
+    sequence++;
     currentSongPlaying = true;
 
     {

@@ -2,6 +2,8 @@
 
 #include <stddef.h>  // for size_t
 #include <atomic>
+#include <deque>
+#include <mutex>
 #include <functional>
 
 #include "BellTask.h"
@@ -16,8 +18,8 @@ class WrappedSemaphore;
 
 namespace cspot {
 struct Context;
-struct AccessKeyFetcher;
-struct CDNAudioFile;
+class AccessKeyFetcher;
+class CDNAudioFile;
 
 // Used in got track info event
 struct TrackInfo {
@@ -100,11 +102,12 @@ class TrackQueue : public bell::Task {
   bool isFinished();
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
   void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
+  TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
 
  private:
-  static const int MAX_TRACKS_PRELOAD = 2;
+  static const int MAX_TRACKS_PRELOAD = 3;
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
   std::shared_ptr<PlaybackState> playbackState;
