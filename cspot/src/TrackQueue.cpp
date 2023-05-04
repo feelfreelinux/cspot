@@ -274,31 +274,38 @@ void QueuedTrack::stepLoadCDNUrl(const std::string& accessKey) {
   // Request CDN URL
   CSPOT_LOG(info, "Received access key, fetching CDN URL...");
 
-  std::string requestUrl = string_format(
-      "https://api.spotify.com/v1/storage-resolve/files/audio/interactive/"
-      "%s?alt=json&product=9",
-      bytesToHexString(fileId).c_str());
+  try {
 
-  auto req = bell::HTTPClient::get(
-      requestUrl, {bell::HTTPClient::ValueHeader(
-                      {"Authorization", "Bearer " + accessKey})});
+    std::string requestUrl = string_format(
+        "https://api.spotify.com/v1/storage-resolve/files/audio/interactive/"
+        "%s?alt=json&product=9",
+        bytesToHexString(fileId).c_str());
 
-  // Wait for response
-  std::string_view result = req->body();
+    auto req = bell::HTTPClient::get(
+        requestUrl, {bell::HTTPClient::ValueHeader(
+                        {"Authorization", "Bearer " + accessKey})});
+
+    // Wait for response
+    std::string_view result = req->body();
 
 #ifdef BELL_ONLY_CJSON
-  cJSON* jsonResult = cJSON_Parse(result.data());
-  cdnUrl = cJSON_GetArrayItem(cJSON_GetObjectItem(jsonResult, "cdnurl"), 0)
-               ->valuestring;
-  cJSON_Delete(jsonResult);
+    cJSON* jsonResult = cJSON_Parse(result.data());
+    cdnUrl = cJSON_GetArrayItem(cJSON_GetObjectItem(jsonResult, "cdnurl"), 0)
+                 ->valuestring;
+    cJSON_Delete(jsonResult);
 #else
-  auto jsonResult = nlohmann::json::parse(result);
-  cdnUrl = jsonResult["cdnurl"][0];
+    auto jsonResult = nlohmann::json::parse(result);
+    cdnUrl = jsonResult["cdnurl"][0];
 #endif
 
-  CSPOT_LOG(info, "Received CDN URL, %s", cdnUrl.c_str());
-  state = State::READY;
-  loadedSemaphore->give();
+    CSPOT_LOG(info, "Received CDN URL, %s", cdnUrl.c_str());
+    state = State::READY;
+    loadedSemaphore->give();
+  } catch (...) {
+    CSPOT_LOG(error, "Cannot fetch CDN URL");
+    state = State::FAILED;
+    loadedSemaphore->give();
+  }
 }
 
 void QueuedTrack::expire() {
@@ -354,7 +361,7 @@ void QueuedTrack::stepLoadMetadata(
 
 TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
                        std::shared_ptr<cspot::PlaybackState> state)
-    : bell::Task("CSpotTrackQueue", 1024 * 32, 0, 1),
+    : bell::Task("CSpotTrackQueue", 1024 * 32, 2, 1),
       playbackState(state),
       ctx(ctx) {
   accessKeyFetcher = std::make_shared<cspot::AccessKeyFetcher>(ctx);
