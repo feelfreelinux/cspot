@@ -73,7 +73,8 @@ void AccessKeyFetcher::updateAccessKey() {
       [this, timeProvider](MercurySession::Response& res) {
         if (res.fail)
           return;
-        auto accessJSON = std::string((char*)res.parts[0].data(), res.parts[0].size());
+        auto accessJSON =
+            std::string((char*)res.parts[0].data(), res.parts[0].size());
 #ifdef BELL_ONLY_CJSON
         cJSON* jsonBody = cJSON_Parse(accessJSON.c_str());
         this->accessKey =
@@ -88,14 +89,11 @@ void AccessKeyFetcher::updateAccessKey() {
 
         this->expiresAt =
             timeProvider->getSyncedTimestamp() + (expiresIn * 1000);
-#ifdef BELL_ONLY_CJSON
-        callback(cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring);
-        cJSON_Delete(jsonBody);
-#else
-        accessKey = (jsonBody["accessToken"]);
         updateSemaphore->give();
-#endif
       });
 
   updateSemaphore->twait(5000);
+
+  // Mark as not pending for refresh
+  keyPending = false;
 }
