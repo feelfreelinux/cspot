@@ -1,2 +1,2 @@
 CompileFlags:
-   CompilationDatabase: targets/cli/build      # Search build/ directory for compile_commands.json
+   CompilationDatabase: targets/cli/build/       # Search build/ directory for compile_commands.json

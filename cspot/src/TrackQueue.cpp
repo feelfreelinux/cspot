@@ -361,7 +361,7 @@ void QueuedTrack::stepLoadMetadata(
 
 TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
                        std::shared_ptr<cspot::PlaybackState> state)
-    : bell::Task("CSpotTrackQueue", 1024 * 32, 0, 1),
+    : bell::Task("CSpotTrackQueue", 1024 * 32, 2, 1),
       playbackState(state),
       ctx(ctx) {
   accessKeyFetcher = std::make_shared<cspot::AccessKeyFetcher>(ctx);
