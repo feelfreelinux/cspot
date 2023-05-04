@@ -2,11 +2,9 @@
 
 #include <stddef.h>  // for size_t
 #include <atomic>
-#include <deque>    // for deque
-#include <memory>   // for shared_ptr
-#include <mutex>    // for mutex
-#include <variant>  // for variant
-#include <vector>   // for vector
+#include <deque>
+#include <mutex>
+#include <functional>
 
 #include "BellTask.h"
 #include "PlaybackState.h"
@@ -15,13 +13,13 @@
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
 
 namespace bell {
-struct WrappedSemaphore;
+class WrappedSemaphore;
 };
 
 namespace cspot {
 struct Context;
-struct AccessKeyFetcher;
-struct CDNAudioFile;
+class AccessKeyFetcher;
+class CDNAudioFile;
 
 // Used in got track info event
 struct TrackInfo {
@@ -104,6 +102,7 @@ class TrackQueue : public bell::Task {
   bool isFinished();
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
   void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
+  TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
 
