@@ -3,7 +3,9 @@
 #include "BellLogger.h"   // for AbstractLogger
 #include "Logger.h"       // for CSPOT_LOG
 #include "Utils.h"        // for extract, getCurrentTimestamp
+#ifndef _WIN32
 #include <netdb.h>
+#endif
 
 using namespace cspot;
 

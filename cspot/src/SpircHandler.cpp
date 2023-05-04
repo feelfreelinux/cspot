@@ -138,7 +138,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       notify();
 
       sendEvent(EventType::SEEK, (int)playbackState->remoteFrame.position);
-      sendEvent(EventType::FLUSH);
+      //sendEvent(EventType::FLUSH);
       break;
     }
     case MessageType_kMessageTypeVolume:

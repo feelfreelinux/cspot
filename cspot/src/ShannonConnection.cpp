@@ -8,7 +8,9 @@
 #include "PlainConnection.h"  // for PlainConnection
 #include "Shannon.h"          // for Shannon
 #include "Utils.h"            // for pack, extract
+#ifndef _WIN32
 #include <netdb.h>
+#endif
 
 using namespace cspot;
 

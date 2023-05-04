@@ -33,8 +33,7 @@ class TrackPlayer : bell::Task {
  public:
   // Callback types
   typedef std::function<void(std::shared_ptr<QueuedTrack>)> TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view, size_t)>
-      DataCallback;
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view)> DataCallback;
   typedef std::function<void()> EOFCallback;
   typedef std::function<bool()> isAiringCallback;
 
@@ -64,9 +63,6 @@ class TrackPlayer : bell::Task {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackQueue> trackQueue;
   std::shared_ptr<cspot::CDNAudioFile> currentTrackStream;
-
-  // std::shared_ptr<cspot::CDNTrackStream> currentTrackStream;
-  size_t sequence = std::time(nullptr);
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
 

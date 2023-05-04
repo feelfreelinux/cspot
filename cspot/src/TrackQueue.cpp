@@ -14,9 +14,12 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "WrappedSemaphore.h"
+#ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
 #include "nlohmann/json_fwd.hpp"  // for json
+#endif
 #include "protobuf/metadata.pb.h"
 
 using namespace cspot;
@@ -383,6 +386,14 @@ TrackQueue::~TrackQueue() {
 
   pb_release(Track_fields, &pbTrack);
   pb_release(Episode_fields, &pbEpisode);
+}
+
+TrackInfo TrackQueue::getTrackInfo(std::string_view identifier) {
+  for (auto& track : preloadedTracks) {
+    if (track->identifier == identifier)
+      return track->trackInfo;
+  }
+  return TrackInfo{};
 }
 
 void TrackQueue::runTask() {
