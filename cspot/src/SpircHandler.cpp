@@ -78,7 +78,7 @@ void SpircHandler::subscribeToMercury() {
 void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 
 void SpircHandler::notifyAudioReachedPlayback() {
-  static int offset = 0;
+  int offset = 0;
 
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
@@ -94,6 +94,9 @@ void SpircHandler::notifyAudioReachedPlayback() {
   } else {
     trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
     playbackState->updatePositionMs(0);
+
+    // we moved to next track, re-acquire currentTrack again
+    currentTrack = trackQueue->consumeTrack(nullptr, offset);
   }
 
   this->notify();
