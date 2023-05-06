@@ -8,7 +8,7 @@
 #include <type_traits>  // for enable_if<>::type
 #include <chrono>
 #ifndef _WIN32
-#include <netdb.h>
+#include <arpa/inet.h>
 #endif
 
 unsigned long long getCurrentTimestamp() {
