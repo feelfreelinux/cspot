@@ -24,7 +24,11 @@ void TrackReference::decodeURI() {
       gid = bigNumAdd(gid, d);
     }
 
+#if __cplusplus >= 202002L
     if (uri.starts_with("episode")) {
+#else
+    if (uri.find("episode") == 0) {    
+#endif    
       type = Type::EPISODE;
     }
   }

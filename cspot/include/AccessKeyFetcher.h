@@ -37,7 +37,7 @@ class AccessKeyFetcher {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<bell::WrappedSemaphore> updateSemaphore;
 
-  std::atomic<bool> keyPending;
+  std::atomic<bool> keyPending = false;
   std::string accessKey;
   long long int expiresAt;
 };

@@ -14,8 +14,12 @@
 #include "TimeProvider.h"    // for TimeProvider
 #include "Utils.h"           // for string_format
 #include "WrappedSemaphore.h"
+#ifdef BELL_ONLY_CJSON
+#include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
 #include "nlohmann/json_fwd.hpp"  // for json
+#endif
 
 using namespace cspot;
 
@@ -80,6 +84,7 @@ void AccessKeyFetcher::updateAccessKey() {
         this->accessKey =
             cJSON_GetObjectItem(jsonBody, "accessToken")->valuestring;
         int expiresIn = cJSON_GetObjectItem(jsonBody, "expiresIn")->valueint;
+        cJSON_Delete(jsonBody);
 #else
         auto jsonBody = nlohmann::json::parse(accessJSON);
         this->accessKey = jsonBody["accessToken"];

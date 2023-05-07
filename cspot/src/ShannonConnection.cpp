@@ -9,7 +9,7 @@
 #include "Shannon.h"          // for Shannon
 #include "Utils.h"            // for pack, extract
 #ifndef _WIN32
-#include <netdb.h>
+#include <arpa/inet.h>
 #endif
 
 using namespace cspot;
