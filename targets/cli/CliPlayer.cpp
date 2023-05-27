@@ -25,8 +25,6 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->handler = handler;
   this->audioSink = std::move(sink);
 
-  // this->audioSink->setParams(44100, 2, 16);
-
   this->centralAudioBuffer =
       std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
 
@@ -37,8 +35,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   auto hashFunc = std::hash<std::string_view>();
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
-                        size_t sequence) {
+      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
         auto hash = hashFunc(trackId);
 
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
