@@ -1,13 +1,10 @@
 #pragma once
 
+#include <atomic>      // or std::atomic
 #include <functional>  // for function
 #include <memory>      // for shared_ptr
 #include <string>      // for string
-#include <atomic>
 
-namespace bell {
-class WrappedSemaphore;
-};
 namespace cspot {
 struct Context;
 
@@ -35,7 +32,6 @@ class AccessKeyFetcher {
 
  private:
   std::shared_ptr<cspot::Context> ctx;
-  std::shared_ptr<bell::WrappedSemaphore> updateSemaphore;
 
   std::atomic<bool> keyPending = false;
   std::string accessKey;

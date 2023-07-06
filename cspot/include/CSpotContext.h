@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_types/_uint8_t.h>
 #include <memory>
 
 #include "LoginBlob.h"
@@ -14,6 +15,7 @@ struct Context {
     AudioFormat audioFormat = AudioFormat::AudioFormat_OGG_VORBIS_160;
     std::string deviceId;
     std::string deviceName;
+    std::vector<uint8_t> authData;
     int volume;
 
     std::string username;
@@ -33,6 +35,7 @@ struct Context {
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
     ctx->config.deviceId = blob->getDeviceId();
     ctx->config.deviceName = blob->getDeviceName();
+    ctx->config.authData = blob->authData;
     ctx->config.volume = 0;
     ctx->config.username = blob->getUserName();
 

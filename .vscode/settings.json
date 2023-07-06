@@ -1,5 +1,5 @@
 {
-    "clangd.path": "/Users/cspot/esp-clang/bin/clangd",
+    "clangd.path": "clangd",
     "cmake.sourceDirectory": "${workspaceFolder}/targets/cli",
     "cmake.buildDirectory": "${workspaceFolder}/targets/cli/build",
     "clangd.arguments": [
