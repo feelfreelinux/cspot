@@ -1,6 +1,6 @@
 #pragma once
 
-#include <_types/_uint8_t.h>
+#include <stdint.h>
 #include <memory>
 
 #include "LoginBlob.h"
