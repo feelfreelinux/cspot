@@ -1,4 +1,4 @@
 [submodule "cspot/bell"]
 	path = cspot/bell
 	url = https://github.com/philippe44/bell
-	branch = misc
+	branch = develop

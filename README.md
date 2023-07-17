@@ -178,6 +178,7 @@ After building the app, the only thing you need to do is to run it through CLI.
 $ ./cspotcli
 
 ```
+If you run it with no parameter, it will use ZeroConf to advertise itself. This means that until at least one **local** Spotify Connect application has discovered and connected it, it will not be registered to Spotify servers. As a consequence, Spotify's WebAPI will not be able to see it. If you want the player to be registered at start-up, you need to either use username/password all the time or at least once to create a credentials file and then re-use that file. Run it with -u/-p/-c once and then run it with -c only. See command's line help.
 
 Now open a real Spotify app and you should see a cspot device on your local network. Use it to play audio.
 

@@ -17,6 +17,10 @@
 #include "PlainConnection.h"    // for PlainConnection, timeoutCallback
 #include "ShannonConnection.h"  // for ShannonConnection
 
+#include "pb_decode.h"
+#include "NanoPBHelper.h"  // for pbPutString, pbEncode, pbDecode
+#include "protobuf/authentication.pb.h"
+
 using random_bytes_engine =
     std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
 
@@ -79,9 +83,13 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob) {
   auto packet = this->shanConn->recvPacket();
   switch (packet.command) {
     case AUTH_SUCCESSFUL_COMMAND: {
+      APWelcome welcome;
       CSPOT_LOG(debug, "Authorization successful");
+      pbDecode(welcome, APWelcome_fields, packet.data);
       return std::vector<uint8_t>(
-          {0x1});  // TODO: return actual reusable credentaials to be stored somewhere
+          welcome.reusable_auth_credentials.bytes, 
+          welcome.reusable_auth_credentials.bytes + welcome.reusable_auth_credentials.size
+      );
       break;
     }
     case AUTH_DECLINED_COMMAND: {

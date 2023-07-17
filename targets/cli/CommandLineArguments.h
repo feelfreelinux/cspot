@@ -19,6 +19,10 @@ class CommandLineArguments {
     */
   std::string password;
   /**
+     * A file to store/read reusable credentials from
+    */
+  std::string credentials;
+  /**
      * Bitrate setting.
     */
   bool setBitrate = false;
@@ -31,8 +35,8 @@ class CommandLineArguments {
      * This is a constructor which initializez all the fields of CommandLineArguments
      * @param shouldShowHelp determines whether the help text should be printed.
      */
-  CommandLineArguments(std::string username, std::string password,
-                       bool shouldShowHelp);
+  CommandLineArguments(std::string username, std::string password, 
+                       std::string credentials, bool shouldShowHelp);
 
   /**
      * Parses command line arguments, as they are passed to main().
