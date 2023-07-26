@@ -8,7 +8,7 @@
 #include "Logger.h"                          // for CSPOT_LOG
 #include "protobuf/authentication.pb.h"      // for AuthenticationType_AUTHE...
 #ifdef BELL_ONLY_CJSON
-#include "cJSON.h "
+#include "cJSON.h"
 #else
 #include "nlohmann/detail/json_pointer.hpp"  // for json_pointer<>::string_t
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
