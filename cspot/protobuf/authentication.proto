@@ -37,6 +37,11 @@ enum Os {
     OS_BCO = 0x16;
 }
 
+enum AccountType {
+    Spotify = 0x0;
+    Facebook = 0x1;
+}
+
 enum AuthenticationType {
     AUTHENTICATION_USER_PASS = 0x0;
     AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS = 0x1;
@@ -62,4 +67,28 @@ message ClientResponseEncrypted {
     required LoginCredentials login_credentials = 0xa; 
     required SystemInfo system_info = 0x32; 
     optional string version_string = 0x46; 
+}
+
+message APWelcome {
+    required string canonical_username = 0xa;
+    required AccountType account_type_logged_in = 0x14;
+    required AccountType credentials_type_logged_in = 0x19;
+    required AuthenticationType reusable_auth_credentials_type = 0x1e;
+    required bytes reusable_auth_credentials = 0x28;
+    optional bytes lfs_secret = 0x32; 
+    optional AccountInfo account_info = 0x3c;
+    optional AccountInfoFacebook fb = 0x46;
+}
+
+message AccountInfo {
+    optional AccountInfoSpotify spotify = 0x1;
+    optional AccountInfoFacebook facebook = 0x2;
+}
+
+message AccountInfoSpotify {
+}
+
+message AccountInfoFacebook {
+    optional string access_token = 0x1;
+    optional string machine_id = 0x2;
 }

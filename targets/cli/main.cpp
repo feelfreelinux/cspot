@@ -3,6 +3,8 @@
 #include <stdexcept>    // for invalid_argument
 #include <type_traits>  // for remove_extent_t
 #include <vector>       // for vector
+#include <iostream>
+#include <fstream>
 
 #include "BellHTTPServer.h"       // for BellHTTPServer
 #include "BellLogger.h"           // for setDefaultLogger, AbstractLogger
@@ -162,6 +164,14 @@ int main(int argc, char** argv) {
       loginBlob->loadUserPass(args->username, args->password);
       loggedInSemaphore->give();
     }
+    // reusable credentials
+    else if (!args->credentials.empty()) {
+        std::ifstream file(args->credentials);
+        std::ostringstream credentials;
+        credentials << file.rdbuf();
+        loginBlob->loadJson(credentials.str());
+        loggedInSemaphore->give();
+    }
     // ZeroconfAuthenticator
     else {
       zeroconfServer->blob = loginBlob;
@@ -182,10 +192,17 @@ int main(int argc, char** argv) {
 
     CSPOT_LOG(info, "Creating player");
     ctx->session->connectWithRandomAp();
-    auto token = ctx->session->authenticate(loginBlob);
+    ctx->config.authData = ctx->session->authenticate(loginBlob);
 
     // Auth successful
-    if (token.size() > 0) {
+    if (ctx->config.authData.size() > 0) {
+      // when credentials file and username are set, then store reusable credentials
+      if (!args->credentials.empty() && !args->username.empty()) {
+          std::ofstream file(args->credentials);
+          file << ctx->getCredentialsJson();
+      }
+
+      // Start spirc task
       auto handler = std::make_shared<cspot::SpircHandler>(ctx);
 
       // Start handling mercury messages
