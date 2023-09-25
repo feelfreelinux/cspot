@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
       std::cout << "-p, --password            your spotify password, note that "
                    "if you use facebook login you can set a password in your "
                    "account settings\n";
+      std::cout << "-c, --credentials         json file to store/load reusable credentials\n";
       std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
       std::cout << "\n";
       std::cout << "ddd 2022\n";
