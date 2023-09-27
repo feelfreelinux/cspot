@@ -6,16 +6,16 @@
 #include "protobuf/metadata.pb.h"  // for AudioFormat_OGG_VORBIS_160, AudioF...
 
 CommandLineArguments::CommandLineArguments(std::string u, std::string p,
-                                           bool shouldShowHelp)
-    : username(u), password(p), shouldShowHelp(shouldShowHelp) {}
+                                           std::string c, bool shouldShowHelp)
+    : username(u), password(p), credentials(c), shouldShowHelp(shouldShowHelp) {}
 
 std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc,
                                                                   char** argv) {
 
   if (argc == 1) {
-    return std::make_shared<CommandLineArguments>("", "", false);
+    return std::make_shared<CommandLineArguments>("", "", "", false);
   }
-  auto result = std::make_shared<CommandLineArguments>("", "", false);
+  auto result = std::make_shared<CommandLineArguments>("", "", "", false);
   for (int i = 1; i < argc; i++) {
     auto stringVal = std::string(argv[i]);
 
@@ -36,6 +36,11 @@ std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc,
         throw std::invalid_argument("expected path after the password flag");
       }
       result->password = std::string(argv[++i]);
+    } else if (stringVal == "-c" || stringVal == "--credentials") {
+        if (i >= argc - 1) {
+            throw std::invalid_argument("expected path after the credentials flag");
+        }
+        result->credentials = std::string(argv[++i]);
     } else if (stringVal == "-b" || stringVal == "--bitrate") {
       if (i >= argc - 1) {
         throw std::invalid_argument("expected path after the bitrate flag");
