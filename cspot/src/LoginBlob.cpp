@@ -142,8 +142,8 @@ void LoginBlob::loadJson(const std::string& json) {
   cJSON* root = cJSON_Parse(json.c_str());
   this->authType = cJSON_GetObjectItem(root, "authType")->valueint;
   this->username = cJSON_GetObjectItem(root, "username")->valuestring;
-  std::string authDataObject =
-      cJSON_GetObjectItem(root, "authData")->valuestring;
+  std::string authDataObject = cJSON_GetObjectItem(root, "authData")->valuestring;
+  this->authData = crypto->base64Decode(authDataObject);
   cJSON_Delete(root);
 #else
   auto root = nlohmann::json::parse(json);
