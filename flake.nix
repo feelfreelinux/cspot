@@ -52,7 +52,7 @@
           ];
           # Patch nanopb shebangs to refer to provided python
           postPatch = ''
-            patchShebangs src/core/external/bell/external/nanopb/generator/*
+            patchShebangs cspot/bell/external/nanopb/generator/*
           '';
           enableParallelBuilding = true;
         };
