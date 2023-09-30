@@ -197,8 +197,8 @@ int main(int argc, char** argv) {
 
     // Auth successful
     if (ctx->config.authData.size() > 0) {
-      // when credentials file and username are set, then store reusable credentials
-      if (!args->credentials.empty() && !args->username.empty()) {
+      // when credentials file is set, then store reusable credentials
+      if (!args->credentials.empty()) {
           std::ofstream file(args->credentials);
           file << ctx->getCredentialsJson();
       }
