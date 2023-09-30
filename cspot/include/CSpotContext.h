@@ -3,12 +3,12 @@
 #include <stdint.h>
 #include <memory>
 
+#include "Crypto.h"
 #include "LoginBlob.h"
 #include "MercurySession.h"
 #include "TimeProvider.h"
-#include "Crypto.h"  
+#include "protobuf/authentication.pb.h"  // for AuthenticationType_AUTHE...
 #include "protobuf/metadata.pb.h"
-#include "protobuf/authentication.pb.h"      // for AuthenticationType_AUTHE...
 #ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
 #else
@@ -37,24 +37,28 @@ struct Context {
   std::shared_ptr<cspot::MercurySession> session;
   std::string getCredentialsJson() {
 #ifdef BELL_ONLY_CJSON
-      cJSON* json_obj = cJSON_CreateObject();
-      cJSON_AddStringToObject(json_obj, "authData", Crypto::base64Encode(config.authData).c_str());
-      cJSON_AddNumberToObject(json_obj, "authType", AuthenticationType_AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS);
-      cJSON_AddStringToObject(json_obj, "username", config.username.c_str());
+    cJSON* json_obj = cJSON_CreateObject();
+    cJSON_AddStringToObject(json_obj, "authData",
+                            Crypto::base64Encode(config.authData).c_str());
+    cJSON_AddNumberToObject(
+        json_obj, "authType",
+        AuthenticationType_AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS);
+    cJSON_AddStringToObject(json_obj, "username", config.username.c_str());
 
-      char* str = cJSON_PrintUnformatted(json_obj);
-      cJSON_Delete(json_obj);
-      std::string json_objStr(str);
-      free(str);
+    char* str = cJSON_PrintUnformatted(json_obj);
+    cJSON_Delete(json_obj);
+    std::string json_objStr(str);
+    free(str);
 
-      return json_objStr;
+    return json_objStr;
 #else
-      nlohmann::json obj;
-      obj["authData"] = Crypto::base64Encode(config.authData);
-      obj["authType"] = AuthenticationType_AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS;
-      obj["username"] = config.username;
+    nlohmann::json obj;
+    obj["authData"] = Crypto::base64Encode(config.authData);
+    obj["authType"] =
+        AuthenticationType_AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS;
+    obj["username"] = config.username;
 
-      return obj.dump();
+    return obj.dump();
 #endif
   }
 

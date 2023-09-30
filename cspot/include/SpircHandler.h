@@ -7,7 +7,7 @@
 #include <variant>     // for variant
 #include <vector>      // for vector
 
-#include "CDNAudioFile.h"     // for CDNTrackStream, CDNTrackStream::Track...
+#include "CDNAudioFile.h"  // for CDNTrackStream, CDNTrackStream::Track...
 #include "TrackQueue.h"
 #include "protobuf/spirc.pb.h"  // for MessageType
 

@@ -27,8 +27,8 @@ void TrackReference::decodeURI() {
 #if __cplusplus >= 202002L
     if (uri.starts_with("episode")) {
 #else
-    if (uri.find("episode") == 0) {    
-#endif    
+    if (uri.find("episode") == 0) {
+#endif
       type = Type::EPISODE;
     }
   }

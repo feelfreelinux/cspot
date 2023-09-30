@@ -5,6 +5,7 @@
 #include <vector>       // for vector
 #include <iostream>
 #include <fstream>
+#include <sstream> // for std::osstringstream
 
 #include "BellHTTPServer.h"       // for BellHTTPServer
 #include "BellLogger.h"           // for setDefaultLogger, AbstractLogger

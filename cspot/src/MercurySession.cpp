@@ -7,7 +7,7 @@
 #include <type_traits>  // for remove_extent_t, __underlying_type_impl<>:...
 #include <utility>      // for pair
 #ifndef _WIN32
-#include <arpa/inet.h>          // for htons, ntohs, htonl, ntohl
+#include <arpa/inet.h>  // for htons, ntohs, htonl, ntohl
 #endif
 #include "BellLogger.h"         // for AbstractLogger
 #include "BellTask.h"           // for Task

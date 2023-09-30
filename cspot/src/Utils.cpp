@@ -1,12 +1,12 @@
 #include "Utils.h"
 
-#include <stdlib.h>     // for strtol
+#include <stdlib.h>  // for strtol
+#include <chrono>
 #include <iomanip>      // for operator<<, setfill, setw
 #include <iostream>     // for basic_ostream, hex
 #include <sstream>      // for stringstream
 #include <string>       // for string
 #include <type_traits>  // for enable_if<>::type
-#include <chrono>
 #ifndef _WIN32
 #include <arpa/inet.h>
 #endif

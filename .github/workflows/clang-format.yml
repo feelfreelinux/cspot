@@ -1,4 +1,4 @@
-name: Build cspot-cli on Ubuntu
+name: Run clang-format check
 on:
   pull_request:
   push:
@@ -12,4 +12,4 @@ jobs:
     - uses: cachix/install-nix-action@v18
       with:
         nix_path: nixpkgs=channel:nixos-23.05
-    - run: nix build '.?submodules=1#target-cli' 
+    - run: nix develop --command python3 .github/scripts/run-clang-format.py -r cspot/src cspot/include

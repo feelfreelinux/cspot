@@ -6,7 +6,7 @@
 #include <string_view>       // for string_view
 #include <vector>            // for vector
 
-#include "HTTPClient.h"           // for HTTPClient, HTTPClient::Response
+#include "HTTPClient.h"  // for HTTPClient, HTTPClient::Response
 #ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
 #else

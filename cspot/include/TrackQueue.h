@@ -3,8 +3,8 @@
 #include <stddef.h>  // for size_t
 #include <atomic>
 #include <deque>
-#include <mutex>
 #include <functional>
+#include <mutex>
 
 #include "BellTask.h"
 #include "PlaybackState.h"
@@ -93,7 +93,6 @@ class TrackQueue : public bell::Task {
 
   std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
   std::atomic<bool> notifyPending = false;
-
 
   void runTask() override;
   void stopTask();

@@ -10,11 +10,11 @@
 #include "AccessKeyFetcher.h"  // for AccessKeyFetcher
 #include "BellLogger.h"        // for AbstractLogger
 #include "Crypto.h"
-#include "Logger.h"               // for CSPOT_LOG
-#include "Packet.h"               // for cspot
-#include "SocketStream.h"         // for SocketStream
-#include "Utils.h"                // for bigNumAdd, bytesToHexString, string...
-#include "WrappedSemaphore.h"     // for WrappedSemaphore
+#include "Logger.h"            // for CSPOT_LOG
+#include "Packet.h"            // for cspot
+#include "SocketStream.h"      // for SocketStream
+#include "Utils.h"             // for bigNumAdd, bytesToHexString, string...
+#include "WrappedSemaphore.h"  // for WrappedSemaphore
 #ifdef BELL_ONLY_CJSON
 #include "cJSON.h"
 #else

@@ -17,8 +17,8 @@
 #include "PlainConnection.h"    // for PlainConnection, timeoutCallback
 #include "ShannonConnection.h"  // for ShannonConnection
 
-#include "pb_decode.h"
 #include "NanoPBHelper.h"  // for pbPutString, pbEncode, pbDecode
+#include "pb_decode.h"
 #include "protobuf/authentication.pb.h"
 
 using random_bytes_engine =
@@ -86,10 +86,9 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob) {
       APWelcome welcome;
       CSPOT_LOG(debug, "Authorization successful");
       pbDecode(welcome, APWelcome_fields, packet.data);
-      return std::vector<uint8_t>(
-          welcome.reusable_auth_credentials.bytes, 
-          welcome.reusable_auth_credentials.bytes + welcome.reusable_auth_credentials.size
-      );
+      return std::vector<uint8_t>(welcome.reusable_auth_credentials.bytes,
+                                  welcome.reusable_auth_credentials.bytes +
+                                      welcome.reusable_auth_credentials.size);
       break;
     }
     case AUTH_DECLINED_COMMAND: {

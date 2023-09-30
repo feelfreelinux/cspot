@@ -88,8 +88,8 @@ class MercurySession : public bell::Task, public cspot::Session {
   void unregisterAudioKey(uint32_t sequenceId);
 
   uint32_t requestAudioKey(const std::vector<uint8_t>& trackId,
-                       const std::vector<uint8_t>& fileId,
-                       AudioKeyCallback audioCallback);
+                           const std::vector<uint8_t>& fileId,
+                           AudioKeyCallback audioCallback);
 
   std::string getCountryCode();
 
