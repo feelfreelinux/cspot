@@ -70,6 +70,7 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx,
 
 TrackPlayer::~TrackPlayer() {
   isRunning = false;
+  resetState();
   std::scoped_lock lock(runningMutex);
 }
 
