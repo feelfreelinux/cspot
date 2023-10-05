@@ -553,6 +553,13 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
     }
 
     return true;
+  } else if (dir == SkipDirection::PREV && currentTracksIndex == 0) {
+      queueNextTrack(0);
+
+      // Reset position to zero (in that case it's always expected)
+      notifyPending = true;
+
+      return true;
   }
 
   return false;
