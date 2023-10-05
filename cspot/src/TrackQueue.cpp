@@ -522,10 +522,10 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   bool canSkipNext = currentTracks.size() > currentTracksIndex + 1;
   bool canSkipPrev = currentTracksIndex > 0;
-  uint64_t position = !playbackState->remoteFrame.state.has_position_ms ? 0 :
-      playbackState->remoteFrame.state.position_ms +
+  uint64_t position = !playbackState->innerFrame.state.has_position_ms ? 0 :
+      playbackState->innerFrame.state.position_ms +
       ctx->timeProvider->getSyncedTimestamp() -
-      playbackState->remoteFrame.state.position_measured_at;
+      playbackState->innerFrame.state.position_measured_at;
 
   if (dir == SkipDirection::PREV && (currentTracksIndex == 0 || position > 3000)) {
       queueNextTrack(0);
