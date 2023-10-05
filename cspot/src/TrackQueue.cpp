@@ -522,8 +522,19 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   bool canSkipNext = currentTracks.size() > currentTracksIndex + 1;
   bool canSkipPrev = currentTracksIndex > 0;
+  uint64_t position = !playbackState->remoteFrame.state.has_position_ms ? 0 :
+      playbackState->remoteFrame.state.position_ms +
+      ctx->timeProvider->getSyncedTimestamp() -
+      playbackState->remoteFrame.state.position_measured_at;
 
-  if ((dir == SkipDirection::NEXT && canSkipNext) ||
+  if (dir == SkipDirection::PREV && (currentTracksIndex == 0 || position > 3000)) {
+      queueNextTrack(0);
+
+      // Reset position to zero (in that case it's always expected)
+      notifyPending = true;
+
+      return true;
+  } else if ((dir == SkipDirection::NEXT && canSkipNext) ||
       (dir == SkipDirection::PREV && canSkipPrev)) {
     std::scoped_lock lock(tracksMutex);
     if (dir == SkipDirection::NEXT) {
@@ -553,13 +564,6 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
     }
 
     return true;
-  } else if (dir == SkipDirection::PREV && currentTracksIndex == 0) {
-      queueNextTrack(0);
-
-      // Reset position to zero (in that case it's always expected)
-      notifyPending = true;
-
-      return true;
   }
 
   return false;
