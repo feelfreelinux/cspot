@@ -31,15 +31,15 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     }
   };
 
-  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track) {
-    playbackState->setPlaybackState(PlaybackState::State::Playing);
+  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track, bool paused = false) {
+    playbackState->setPlaybackState(paused ? PlaybackState::State::Paused : PlaybackState::State::Playing);
     playbackState->updatePositionMs(track->requestedPosition);
 
     this->notify();
-
+    CSPOT_LOG(info, "WHARE %d", paused);
     // Send playback start event, unpause
     sendEvent(EventType::PLAYBACK_START, (int)track->requestedPosition);
-    sendEvent(EventType::PLAY_PAUSE, false);
+    sendEvent(EventType::PLAY_PAUSE, paused);
   };
 
   this->ctx = ctx;
@@ -142,7 +142,6 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       notify();
 
       sendEvent(EventType::SEEK, (int)playbackState->remoteFrame.position);
-      //sendEvent(EventType::FLUSH);
       break;
     }
     case MessageType_kMessageTypeVolume:
@@ -201,8 +200,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
                                false);
       this->notify();
 
-      trackPlayer->resetState();
       sendEvent(EventType::FLUSH);
+      trackPlayer->resetState();
       break;
     }
     case MessageType_kMessageTypeShuffle: {
@@ -229,24 +228,14 @@ void SpircHandler::notify() {
   this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {
-  if (trackQueue->skipTrack(dir)) {
-    // flush first to clean sink
-    sendEvent(EventType::FLUSH);
-    
-    // Reset track state
-    trackPlayer->resetState();
+bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {  
+  bool skipped = trackQueue->skipTrack(dir);
 
-    return true;
-  } else {
-    // can't skip, just pause where we are
-    sendEvent(EventType::PLAY_PAUSE, true);
+  // Reset track state
+  trackPlayer->resetState(!skipped);
 
-    playbackState->setPlaybackState(PlaybackState::State::Paused);
-    notify();
-
-    return false;
-  }
+  // send NEXT or PREV event only when successful
+  return skipped;
 }
 
 bool SpircHandler::nextSong() {

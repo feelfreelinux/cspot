@@ -87,10 +87,11 @@ void TrackPlayer::stop() {
   std::scoped_lock lock(runningMutex);
 }
 
-void TrackPlayer::resetState() {
+void TrackPlayer::resetState(bool paused) {
   // Mark for reset
   this->pendingReset = true;
   this->currentSongPlaying = false;
+  this->startPaused = paused;
 
   std::scoped_lock lock(dataOutMutex);
 
@@ -184,7 +185,8 @@ void TrackPlayer::runTask() {
       }
 
       if (trackOffset == 0 && pendingSeekPositionMs == 0) {
-        this->trackLoaded(track);
+        this->trackLoaded(track, startPaused);
+        startPaused = false;
       }
 
       int32_t r =

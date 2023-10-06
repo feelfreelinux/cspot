@@ -65,6 +65,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
             this->centralAudioBuffer->clearBuffer();
             break;
           case cspot::SpircHandler::EventType::PLAYBACK_START:
+            this->isPaused = true;
             this->centralAudioBuffer->clearBuffer();
             break;
           default:
@@ -90,7 +91,7 @@ void CliPlayer::runTask() {
 
       if (this->pauseRequested) {
         this->pauseRequested = false;
-        std::cout << "Pause requsted!" << std::endl;
+        std::cout << "Pause requested!" << std::endl;
 #ifndef BELL_DISABLE_CODECS
         auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
             44100 / 2, false, [this]() { this->isPaused = true; });
