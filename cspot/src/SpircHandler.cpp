@@ -36,8 +36,8 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     playbackState->updatePositionMs(track->requestedPosition);
 
     this->notify();
-    CSPOT_LOG(info, "WHARE %d", paused);
-    // Send playback start event, unpause
+
+    // Send playback start event, pause/unpause per request
     sendEvent(EventType::PLAYBACK_START, (int)track->requestedPosition);
     sendEvent(EventType::PLAY_PAUSE, paused);
   };
