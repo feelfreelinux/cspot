@@ -157,12 +157,14 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       setPause(false);
       break;
     case MessageType_kMessageTypeNext:
-      nextSong();
-      sendEvent(EventType::NEXT);
+      if (nextSong()) {
+        sendEvent(EventType::NEXT);
+      }
       break;
     case MessageType_kMessageTypePrev:
-      previousSong();
-      sendEvent(EventType::PREV);
+      if (previousSong()) {
+        sendEvent(EventType::PREV);
+      }
       break;
     case MessageType_kMessageTypeLoad: {
       this->trackPlayer->start();
@@ -227,34 +229,32 @@ void SpircHandler::notify() {
   this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-void SpircHandler::skipSong(TrackQueue::SkipDirection dir) {
+bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {
   if (trackQueue->skipTrack(dir)) {
-    playbackState->setPlaybackState(PlaybackState::State::Playing);
-    notify();
-
+    // flush first to clean sink
+    sendEvent(EventType::FLUSH);
+    
     // Reset track state
     trackPlayer->resetState();
 
-    sendEvent(EventType::PLAY_PAUSE, false);
+    return true;
   } else {
+    // can't skip, just pause where we are
+    sendEvent(EventType::PLAY_PAUSE, true);
+
     playbackState->setPlaybackState(PlaybackState::State::Paused);
-    playbackState->updatePositionMs(0);
     notify();
 
-    sendEvent(EventType::PLAY_PAUSE, true);
+    return false;
   }
-
-  notify();
-
-  sendEvent(EventType::FLUSH);
 }
 
-void SpircHandler::nextSong() {
-  skipSong(TrackQueue::SkipDirection::NEXT);
+bool SpircHandler::nextSong() {
+  return skipSong(TrackQueue::SkipDirection::NEXT);
 }
 
-void SpircHandler::previousSong() {
-  skipSong(TrackQueue::SkipDirection::PREV);
+bool SpircHandler::previousSong() {
+  return skipSong(TrackQueue::SkipDirection::PREV);
 }
 
 std::shared_ptr<TrackPlayer> SpircHandler::getTrackPlayer() {

@@ -119,7 +119,7 @@ void TrackPlayer::runTask() {
   while (isRunning) {
     // Ensure we even have any tracks to play
     if (!this->trackQueue->hasTracks() ||
-        (endOfQueueReached && trackQueue->isFinished())) {
+        (!pendingReset && endOfQueueReached && trackQueue->isFinished())) {
       this->trackQueue->playableSemaphore->twait(300);
       continue;
     }
