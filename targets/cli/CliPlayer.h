@@ -37,6 +37,7 @@ class CliPlayer : public bell::Task {
   std::atomic<bool> isPaused = true;
   std::atomic<bool> isRunning = true;
   std::mutex runningMutex;
+  std::atomic<bool> playlistEnd = false;
 
   void runTask() override;
 };

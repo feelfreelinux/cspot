@@ -77,6 +77,12 @@ void SpircHandler::subscribeToMercury() {
 
 void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 
+void SpircHandler::notifyAudioEnded() {
+    playbackState->updatePositionMs(0);
+    notify();
+    trackPlayer->resetState(true);
+}
+
 void SpircHandler::notifyAudioReachedPlayback() {
   int offset = 0;
 

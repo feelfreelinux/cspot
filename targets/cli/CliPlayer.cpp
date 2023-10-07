@@ -66,7 +66,11 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
             break;
           case cspot::SpircHandler::EventType::PLAYBACK_START:
             this->isPaused = true;
+            this->playlistEnd = false;
             this->centralAudioBuffer->clearBuffer();
+            break;
+          case cspot::SpircHandler::EventType::DEPLETED:
+            this->playlistEnd = true;
             break;
           default:
             break;
@@ -102,6 +106,10 @@ void CliPlayer::runTask() {
       }
 
       if (!chunk || chunk->pcmSize == 0) {
+        if (this->playlistEnd) {
+            this->handler->notifyAudioEnded();
+            this->playlistEnd = false;
+        }
         BELL_SLEEP_MS(10);
         continue;
       } else {
