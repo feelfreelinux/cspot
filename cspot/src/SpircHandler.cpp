@@ -31,8 +31,10 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     }
   };
 
-  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track, bool paused = false) {
-    playbackState->setPlaybackState(paused ? PlaybackState::State::Paused : PlaybackState::State::Playing);
+  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track,
+                                    bool paused = false) {
+    playbackState->setPlaybackState(paused ? PlaybackState::State::Paused
+                                           : PlaybackState::State::Playing);
     playbackState->updatePositionMs(track->requestedPosition);
 
     this->notify();
@@ -78,9 +80,9 @@ void SpircHandler::subscribeToMercury() {
 void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 
 void SpircHandler::notifyAudioEnded() {
-    playbackState->updatePositionMs(0);
-    notify();
-    trackPlayer->resetState(true);
+  playbackState->updatePositionMs(0);
+  notify();
+  trackPlayer->resetState(true);
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -234,7 +236,7 @@ void SpircHandler::notify() {
   this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {  
+bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {
   bool skipped = trackQueue->skipTrack(dir);
 
   // Reset track state

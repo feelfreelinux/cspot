@@ -510,9 +510,9 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   }
 
   // in case we re-queue current track, make sure position is updated (0)
-  if (offset == 0 && preloadedTracks.size() && 
+  if (offset == 0 && preloadedTracks.size() &&
       preloadedTracks[0]->ref == currentTracks[currentTracksIndex]) {
-      preloadedTracks.pop_front();
+    preloadedTracks.pop_front();
   }
 
   if (offset <= 0) {
@@ -527,51 +527,53 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 }
 
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
-    bool skipped = true;
-    std::scoped_lock lock(tracksMutex);
+  bool skipped = true;
+  std::scoped_lock lock(tracksMutex);
 
-    if (dir == SkipDirection::PREV) {
-      uint64_t position = !playbackState->innerFrame.state.has_position_ms ? 0 :
-          playbackState->innerFrame.state.position_ms +
-          ctx->timeProvider->getSyncedTimestamp() -
-          playbackState->innerFrame.state.position_measured_at;
+  if (dir == SkipDirection::PREV) {
+    uint64_t position =
+        !playbackState->innerFrame.state.has_position_ms
+            ? 0
+            : playbackState->innerFrame.state.position_ms +
+                  ctx->timeProvider->getSyncedTimestamp() -
+                  playbackState->innerFrame.state.position_measured_at;
 
-      if (currentTracksIndex > 0 && position < 3000) {
-        queueNextTrack(-1);
+    if (currentTracksIndex > 0 && position < 3000) {
+      queueNextTrack(-1);
 
-        if (preloadedTracks.size() > MAX_TRACKS_PRELOAD) {
-            preloadedTracks.pop_back();
-        }
-
-        currentTracksIndex--;
-      } else {
-        queueNextTrack(0);
+      if (preloadedTracks.size() > MAX_TRACKS_PRELOAD) {
+        preloadedTracks.pop_back();
       }
+
+      currentTracksIndex--;
     } else {
-      if (currentTracks.size() > currentTracksIndex + 1) {
-        preloadedTracks.pop_front();
-
-        if (!queueNextTrack(preloadedTracks.size() + 1)) {
-          CSPOT_LOG(info, "Failed to queue next track");
-        }
-
-        currentTracksIndex++;
-       } else {
-         skipped = false;
-       }
+      queueNextTrack(0);
     }
+  } else {
+    if (currentTracks.size() > currentTracksIndex + 1) {
+      preloadedTracks.pop_front();
 
-    if (skipped) {
-        // Update frame data
-        playbackState->innerFrame.state.playing_track_index = currentTracksIndex;
+      if (!queueNextTrack(preloadedTracks.size() + 1)) {
+        CSPOT_LOG(info, "Failed to queue next track");
+      }
 
-        if (expectNotify) {
-            // Reset position to zero
-            notifyPending = true;
-        }
+      currentTracksIndex++;
+    } else {
+      skipped = false;
     }
+  }
 
-    return skipped;
+  if (skipped) {
+    // Update frame data
+    playbackState->innerFrame.state.playing_track_index = currentTracksIndex;
+
+    if (expectNotify) {
+      // Reset position to zero
+      notifyPending = true;
+    }
+  }
+
+  return skipped;
 }
 
 bool TrackQueue::hasTracks() {
