@@ -24,11 +24,7 @@ void TrackReference::decodeURI() {
       gid = bigNumAdd(gid, d);
     }
 
-#if __cplusplus >= 202002L
-    if (uri.starts_with("episode")) {
-#else
-    if (uri.find("episode") == 0) {
-#endif
+    if (uri.find("episode:") != std::string::npos) {
       type = Type::EPISODE;
     }
   }

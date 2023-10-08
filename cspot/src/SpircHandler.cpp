@@ -31,15 +31,15 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     }
   };
 
-  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track) {
-    playbackState->setPlaybackState(PlaybackState::State::Playing);
+  auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track, bool paused = false) {
+    playbackState->setPlaybackState(paused ? PlaybackState::State::Paused : PlaybackState::State::Playing);
     playbackState->updatePositionMs(track->requestedPosition);
 
     this->notify();
 
-    // Send playback start event, unpause
+    // Send playback start event, pause/unpause per request
     sendEvent(EventType::PLAYBACK_START, (int)track->requestedPosition);
-    sendEvent(EventType::PLAY_PAUSE, false);
+    sendEvent(EventType::PLAY_PAUSE, paused);
   };
 
   this->ctx = ctx;
@@ -76,6 +76,12 @@ void SpircHandler::subscribeToMercury() {
 }
 
 void SpircHandler::loadTrackFromURI(const std::string& uri) {}
+
+void SpircHandler::notifyAudioEnded() {
+    playbackState->updatePositionMs(0);
+    notify();
+    trackPlayer->resetState(true);
+}
 
 void SpircHandler::notifyAudioReachedPlayback() {
   int offset = 0;
@@ -142,7 +148,6 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       notify();
 
       sendEvent(EventType::SEEK, (int)playbackState->remoteFrame.position);
-      //sendEvent(EventType::FLUSH);
       break;
     }
     case MessageType_kMessageTypeVolume:
@@ -157,12 +162,14 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       setPause(false);
       break;
     case MessageType_kMessageTypeNext:
-      nextSong();
-      sendEvent(EventType::NEXT);
+      if (nextSong()) {
+        sendEvent(EventType::NEXT);
+      }
       break;
     case MessageType_kMessageTypePrev:
-      previousSong();
-      sendEvent(EventType::PREV);
+      if (previousSong()) {
+        sendEvent(EventType::PREV);
+      }
       break;
     case MessageType_kMessageTypeLoad: {
       this->trackPlayer->start();
@@ -199,8 +206,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
                                false);
       this->notify();
 
-      trackPlayer->resetState();
       sendEvent(EventType::FLUSH);
+      trackPlayer->resetState();
       break;
     }
     case MessageType_kMessageTypeShuffle: {
@@ -227,34 +234,22 @@ void SpircHandler::notify() {
   this->sendCmd(MessageType_kMessageTypeNotify);
 }
 
-void SpircHandler::skipSong(TrackQueue::SkipDirection dir) {
-  if (trackQueue->skipTrack(dir)) {
-    playbackState->setPlaybackState(PlaybackState::State::Playing);
-    notify();
+bool SpircHandler::skipSong(TrackQueue::SkipDirection dir) {  
+  bool skipped = trackQueue->skipTrack(dir);
 
-    // Reset track state
-    trackPlayer->resetState();
+  // Reset track state
+  trackPlayer->resetState(!skipped);
 
-    sendEvent(EventType::PLAY_PAUSE, false);
-  } else {
-    playbackState->setPlaybackState(PlaybackState::State::Paused);
-    playbackState->updatePositionMs(0);
-    notify();
-
-    sendEvent(EventType::PLAY_PAUSE, true);
-  }
-
-  notify();
-
-  sendEvent(EventType::FLUSH);
+  // send NEXT or PREV event only when successful
+  return skipped;
 }
 
-void SpircHandler::nextSong() {
-  skipSong(TrackQueue::SkipDirection::NEXT);
+bool SpircHandler::nextSong() {
+  return skipSong(TrackQueue::SkipDirection::NEXT);
 }
 
-void SpircHandler::previousSong() {
-  skipSong(TrackQueue::SkipDirection::PREV);
+bool SpircHandler::previousSong() {
+  return skipSong(TrackQueue::SkipDirection::PREV);
 }
 
 std::shared_ptr<TrackPlayer> SpircHandler::getTrackPlayer() {

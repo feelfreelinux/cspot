@@ -48,11 +48,12 @@ class SpircHandler {
 
   void setPause(bool pause);
 
-  void previousSong();
+  bool previousSong();
 
-  void nextSong();
+  bool nextSong();
 
   void notifyAudioReachedPlayback();
+  void notifyAudioEnded();
   void updatePositionMs(uint32_t position);
   void setRemoteVolume(int volume);
   void loadTrackFromURI(const std::string& uri);
@@ -74,7 +75,7 @@ class SpircHandler {
   void sendEvent(EventType type);
   void sendEvent(EventType type, EventData data);
 
-  void skipSong(TrackQueue::SkipDirection dir);
+  bool skipSong(TrackQueue::SkipDirection dir);
   void handleFrame(std::vector<uint8_t>& data);
   void notify();
 };
