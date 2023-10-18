@@ -205,10 +205,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       playbackState->syncWithRemote();
 
       // 1st track is the current one, but update the position
-      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms +
-                               ctx->timeProvider->getSyncedTimestamp() -
-                               playbackState->innerFrame.state.position_measured_at,
-                               false);
+      trackQueue->updateTracks(
+          playbackState->remoteFrame.state.position_ms +
+            ctx->timeProvider->getSyncedTimestamp() -
+            playbackState->innerFrame.state.position_measured_at,
+          false);
+
       this->notify();
 
       sendEvent(EventType::FLUSH);
