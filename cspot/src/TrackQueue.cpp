@@ -587,11 +587,11 @@ bool TrackQueue::isFinished() {
   return currentTracksIndex >= currentTracks.size() - 1;
 }
 
-bool TrackQueue::updateTracks(uint32_t requestedPosition, std::function<struct TrackReference()> getCurrentRef) {
+bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
   std::scoped_lock lock(tracksMutex);
   bool cleared = true;
 
-  if (getCurrentRef == nullptr) {
+  if (initial) {
     // Clear preloaded tracks
     preloadedTracks.clear();
 
@@ -613,13 +613,13 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, std::function<struct T
     // Copy requested track list
     currentTracks = playbackState->remoteTracks;
 
-    // try to not re-load track if we are still streaming it
-    if (getCurrentRef() == currentTracks[currentTracksIndex]) {
+    // try to not re-load track if we are still loading it
+    if (preloadedTracks[0]->loading) {
       // remove everything except first track
       preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
 
       // Push a song on the preloaded queue
-      CSPOT_LOG(info, "keeping current track");
+      CSPOT_LOG(info, "Keeping current track");
       queueNextTrack(1);
 
       cleared = false;
@@ -628,7 +628,7 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, std::function<struct T
       preloadedTracks.clear();
 
       // Push a song on the preloaded queue
-      CSPOT_LOG(info, "re-loading current track");
+      CSPOT_LOG(info, "Re-loading current track");
       queueNextTrack(0, requestedPosition);
     }
   }

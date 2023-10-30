@@ -111,7 +111,7 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
-  std::shared_ptr<QueuedTrack> newTrack = nullptr;
+  std::shared_ptr<QueuedTrack> track, newTrack = nullptr;
 
   int trackOffset = 0;
   bool eof = false;
@@ -201,6 +201,7 @@ void TrackPlayer::runTask() {
       }
 
       eof = false;
+      track->loading = true;
 
       CSPOT_LOG(info, "Playing");
 
@@ -255,6 +256,7 @@ void TrackPlayer::runTask() {
 
       // always move back to LOADING (ensure proper seeking after last track has been loaded)
       currentTrackStream = nullptr;
+      track->loading = false;
     }
 
     if (eof) {

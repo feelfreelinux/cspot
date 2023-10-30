@@ -192,7 +192,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
 
       // Update track list in case we have a new one
       trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
-                               nullptr);
+                               true);
 
       this->notify();
 
@@ -208,10 +208,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       bool cleared = trackQueue->updateTracks(
           playbackState->remoteFrame.state.position_ms +
           ctx->timeProvider->getSyncedTimestamp() -
-          playbackState->innerFrame.state.position_measured_at,
-          [this] () {
-              return trackPlayer->getCurrentTrack()->ref;
-          } );
+          playbackState->innerFrame.state.position_measured_at);
 
       this->notify();
 
