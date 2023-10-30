@@ -111,7 +111,7 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
-  std::shared_ptr<QueuedTrack> track, newTrack = nullptr;
+  std::shared_ptr<QueuedTrack> newTrack = nullptr;
 
   int trackOffset = 0;
   bool eof = false;

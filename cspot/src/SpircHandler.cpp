@@ -192,7 +192,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
 
       // Update track list in case we have a new one
       trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
-                               true);
+                               nullptr);
 
       this->notify();
 
@@ -204,12 +204,22 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       CSPOT_LOG(debug, "Got replace frame");
       playbackState->syncWithRemote();
 
-      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
-                               false);
+      // 1st track is the current one, but update the position
+      bool cleared = trackQueue->updateTracks(
+          playbackState->remoteFrame.state.position_ms +
+          ctx->timeProvider->getSyncedTimestamp() -
+          playbackState->innerFrame.state.position_measured_at,
+          [this] () {
+              return trackPlayer->getCurrentTrack()->ref;
+          } );
+
       this->notify();
 
-      sendEvent(EventType::FLUSH);
-      trackPlayer->resetState();
+      // need to re-load all if streaming track is completed
+      if (cleared) {
+          sendEvent(EventType::FLUSH);
+          trackPlayer->resetState();
+      }
       break;
     }
     case MessageType_kMessageTypeShuffle: {

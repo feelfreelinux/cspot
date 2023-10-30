@@ -100,7 +100,7 @@ class TrackQueue : public bell::Task {
   bool hasTracks();
   bool isFinished();
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
-  void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
+  bool updateTracks(uint32_t requestedPosition = 0, std::function<TrackReference()> getCurrentRef = nullptr);
   TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);

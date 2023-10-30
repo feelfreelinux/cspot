@@ -37,7 +37,6 @@ class TrackPlayer : bell::Task {
   typedef std::function<size_t(uint8_t*, size_t, std::string_view)>
       DataCallback;
   typedef std::function<void()> EOFCallback;
-  typedef std::function<bool()> isAiringCallback;
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,
               std::shared_ptr<cspot::TrackQueue> trackQueue,
@@ -51,6 +50,9 @@ class TrackPlayer : bell::Task {
   // CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
   void resetState(bool paused = false);
+  std::shared_ptr<QueuedTrack> getCurrentTrack() {
+      return track;
+  };
 
   // Vorbis codec callbacks
   size_t _vorbisRead(void* ptr, size_t size, size_t nmemb);
@@ -65,6 +67,7 @@ class TrackPlayer : bell::Task {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackQueue> trackQueue;
   std::shared_ptr<cspot::CDNAudioFile> currentTrackStream;
+  std::shared_ptr<QueuedTrack> track = nullptr;
 
   std::unique_ptr<bell::WrappedSemaphore> playbackSemaphore;
 
