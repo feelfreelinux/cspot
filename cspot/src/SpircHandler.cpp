@@ -201,7 +201,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       break;
     }
     case MessageType_kMessageTypeReplace: {
-      CSPOT_LOG(debug, "Got replace frame");
+      CSPOT_LOG(debug, "Got replace frame %d", playbackState->remoteTracks.size());
       playbackState->syncWithRemote();
 
       // 1st track is the current one, but update the position
