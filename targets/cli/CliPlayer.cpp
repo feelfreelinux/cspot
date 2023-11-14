@@ -26,7 +26,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->audioSink = std::move(sink);
 
   this->centralAudioBuffer =
-      std::make_shared<bell::CentralAudioBuffer>(1 * 1024);
+      std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
 
 #ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
