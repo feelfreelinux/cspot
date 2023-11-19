@@ -204,8 +204,13 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       CSPOT_LOG(debug, "Got replace frame");
       playbackState->syncWithRemote();
 
-      trackQueue->updateTracks(playbackState->remoteFrame.state.position_ms,
-                               false);
+      // 1st track is the current one, but update the position
+      trackQueue->updateTracks(
+          playbackState->remoteFrame.state.position_ms +
+              ctx->timeProvider->getSyncedTimestamp() -
+              playbackState->innerFrame.state.position_measured_at,
+          false);
+
       this->notify();
 
       sendEvent(EventType::FLUSH);
