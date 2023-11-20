@@ -208,7 +208,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       bool cleared = trackQueue->updateTracks(
           playbackState->remoteFrame.state.position_ms +
           ctx->timeProvider->getSyncedTimestamp() -
-          playbackState->innerFrame.state.position_measured_at);
+          playbackState->innerFrame.state.position_measured_at, false);
 
       this->notify();
 
