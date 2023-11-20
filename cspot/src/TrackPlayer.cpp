@@ -201,6 +201,7 @@ void TrackPlayer::runTask() {
       }
 
       eof = false;
+      track->loading = true;
 
       CSPOT_LOG(info, "Playing");
 
@@ -255,6 +256,7 @@ void TrackPlayer::runTask() {
 
       // always move back to LOADING (ensure proper seeking after last track has been loaded)
       currentTrackStream = nullptr;
+      track->loading = false;
     }
 
     if (eof) {

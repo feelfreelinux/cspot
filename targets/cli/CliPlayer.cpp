@@ -72,6 +72,10 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
           case cspot::SpircHandler::EventType::DEPLETED:
             this->playlistEnd = true;
             break;
+          case cspot::SpircHandler::EventType::VOLUME: {
+            int volume = std::get<int>(event->data);
+            break;
+          }
           default:
             break;
         }

@@ -587,17 +587,17 @@ bool TrackQueue::isFinished() {
   return currentTracksIndex >= currentTracks.size() - 1;
 }
 
-void TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
+bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
   std::scoped_lock lock(tracksMutex);
+  bool cleared = true;
+
+  // Copy requested track list
+  currentTracks = playbackState->remoteTracks;
+  currentTracksIndex = playbackState->innerFrame.state.playing_track_index;
 
   if (initial) {
     // Clear preloaded tracks
     preloadedTracks.clear();
-
-    // Copy requested track list
-    currentTracks = playbackState->remoteTracks;
-
-    currentTracksIndex = playbackState->innerFrame.state.playing_track_index;
 
     if (currentTracksIndex < currentTracks.size()) {
       // Push a song on the preloaded queue
@@ -608,14 +608,25 @@ void TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
     notifyPending = true;
 
     playableSemaphore->give();
+  } else if (preloadedTracks[0]->loading) {
+    // try to not re-load track if we are still loading it
+
+    // remove everything except first track
+    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
+
+    // Push a song on the preloaded queue
+    CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
+    queueNextTrack(1);
+
+    cleared = false;
   } else {
     // Clear preloaded tracks
     preloadedTracks.clear();
 
-    // Copy requested track list
-    currentTracks = playbackState->remoteTracks;
-
     // Push a song on the preloaded queue
+    CSPOT_LOG(info, "Re-loading current track");
     queueNextTrack(0, requestedPosition);
   }
+
+  return cleared;
 }

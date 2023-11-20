@@ -37,7 +37,6 @@ class TrackPlayer : bell::Task {
   typedef std::function<size_t(uint8_t*, size_t, std::string_view)>
       DataCallback;
   typedef std::function<void()> EOFCallback;
-  typedef std::function<bool()> isAiringCallback;
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,
               std::shared_ptr<cspot::TrackQueue> trackQueue,
