@@ -609,16 +609,16 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
 
     playableSemaphore->give();
   } else if (preloadedTracks[0]->loading) {
-      // try to not re-load track if we are still loading it
-   
-      // remove everything except first track
-      preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
+    // try to not re-load track if we are still loading it
 
-      // Push a song on the preloaded queue
-      CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
-      queueNextTrack(1);
+    // remove everything except first track
+    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
 
-      cleared = false;
+    // Push a song on the preloaded queue
+    CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
+    queueNextTrack(1);
+
+    cleared = false;
   } else {
     // Clear preloaded tracks
     preloadedTracks.clear();
