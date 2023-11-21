@@ -54,6 +54,7 @@ class QueuedTrack {
 
   uint32_t requestedPosition;
   std::string identifier;
+  bool loading = false;
 
   // Will return nullptr if the track is not ready
   std::shared_ptr<cspot::CDNAudioFile> getAudioFile();
@@ -100,7 +101,7 @@ class TrackQueue : public bell::Task {
   bool hasTracks();
   bool isFinished();
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
-  void updateTracks(uint32_t requestedPosition = 0, bool initial = false);
+  bool updateTracks(uint32_t requestedPosition = 0, bool initial = false);
   TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
