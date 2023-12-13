@@ -97,6 +97,8 @@ void TrackInfo::loadPbTrack(Track* pbTrack, const std::vector<uint8_t>& gid) {
     }
   }
 
+  number = pbTrack->has_number ? pbTrack->number : 0;
+  discNumber = pbTrack->has_disc_number ? pbTrack->disc_number : 0;
   duration = pbTrack->duration;
 }
 
