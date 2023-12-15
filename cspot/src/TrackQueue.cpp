@@ -115,6 +115,7 @@ void TrackInfo::loadPbEpisode(Episode* pbEpisode,
     imageUrl = "https://i.scdn.co/image/" + bytesToHexString(imageId);
   }
 
+  number = pbEpisode->has_number ? pbEpisode->number : 0;
   duration = pbEpisode->duration;
 }
 
