@@ -116,6 +116,7 @@ void TrackInfo::loadPbEpisode(Episode* pbEpisode,
   }
 
   number = pbEpisode->has_number ? pbEpisode->number : 0;
+  discNumber = 0;
   duration = pbEpisode->duration;
 }
 
