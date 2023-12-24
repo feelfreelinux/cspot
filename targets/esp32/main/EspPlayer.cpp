@@ -109,7 +109,7 @@ void EspPlayer::runTask() {
           this->isPaused = true;
         }
         
-        //this->audioSink->feedPCMFrames(outBuf.data(), read);
+        this->audioSink->feedPCMFrames(outBuf.data(), read);
 
         if (read == 0) {        
           if (this->playlistEnd) {
