@@ -1,0 +1,12 @@
+.cache/
+.DS_Store
+__pycache__/
+build/
+build*/
+py/
+result/
+authBlob.json
+config.json
+cspot/protos
+targets/esp32/sdkconfig.cspot-wrover-b
+*.bak
