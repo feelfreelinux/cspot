@@ -52,6 +52,31 @@ menu "CSPOT Configuration"
         config CSPOT_STATUS_LED_TYPE_RMT
             bool "RMT - Addressable LED"
     endchoice
+    choice CSPOT_LOGIN
+    prompt "Login type"
+    default CSPOT_LOGIN_ZEROCONF
+    help
+        Select login form
+
+    config CSPOT_LOGIN_ZEROCONF
+        bool "Login with zeroconfServer"
+        help
+            login with zeroconf
+    config CSPOT_LOGIN_PASS
+        bool "Login with password"    
+    endchoice
+
+    menu "username & password"
+        visible if CSPOT_LOGIN_PASS
+        config CSPOT_LOGIN_USERNAME
+        string "Spotify username"
+        default "username"
+        config CSPOT_LOGIN_PASSWORD
+        string "Spotify password"
+        default "password"
+        help
+            login with username and password
+        endmenu
 
     config CSPOT_STATUS_LED_GPIO
         int "Status LED GPIO number"
