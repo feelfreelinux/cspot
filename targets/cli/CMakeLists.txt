@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.9)
 
 project(cspotcli)
 
@@ -13,8 +13,6 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
       ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
 # CMake options
 set(CMAKE_CXX_STANDARD 20)
 
@@ -25,10 +23,6 @@ endif()
 
 # Main target sources
 file(GLOB SOURCES "*.cpp")
-
-find_package(portaudio REQUIRED )
-include_directories( ${PORTAUDIO_INCLUDE_DIRS} )
-set(THINGS_TO_LINK ${THINGS_TO_LINK} ${PORTAUDIO_LIBRARIES})
 
 if(USE_PORTAUDIO)
     add_definitions(-DCSPOT_ENABLE_PORTAUDIO_SINK)
