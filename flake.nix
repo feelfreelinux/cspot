@@ -2,7 +2,7 @@
   description = "cspot - A Spotify Connect player written in CPP targeting, but not limited to embedded devices (ESP32).";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.05";
+    nixpkgs.url = "nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
