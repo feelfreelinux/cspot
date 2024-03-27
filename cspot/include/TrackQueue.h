@@ -100,6 +100,8 @@ class TrackQueue : public bell::Task {
 
   bool hasTracks();
   bool isFinished();
+  void setRepeat(bool repeat);
+  void setShuffle(bool shuffle);
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
   bool updateTracks(uint32_t requestedPosition = 0, bool initial = false);
   TrackInfo getTrackInfo(std::string_view identifier);
@@ -127,6 +129,7 @@ class TrackQueue : public bell::Task {
   int16_t currentTracksIndex = -1;
 
   bool isRunning = false;
+  bool shouldRepeat = false;
 
   void processTrack(std::shared_ptr<QueuedTrack> track);
   bool queueNextTrack(int offset = 0, uint32_t positionMs = 0);

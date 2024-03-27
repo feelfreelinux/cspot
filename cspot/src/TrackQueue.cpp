@@ -440,6 +440,11 @@ void TrackQueue::stopTask() {
   }
 }
 
+void TrackQueue::setRepeat(bool repeat) {
+  std::scoped_lock lock(tracksMutex);
+  shouldRepeat = repeat;
+}
+
 std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     std::shared_ptr<QueuedTrack> prevTrack, int& offset) {
   std::scoped_lock lock(tracksMutex);
@@ -455,12 +460,11 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     return preloadedTracks[0];
   }
 
-  // if (currentTracksIndex + preloadedTracks.size() >= currentTracks.size()) {
-  //   offset = -1;
-
-  //   // Last track in queue
-  //   return nullptr;
-  // }
+  if (shouldRepeat) {
+    // offset += 1;
+    // Repeat enabled - return previous track
+    return prevTrack;
+  }
 
   auto prevTrackIter =
       std::find(preloadedTracks.begin(), preloadedTracks.end(), prevTrack);

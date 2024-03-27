@@ -31,16 +31,18 @@
       clang-tools = pkgs.clang-tools.override {llvmPackages = llvm;};
 
       deps = with pkgs; [
-            avahi
-            avahi-compat
-            cmake
-            ninja
-            python3
-            python3Packages.protobuf
-            python3Packages.setuptools
-            unstable.mbedtls
-            portaudio
-            protobuf
+        avahi
+        pipewire
+        avahi-compat
+        cmake
+        ninja
+        python3
+        python3Packages.protobuf
+        python3Packages.setuptools
+        unstable.mbedtls
+        portaudio
+        alsa-lib
+        protobuf
       ];
 
       apps = {

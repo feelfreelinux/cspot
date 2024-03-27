@@ -47,6 +47,8 @@ class SpircHandler {
   void setEventHandler(EventHandler handler);
 
   void setPause(bool pause);
+  void setRepeat(bool repeat);
+  void setShuffle(bool shuffle);
 
   bool previousSong();
 
@@ -65,6 +67,7 @@ class SpircHandler {
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<cspot::TrackPlayer> trackPlayer;
   std::shared_ptr<cspot::TrackQueue> trackQueue;
+  std::mutex stateMutex;
 
   EventHandler eventHandler = nullptr;
 

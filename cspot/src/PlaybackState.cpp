@@ -144,6 +144,16 @@ void PlaybackState::setVolume(uint32_t volume) {
   ctx->config.volume = volume;
 }
 
+void PlaybackState::setRepeat(bool isRepeat) {
+  innerFrame.state.has_repeat = true;
+  innerFrame.state.repeat = isRepeat;
+}
+
+void PlaybackState::setShuffle(bool shuffle) {
+  innerFrame.state.has_shuffle = true;
+  innerFrame.state.shuffle = true;
+}
+
 bool PlaybackState::decodeRemoteFrame(std::vector<uint8_t>& data) {
   pb_release(Frame_fields, &remoteFrame);
 

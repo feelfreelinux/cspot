@@ -1,7 +1,8 @@
 #include "SpircHandler.h"
 
-#include <cstdint>      // for uint8_t
-#include <memory>       // for shared_ptr, make_unique, unique_ptr
+#include <cstdint>  // for uint8_t
+#include <memory>   // for shared_ptr, make_unique, unique_ptr
+#include <mutex>
 #include <type_traits>  // for remove_extent_t
 #include <utility>      // for move
 
@@ -83,6 +84,17 @@ void SpircHandler::notifyAudioEnded() {
   playbackState->updatePositionMs(0);
   notify();
   trackPlayer->resetState(true);
+}
+
+void SpircHandler::setRepeat(bool repeat) {
+  playbackState->setRepeat(repeat);
+  notify();
+
+  trackQueue->setRepeat(repeat);
+}
+
+void SpircHandler::setShuffle(bool shuffle) {
+  //
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -223,12 +235,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     }
     case MessageType_kMessageTypeShuffle: {
       CSPOT_LOG(debug, "Got shuffle frame");
-      this->notify();
+      setShuffle(playbackState->remoteFrame.state.shuffle);
       break;
     }
     case MessageType_kMessageTypeRepeat: {
       CSPOT_LOG(debug, "Got repeat frame");
-      this->notify();
+      setRepeat(playbackState->remoteFrame.state.repeat);
       break;
     }
     default:

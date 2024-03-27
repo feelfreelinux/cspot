@@ -134,7 +134,7 @@ void TrackPlayer::runTask() {
 
     endOfQueueReached = false;
 
-    // Wait 800ms. If next reset is requested in meantime, restart the queue.
+    // Wait 50ms. If next reset is requested in meantime, restart the queue.
     // Gets rid of excess actions during rapid queueing
     BELL_SLEEP_MS(50);
 

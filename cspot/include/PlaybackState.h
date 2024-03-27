@@ -58,6 +58,20 @@ class PlaybackState {
   void setActive(bool isActive);
 
   /**
+    * @brief Sets player repeat state
+    * 
+    * @param isRepeat is repeat enabled
+    */
+  void setRepeat(bool isRepeat);
+
+  /**
+   * @brief Set player shuffle state
+   * 
+   * @param shuffle is shuffle enabled
+   */
+  void setShuffle(bool shuffle);
+
+  /**
      * @brief Simple getter
      *
      * @return true player is active
@@ -81,7 +95,7 @@ class PlaybackState {
 
   /**
    * @brief Updates local track queue from remote data.
-     */
+   */
   void syncWithRemote();
 
   /**
