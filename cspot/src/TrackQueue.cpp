@@ -463,18 +463,6 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     return preloadedTracks[0];
   }
 
-  // if (shouldRepeat && prevTrack == outOfQueueTrack) {
-  //   if (offset >= 2) {
-  //     return nullptr;
-  //   }
-  //   offset += 1;
-
-  //   // Insert a copy of the out of queue track as an "out of queue" track
-  //   outOfQueueTrack = std::make_shared<QueuedTrack>(
-  //       outOfQueueTrack->ref, ctx, 0, !outOfQueueTrack->isOutOfQueue);
-  //   return outOfQueueTrack;
-  // }
-
   if (shouldRepeat) {
     offset += 1;
 
