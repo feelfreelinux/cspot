@@ -99,8 +99,8 @@ void TrackPlayer::resetState(bool paused) {
 }
 
 void TrackPlayer::seekMs(size_t ms) {
+  // if middle of track, we need to clear the queue
   if (inFuture) {
-    // We're in the middle of the next track, so we need to reset the player in order to seek
     resetState();
   }
 
@@ -118,6 +118,8 @@ void TrackPlayer::runTask() {
   bool endOfQueueReached = false;
 
   while (isRunning) {
+    bool sendTrackDelimiter = true;
+
     // Ensure we even have any tracks to play
     if (!this->trackQueue->hasTracks() ||
         (!pendingReset && endOfQueueReached && trackQueue->isFinished())) {
@@ -130,6 +132,7 @@ void TrackPlayer::runTask() {
       track = nullptr;
       pendingReset = false;
       inFuture = false;
+      sendTrackDelimiter = false;
     }
 
     endOfQueueReached = false;
@@ -169,6 +172,7 @@ void TrackPlayer::runTask() {
     }
 
     CSPOT_LOG(info, "Got track ID=%s", track->identifier.c_str());
+    std::string trackId = track->identifier;
 
     currentSongPlaying = true;
 
@@ -205,6 +209,11 @@ void TrackPlayer::runTask() {
 
       CSPOT_LOG(info, "Playing");
 
+      if (sendTrackDelimiter) {
+        // Call the data callback with trackChanged set as true, to notify of playback change
+        dataCallback(NULL, 0, "", true);
+      }
+
       while (!eof && currentSongPlaying) {
         // Execute seek if needed
         if (pendingSeekPositionMs > 0) {
@@ -240,7 +249,7 @@ void TrackPlayer::runTask() {
                   break;
 
                 written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-                                       toWrite, track->identifier);
+                                       toWrite, trackId, false);
               }
               if (written == 0) {
                 BELL_SLEEP_MS(50);

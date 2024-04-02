@@ -12,6 +12,7 @@
 #include "CSpotContext.h"
 #include "HTTPClient.h"
 #include "Logger.h"
+#include "TrackReference.h"
 #include "Utils.h"
 #include "WrappedSemaphore.h"
 #ifdef BELL_ONLY_CJSON
@@ -123,7 +124,8 @@ void TrackInfo::loadPbEpisode(Episode* pbEpisode,
 QueuedTrack::QueuedTrack(TrackReference& ref,
                          std::shared_ptr<cspot::Context> ctx,
                          uint32_t requestedPosition)
-    : requestedPosition(requestedPosition), ctx(ctx) {
+    : requestedPosition(requestedPosition),
+      ctx(ctx) {
   this->ref = ref;
 
   loadedSemaphore = std::make_shared<bell::WrappedSemaphore>();
@@ -397,6 +399,7 @@ TrackInfo TrackQueue::getTrackInfo(std::string_view identifier) {
     if (track->identifier == identifier)
       return track->trackInfo;
   }
+
   return TrackInfo{};
 }
 
@@ -460,9 +463,23 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     return preloadedTracks[0];
   }
 
+  // if (shouldRepeat && prevTrack == outOfQueueTrack) {
+  //   if (offset >= 2) {
+  //     return nullptr;
+  //   }
+  //   offset += 1;
+
+  //   // Insert a copy of the out of queue track as an "out of queue" track
+  //   outOfQueueTrack = std::make_shared<QueuedTrack>(
+  //       outOfQueueTrack->ref, ctx, 0, !outOfQueueTrack->isOutOfQueue);
+  //   return outOfQueueTrack;
+  // }
+
   if (shouldRepeat) {
-    // offset += 1;
+    offset += 1;
+
     // Repeat enabled - return previous track
+    prevTrack->requestedPosition = 0;
     return prevTrack;
   }
 
@@ -534,7 +551,7 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   return true;
 }
 
-bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
+bool TrackQueue::skipTrack(SkipDirection dir) {
   bool skipped = true;
   std::scoped_lock lock(tracksMutex);
 
@@ -574,11 +591,6 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   if (skipped) {
     // Update frame data
     playbackState->innerFrame.state.playing_track_index = currentTracksIndex;
-
-    if (expectNotify) {
-      // Reset position to zero
-      notifyPending = true;
-    }
   }
 
   return skipped;
@@ -611,9 +623,6 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
       // Push a song on the preloaded queue
       queueNextTrack(0, requestedPosition);
     }
-
-    // We already updated track meta, mark it
-    notifyPending = true;
 
     playableSemaphore->give();
   } else if (preloadedTracks[0]->loading) {

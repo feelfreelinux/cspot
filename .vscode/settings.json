@@ -1,12 +1,10 @@
 {
     "clangd.path": "clangd",
-    "cmake.sourceDirectory": "${workspaceFolder}/targets/cli",
+    "cmake.sourceDirectory": "${workspaceFolder}/",
     "cmake.buildDirectory": "${workspaceFolder}/targets/cli/build",
     "clangd.arguments": [
         "-pretty",
-        "-background-index",
-        "--background-index",
-        "--compile-commands-dir=${workspaceFolder}/targets/cli/build"
+        // "--compile-commands-dir=${workspaceFolder}/targets/cli/build"
     ],
     "editor.tabSize": 2
 }

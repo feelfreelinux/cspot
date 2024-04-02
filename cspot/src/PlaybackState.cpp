@@ -147,6 +147,11 @@ void PlaybackState::setVolume(uint32_t volume) {
 void PlaybackState::setRepeat(bool isRepeat) {
   innerFrame.state.has_repeat = true;
   innerFrame.state.repeat = isRepeat;
+
+  // Update interpolated local position
+  uint32_t diff = ctx->timeProvider->getSyncedTimestamp() -
+                  innerFrame.state.position_measured_at;
+  this->updatePositionMs(innerFrame.state.position_ms + diff);
 }
 
 void PlaybackState::setShuffle(bool shuffle) {

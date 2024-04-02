@@ -32,7 +32,6 @@
 
       deps = with pkgs; [
         avahi
-        pipewire
         avahi-compat
         cmake
         ninja
@@ -41,7 +40,6 @@
         python3Packages.setuptools
         unstable.mbedtls
         portaudio
-        alsa-lib
         protobuf
       ];
 

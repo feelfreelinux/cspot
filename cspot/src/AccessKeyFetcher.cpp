@@ -1,4 +1,5 @@
 #include "AccessKeyFetcher.h"
+#include <pb_decode.h>
 
 #include <cstring>           // for strrchr
 #include <initializer_list>  // for initializer_list
@@ -107,6 +108,7 @@ void AccessKeyFetcher::updateAccessKey() {
     auto responseBytes = response->bytes();
 
     // Deserialize the response
+    pb_release(LoginResponse_fields, &loginResponse);
     pbDecode(loginResponse, LoginResponse_fields, responseBytes);
 
     if (loginResponse.which_response == LoginResponse_ok_tag) {

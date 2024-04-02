@@ -19,6 +19,8 @@
 #include "StreamInfo.h"    // for BitWidth, BitWidth::BW_16
 #include "TrackPlayer.h"   // for TrackPlayer
 
+const int trackDelimiterHash = 0x21;  // chosen at random
+
 CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
                      std::shared_ptr<cspot::SpircHandler> handler)
     : bell::Task("player", 1024, 0, 0) {
@@ -26,7 +28,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->audioSink = std::move(sink);
 
   this->centralAudioBuffer =
-      std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
+      std::make_shared<bell::CentralAudioBuffer>(2 * 1024);
 
 #ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
@@ -35,10 +37,17 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   auto hashFunc = std::hash<std::string_view>();
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
+      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId,
+                        bool playbackChanged) {
+        if (!playbackChanged) {
+          auto hash = hashFunc(trackId);
 
-        return this->centralAudioBuffer->writePCM(data, bytes, hash);
+          return this->centralAudioBuffer->writePCM(data, bytes, hash);
+        } else {
+          std::cout << "Bout to write delimiter" << std::endl;
+          return this->centralAudioBuffer->writePCM(data, 0,
+                                                    trackDelimiterHash);
+        }
       });
 
   this->isPaused = false;
@@ -91,8 +100,6 @@ void CliPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
   bell::CentralAudioBuffer::AudioChunk* chunk;
 
-  size_t lastHash = 0;
-
   while (isRunning) {
     if (!this->isPaused) {
       chunk = this->centralAudioBuffer->readChunk();
@@ -110,19 +117,19 @@ void CliPlayer::runTask() {
       }
 
       if (!chunk || chunk->pcmSize == 0) {
-        if (this->playlistEnd) {
+        if (chunk && chunk->trackHash == trackDelimiterHash) {
+          std::cout << " Received track delimiter hash" << std::endl;
+          this->handler->notifyAudioReachedPlayback();
+          continue;
+        } else {
+          if (this->playlistEnd) {
             this->handler->notifyAudioEnded();
             this->playlistEnd = false;
+          }
+          BELL_SLEEP_MS(10);
+          continue;
         }
-        BELL_SLEEP_MS(10);
-        continue;
       } else {
-        if (lastHash != chunk->trackHash) {
-          std::cout << " Last hash " << lastHash << " new hash "
-                    << chunk->trackHash << std::endl;
-          lastHash = chunk->trackHash;
-          this->handler->notifyAudioReachedPlayback();
-        }
 
 #ifndef BELL_DISABLE_CODECS
         this->dsp->process(chunk->pcmData, chunk->pcmSize, 2, 44100,

@@ -88,9 +88,13 @@ void SpircHandler::notifyAudioEnded() {
 
 void SpircHandler::setRepeat(bool repeat) {
   playbackState->setRepeat(repeat);
+  trackQueue->setRepeat(repeat);
+  trackPlayer->seekMs(playbackState->innerFrame.state.position_ms);
   notify();
 
-  trackQueue->setRepeat(repeat);
+  CSPOT_LOG(debug, "Changing repeat state");
+
+  sendEvent(EventType::SEEK, (int)playbackState->innerFrame.state.position_ms);
 }
 
 void SpircHandler::setShuffle(bool shuffle) {
@@ -103,21 +107,13 @@ void SpircHandler::notifyAudioReachedPlayback() {
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
 
-  // Do not execute when meta is already updated
-  if (trackQueue->notifyPending) {
-    trackQueue->notifyPending = false;
-
-    playbackState->updatePositionMs(currentTrack->requestedPosition);
-
-    // Reset position in queued track
-    currentTrack->requestedPosition = 0;
-  } else {
-    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
-    playbackState->updatePositionMs(0);
-
+  if (!playbackState->innerFrame.state.repeat) {
+    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT);
     // we moved to next track, re-acquire currentTrack again
     currentTrack = trackQueue->consumeTrack(nullptr, offset);
   }
+
+  playbackState->updatePositionMs(0);
 
   this->notify();
 

@@ -34,6 +34,7 @@ class QueuedTrack {
  public:
   QueuedTrack(TrackReference& ref, std::shared_ptr<cspot::Context> ctx,
               uint32_t requestedPosition = 0);
+
   ~QueuedTrack();
 
   enum class State {
@@ -102,7 +103,7 @@ class TrackQueue : public bell::Task {
   bool isFinished();
   void setRepeat(bool repeat);
   void setShuffle(bool shuffle);
-  bool skipTrack(SkipDirection dir, bool expectNotify = true);
+  bool skipTrack(SkipDirection dir);
   bool updateTracks(uint32_t requestedPosition = 0, bool initial = false);
   TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(

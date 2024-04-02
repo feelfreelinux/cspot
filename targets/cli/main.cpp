@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
       std::cout << "-c, --credentials         json file to store/load reusable credentials\n";
       std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
       std::cout << "\n";
-      std::cout << "ddd 2022\n";
+      std::cout << "ddd 2024\n";
       return 0;
     }
 

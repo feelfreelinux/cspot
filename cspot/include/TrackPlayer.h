@@ -34,7 +34,7 @@ class TrackPlayer : bell::Task {
   // Callback types
   typedef std::function<void(std::shared_ptr<QueuedTrack>, bool)>
       TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view)>
+  typedef std::function<size_t(uint8_t* data, size_t dataLen, std::string_view trackId, bool trackChanged)>
       DataCallback;
   typedef std::function<void()> EOFCallback;
 
