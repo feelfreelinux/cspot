@@ -98,7 +98,14 @@ void SpircHandler::setRepeat(bool repeat) {
 }
 
 void SpircHandler::setShuffle(bool shuffle) {
-  //
+  playbackState->setShuffle(shuffle);
+  trackQueue->setShuffle(shuffle);
+  trackPlayer->seekMs(playbackState->innerFrame.state.position_ms);
+  notify();
+
+  CSPOT_LOG(debug, "Changing shuffle state");
+
+  sendEvent(EventType::SEEK, (int)playbackState->innerFrame.state.position_ms);
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {

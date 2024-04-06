@@ -44,7 +44,6 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
 
           return this->centralAudioBuffer->writePCM(data, bytes, hash);
         } else {
-          std::cout << "Bout to write delimiter" << std::endl;
           return this->centralAudioBuffer->writePCM(data, 0,
                                                     trackDelimiterHash);
         }
@@ -106,7 +105,6 @@ void CliPlayer::runTask() {
 
       if (this->pauseRequested) {
         this->pauseRequested = false;
-        std::cout << "Pause requested!" << std::endl;
 #ifndef BELL_DISABLE_CODECS
         auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
             44100 / 2, false, [this]() { this->isPaused = true; });
@@ -118,7 +116,6 @@ void CliPlayer::runTask() {
 
       if (!chunk || chunk->pcmSize == 0) {
         if (chunk && chunk->trackHash == trackDelimiterHash) {
-          std::cout << " Received track delimiter hash" << std::endl;
           this->handler->notifyAudioReachedPlayback();
           continue;
         } else {

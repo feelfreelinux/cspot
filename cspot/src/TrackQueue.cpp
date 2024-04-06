@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <random>
 
 #include "AccessKeyFetcher.h"
 #include "BellTask.h"
@@ -124,8 +125,7 @@ void TrackInfo::loadPbEpisode(Episode* pbEpisode,
 QueuedTrack::QueuedTrack(TrackReference& ref,
                          std::shared_ptr<cspot::Context> ctx,
                          uint32_t requestedPosition)
-    : requestedPosition(requestedPosition),
-      ctx(ctx) {
+    : requestedPosition(requestedPosition), ctx(ctx) {
   this->ref = ref;
 
   loadedSemaphore = std::make_shared<bell::WrappedSemaphore>();
@@ -440,6 +440,55 @@ void TrackQueue::stopTask() {
     isRunning = false;
     processSemaphore->give();
     std::scoped_lock lock(runningMutex);
+  }
+}
+
+void TrackQueue::setShuffle(bool shuffle) {
+  std::scoped_lock lock(tracksMutex);
+
+  if (shuffle) {
+    // safe the original state of playback queue
+    originalTracks = currentTracks;
+
+    if (currentTracksIndex > 0) {
+      // Always keep the current track at begining of the queue
+      std::swap(currentTracks[0], currentTracks[currentTracksIndex]);
+      currentTracksIndex = 0;
+    }
+
+    // shuffle the tracks in queue
+    std::shuffle(currentTracks.begin() + 1, currentTracks.end(),
+                 std::random_device());
+  } else {
+    for (int idx = 0; idx < originalTracks.size(); idx++) {
+      // Find position for the currently played back song
+      if (originalTracks[idx] == currentTracks[currentTracksIndex]) {
+        currentTracksIndex = idx;
+        break;
+      }
+    }
+
+    currentTracks = originalTracks;
+  }
+
+  playbackState->innerFrame.state.playing_track_index = currentTracksIndex;
+
+  if (preloadedTracks[0]->loading) {
+    // try to not re-load track if we are still loading it
+
+    // remove everything except first track
+    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
+
+    // Push a song on the preloaded queue
+    CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
+    queueNextTrack(1);
+  } else {
+    // Clear preloaded tracks
+    preloadedTracks.clear();
+
+    // Push a song on the preloaded queue
+    CSPOT_LOG(info, "Re-loading current track");
+    queueNextTrack(0);
   }
 }
 

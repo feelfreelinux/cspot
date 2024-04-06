@@ -157,6 +157,11 @@ void PlaybackState::setRepeat(bool isRepeat) {
 void PlaybackState::setShuffle(bool shuffle) {
   innerFrame.state.has_shuffle = true;
   innerFrame.state.shuffle = true;
+
+  // Update interpolated local position
+  uint32_t diff = ctx->timeProvider->getSyncedTimestamp() -
+                  innerFrame.state.position_measured_at;
+  this->updatePositionMs(innerFrame.state.position_ms + diff);
 }
 
 bool PlaybackState::decodeRemoteFrame(std::vector<uint8_t>& data) {

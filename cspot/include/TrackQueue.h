@@ -118,6 +118,11 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
+
+  // Original order of tracks
+  std::vector<TrackReference> originalTracks;
+
+  // Current order of tracks - can be shuffled
   std::vector<TrackReference> currentTracks;
   std::mutex tracksMutex, runningMutex;
 
