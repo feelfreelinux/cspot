@@ -121,8 +121,11 @@ See running the CLI for information on how to run cspot on a desktop computer.
 The ESP32 target is built using the [esp-idf](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) toolchain
 
 ```shell
+# Follow the instructions for setting up esp-idf for your operating system, up to `. ./export.sh` or equivalent
+# esp-idf has a Python virtualenv, install nanopb's dependencies in it
+$ pip3 install protobuf grpcio-tools
 # update submodules after each code pull to avoid build errors
-$ git submodule update
+$ git submodule update --init --recursive
 # navigate to the targets/esp32 directory
 $ cd targets/esp32
 # run once after pulling the repo
