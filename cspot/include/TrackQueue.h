@@ -24,7 +24,7 @@ class CDNAudioFile;
 // Used in got track info event
 struct TrackInfo {
   std::string name, album, artist, imageUrl, trackId;
-  uint32_t duration;
+  uint32_t duration, number, discNumber;
 
   void loadPbTrack(Track* pbTrack, const std::vector<uint8_t>& gid);
   void loadPbEpisode(Episode* pbEpisode, const std::vector<uint8_t>& gid);
