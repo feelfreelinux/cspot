@@ -1,2 +1,5 @@
 Header.uri max_size:256, fixed_length:false
 Header.method max_size:64, fixed_length:false
+UserField.key type:FT_POINTER
+UserField.value type:FT_POINTER
+Header.user_fields max_count:64, fixed_count:false
