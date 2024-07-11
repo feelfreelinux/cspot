@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "Crypto.h"
+#include "EventManager.h"
 #include "LoginBlob.h"
 #include "MercurySession.h"
 #include "TimeProvider.h"
@@ -35,6 +36,7 @@ struct Context {
 
   std::shared_ptr<TimeProvider> timeProvider;
   std::shared_ptr<cspot::MercurySession> session;
+  std::shared_ptr<PlaybackMetrics> playbackMetrics;
   std::string getCredentialsJson() {
 #ifdef BELL_ONLY_CJSON
     cJSON* json_obj = cJSON_CreateObject();
@@ -68,6 +70,7 @@ struct Context {
     ctx->timeProvider = std::make_shared<TimeProvider>();
 
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
+    ctx->playbackMetrics = std::make_shared<PlaybackMetrics>(ctx);
     ctx->config.deviceId = blob->getDeviceId();
     ctx->config.deviceName = blob->getDeviceName();
     ctx->config.authData = blob->authData;
