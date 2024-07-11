@@ -118,6 +118,12 @@ void PlaybackState::syncWithRemote() {
 
   innerFrame.state.has_playing_track_index = true;
   innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
+  innerFrame.state.has_shuffle = remoteFrame.state.has_shuffle;;
+  innerFrame.state.shuffle = remoteFrame.state.shuffle;
+  innerFrame.state.has_repeat = remoteFrame.state.has_repeat;
+  innerFrame.state.repeat = remoteFrame.state.repeat;
+  innerFrame.state.has_index = true;
+  innerFrame.state.index = remoteFrame.state.index;
 }
 
 bool PlaybackState::isActive() {

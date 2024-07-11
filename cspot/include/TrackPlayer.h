@@ -17,10 +17,12 @@ namespace bell {
 class WrappedSemaphore;
 }  // namespace bell
 
+#ifndef CONFIG_BELL_NOCODEC
 #ifdef BELL_VORBIS_FLOAT
 #include "vorbis/vorbisfile.h"
 #else
 #include "ivorbisfile.h"  // for OggVorbis_File, ov_callbacks
+#endif
 #endif
 
 namespace cspot {
@@ -34,9 +36,16 @@ class TrackPlayer : bell::Task {
   // Callback types
   typedef std::function<void(std::shared_ptr<QueuedTrack>, bool)>
       TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view)>
+  typedef std::function<size_t(uint8_t*, size_t, std::string_view  
+
+#ifdef CONFIG_BELL_NOCODEC
+                                       , bool
+#endif
+                                       )>
       DataCallback;
   typedef std::function<void()> EOFCallback;
+  typedef std::function<size_t(std::string_view)> SeekableCallback;
+
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,
               std::shared_ptr<cspot::TrackQueue> trackQueue,
@@ -45,17 +54,19 @@ class TrackPlayer : bell::Task {
 
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs,
                         bool startAutomatically);
-  void setDataCallback(DataCallback callback);
+  void setDataCallback(DataCallback callback, SeekableCallback seekable_callback = nullptr, SeekableCallback spaces_available = nullptr);
 
   // CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
   void resetState(bool paused = false);
 
+#ifndef CONFIG_BELL_NOCODEC
   // Vorbis codec callbacks
   size_t _vorbisRead(void* ptr, size_t size, size_t nmemb);
   size_t _vorbisClose();
   int _vorbisSeek(int64_t offset, int whence);
   long _vorbisTell();
+#endif
 
   void stop();
   void start();
@@ -70,16 +81,23 @@ class TrackPlayer : bell::Task {
   TrackLoadedCallback trackLoaded;
   DataCallback dataCallback = nullptr;
   EOFCallback eofCallback;
+#ifdef CONFIG_BELL_NOCODEC
+  SeekableCallback spaces_available = nullptr;
+  SeekableCallback seekable_callback;
+  size_t seekable_offset;
+#endif
 
   // Playback control
   std::atomic<bool> currentSongPlaying;
   std::mutex playbackMutex;
   std::mutex dataOutMutex;
 
+#ifndef CONFIG_BELL_NOCODEC
   // Vorbis related
   OggVorbis_File vorbisFile;
   ov_callbacks vorbisCallbacks;
   int currentSection;
+#endif
 
   std::vector<uint8_t> pcmBuffer = std::vector<uint8_t>(1024);
 

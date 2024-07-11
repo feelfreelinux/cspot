@@ -127,6 +127,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
   // Decode received spirc frame
   playbackState->decodeRemoteFrame(data);
 
+  std::string influence = "unknown";
   switch (playbackState->remoteFrame.typ) {
     case MessageType_kMessageTypeNotify: {
       CSPOT_LOG(debug, "Notify frame");
@@ -136,7 +137,8 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
           playbackState->remoteFrame.device_state.is_active) {
         CSPOT_LOG(debug, "Another player took control, pausing playback");
         playbackState->setActive(false);
-
+        ctx->playbackMetrics->end_reason = PlaybackMetrics::REMOTE;
+        ctx->playbackMetrics->end_source = influence;
         this->trackPlayer->stop();
         sendEvent(EventType::DISC);
       }
@@ -166,11 +168,13 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     case MessageType_kMessageTypeNext:
       if (nextSong()) {
         sendEvent(EventType::NEXT);
+        ctx->playbackMetrics->end_reason = PlaybackMetrics::FORWARD_BTN;
       }
       break;
     case MessageType_kMessageTypePrev:
       if (previousSong()) {
         sendEvent(EventType::PREV);
+        ctx->playbackMetrics->end_reason = PlaybackMetrics::BACKWARD_BTN;
       }
       break;
     case MessageType_kMessageTypeLoad: {

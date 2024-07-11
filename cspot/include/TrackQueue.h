@@ -8,6 +8,7 @@
 
 #include "BellTask.h"
 #include "PlaybackState.h"
+#include "EventManager.h" // for TrackMetrics
 #include "TrackReference.h"
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
@@ -53,9 +54,11 @@ class QueuedTrack {
   TrackInfo trackInfo;  // Full track information fetched from spotify, name etc
 
   uint32_t requestedPosition;
+  uint64_t written_bytes = 0;
   std::string identifier;
   bool loading = false;
-
+  std::shared_ptr<cspot::TrackMetrics> trackMetrics;
+  
   // Will return nullptr if the track is not ready
   std::shared_ptr<cspot::CDNAudioFile> getAudioFile();
 

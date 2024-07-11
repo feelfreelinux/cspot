@@ -11,7 +11,9 @@
 #include "Packet.h"            // for cspot
 #include "TrackQueue.h"        // for CDNTrackStream, CDNTrackStream::TrackInfo
 #include "WrappedSemaphore.h"  // for WrappedSemaphore
+#include "CSpotContext.h"
 
+#ifndef CONFIG_BELL_NOCODEC
 #ifdef BELL_VORBIS_FLOAT
 #define VORBIS_SEEK(file, position) \
   (ov_time_seek(file, (double)position / 1000))
@@ -22,14 +24,17 @@
 #define VORBIS_READ(file, buffer, bufferSize, section) \
   (ov_read(file, buffer, bufferSize, section))
 #endif
+#endif
 
 namespace cspot {
 struct Context;
 struct TrackReference;
+class PlaybackMetrics;
 }  // namespace cspot
 
 using namespace cspot;
 
+#ifndef CONFIG_BELL_NOCODEC
 static size_t vorbisReadCb(void* ptr, size_t size, size_t nmemb,
                            TrackPlayer* self) {
   return self->_vorbisRead(ptr, size, nmemb);
@@ -47,6 +52,7 @@ static int vorbisSeekCb(TrackPlayer* self, int64_t offset, int whence) {
 static long vorbisTellCb(TrackPlayer* self) {
   return self->_vorbisTell();
 }
+#endif
 
 TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx,
                          std::shared_ptr<cspot::TrackQueue> trackQueue,
@@ -58,6 +64,7 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx,
   this->trackQueue = trackQueue;
   this->playbackSemaphore = std::make_unique<bell::WrappedSemaphore>(5);
 
+#ifndef CONFIG_BELL_NOCODEC
   // Initialize vorbis callbacks
   vorbisFile = {};
   vorbisCallbacks = {
@@ -66,6 +73,7 @@ TrackPlayer::TrackPlayer(std::shared_ptr<cspot::Context> ctx,
       (decltype(ov_callbacks::close_func))&vorbisCloseCb,
       (decltype(ov_callbacks::tell_func))&vorbisTellCb,
   };
+#endif
 }
 
 TrackPlayer::~TrackPlayer() {
@@ -78,7 +86,10 @@ void TrackPlayer::start() {
   if (!isRunning) {
     isRunning = true;
     startTask();
+    this->ctx->playbackMetrics->start_reason = PlaybackMetrics::REMOTE;
+    this->ctx->playbackMetrics->start_source = "unknown";
   }
+  else this->ctx->playbackMetrics->end_reason = PlaybackMetrics::END_PLAY;
 }
 
 void TrackPlayer::stop() {
@@ -99,10 +110,12 @@ void TrackPlayer::resetState(bool paused) {
 }
 
 void TrackPlayer::seekMs(size_t ms) {
+#ifndef CONFIG_BELL_NOCODEC
   if (inFuture) {
     // We're in the middle of the next track, so we need to reset the player in order to seek
     resetState();
   }
+#endif
 
   CSPOT_LOG(info, "Seeking...");
   this->pendingSeekPositionMs = ms;
@@ -111,7 +124,7 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
-  std::shared_ptr<QueuedTrack> track, newTrack = nullptr;
+  std::shared_ptr<QueuedTrack> track= nullptr, newTrack = nullptr;
 
   int trackOffset = 0;
   bool eof = false;
@@ -155,6 +168,8 @@ void TrackPlayer::runTask() {
     }
 
     track = newTrack;
+    track->trackMetrics = std::make_shared<TrackMetrics>(this->ctx);
+    this->ctx->playbackMetrics->trackMetrics = track->trackMetrics;
 
     inFuture = trackOffset > 0;
 
@@ -174,8 +189,11 @@ void TrackPlayer::runTask() {
 
     {
       std::scoped_lock lock(playbackMutex);
+      bool skipped = 0;
 
       currentTrackStream = track->getAudioFile();
+
+      track->trackMetrics->startTrackDecoding();
 
       // Open the stream
       currentTrackStream->openStream();
@@ -184,6 +202,7 @@ void TrackPlayer::runTask() {
         continue;
       }
 
+#ifndef CONFIG_BELL_NOCODEC
       if (trackOffset == 0 && pendingSeekPositionMs == 0) {
         this->trackLoaded(track, startPaused);
         startPaused = false;
@@ -191,17 +210,52 @@ void TrackPlayer::runTask() {
 
       int32_t r =
           ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
-
+#else
+      size_t start_offset = 0;
+      size_t write_offset = 0;
+      while (!start_offset) {
+        size_t ret = this->currentTrackStream->readBytes(&pcmBuffer[0], pcmBuffer.size());
+        size_t written = 0;
+        size_t toWrite = ret;
+        while (toWrite) {
+          written = dataCallback(pcmBuffer.data() + (ret - toWrite),
+            toWrite, track->identifier, 0);
+          if (written == 0) {
+            BELL_SLEEP_MS(1000);
+          }
+          toWrite -= written;
+        }
+        track->written_bytes += ret;
+        start_offset = seekable_callback(track->identifier);       
+        if(this->spaces_available(track->identifier)<pcmBuffer.size()){
+              BELL_SLEEP_MS(50);
+          continue;
+        }
+        if(ret == 0) printf("re == null");
+      }
+      track->trackMetrics->track_size = currentTrackStream->getSize();
+      float duration_lambda = 1.0 * (currentTrackStream->getSize() - start_offset) / track->trackInfo.duration;
+#endif
       if (pendingSeekPositionMs > 0) {
         track->requestedPosition = pendingSeekPositionMs;
+#ifdef CONFIG_BELL_NOCODEC
+        pendingSeekPositionMs = 0;
+#endif
       }
 
       if (track->requestedPosition > 0) {
+#ifndef CONFIG_BELL_NOCODEC
         VORBIS_SEEK(&vorbisFile, track->requestedPosition);
+#else
+        size_t seekPosition = track->requestedPosition * duration_lambda + start_offset;
+        currentTrackStream->seek(seekPosition);
+        skipped = true;
+#endif
       }
 
       eof = false;
       track->loading = true;
+      track->trackMetrics->startTrack(track->requestedPosition);
 
       CSPOT_LOG(info, "Playing");
 
@@ -210,15 +264,28 @@ void TrackPlayer::runTask() {
         if (pendingSeekPositionMs > 0) {
           uint32_t seekPosition = pendingSeekPositionMs;
 
+          // Seek to the new position
+#ifndef CONFIG_BELL_NOCODEC
+          VORBIS_SEEK(&vorbisFile, seekPosition);
+#else
+          seekPosition = seekPosition * duration_lambda + start_offset;
+          currentTrackStream->seek(seekPosition);
+      track->trackMetrics->newPosition(pendingSeekPositionMs);
+          skipped = true;
+#endif
+
           // Reset the pending seek position
           pendingSeekPositionMs = 0;
-
-          // Seek to the new position
-          VORBIS_SEEK(&vorbisFile, seekPosition);
         }
 
-        long ret = VORBIS_READ(&vorbisFile, (char*)&pcmBuffer[0],
-                               pcmBuffer.size(), &currentSection);
+
+        long ret =
+#ifdef CONFIG_BELL_NOCODEC
+          this->currentTrackStream->readBytes(&pcmBuffer[0], pcmBuffer.size());
+#else
+          VORBIS_READ(&vorbisFile, (char*)&pcmBuffer[0],
+            pcmBuffer.size(), &currentSection);
+#endif
 
         if (ret == 0) {
           CSPOT_LOG(info, "EOF");
@@ -238,25 +305,39 @@ void TrackPlayer::runTask() {
                 // If reset happened during playback, return
                 if (!currentSongPlaying || pendingReset)
                   break;
-
+#ifdef CONFIG_BELL_NOCODEC
+                if (skipped) {
+                  // Reset the pending seek position
+                  skipped = 0;
+                }
+#endif
                 written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-                                       toWrite, track->identifier);
+                                       toWrite, track->identifier
+                                       #ifdef CONFIG_BELL_NOCODEC
+                                       ,skipped
+                                       #endif
+                                       );
               }
               if (written == 0) {
                 BELL_SLEEP_MS(50);
               }
               toWrite -= written;
             }
+            track->written_bytes += ret;
           }
         }
       }
+#ifndef CONFIG_BELL_NOCODEC
       ov_clear(&vorbisFile);
+#endif
 
       CSPOT_LOG(info, "Playing done");
 
       // always move back to LOADING (ensure proper seeking after last track has been loaded)
       currentTrackStream = nullptr;
       track->loading = false;
+      track->trackMetrics->endTrack();
+      std::vector <uint8_t> result = this->ctx->playbackMetrics->sendEvent(track);
     }
 
     if (eof) {
@@ -269,6 +350,7 @@ void TrackPlayer::runTask() {
   }
 }
 
+#ifndef CONFIG_BELL_NOCODEC
 size_t TrackPlayer::_vorbisRead(void* ptr, size_t size, size_t nmemb) {
   if (this->currentTrackStream == nullptr) {
     return 0;
@@ -307,7 +389,12 @@ long TrackPlayer::_vorbisTell() {
   }
   return this->currentTrackStream->getPosition();
 }
+#endif
 
-void TrackPlayer::setDataCallback(DataCallback callback) {
+void TrackPlayer::setDataCallback(DataCallback callback, SeekableCallback seekable_callback, SeekableCallback spaces_available ) {
   this->dataCallback = callback;
+  #ifdef CONFIG_BELL_NOCODEC
+  this->seekable_callback = seekable_callback;
+  this->spaces_available = spaces_available;
+  #endif
 }
