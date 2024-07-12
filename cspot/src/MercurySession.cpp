@@ -68,6 +68,7 @@ void MercurySession::reconnect() {
   try {
     this->conn = nullptr;
     this->shanConn = nullptr;
+    this->partials.clear();
 
     this->connectWithRandomAp();
     this->authenticate(this->authBlob);
@@ -187,12 +188,13 @@ void MercurySession::handlePacket() {
     case RequestType::SUBRES: {
       auto response = decodeResponse(packet.data);
 
-      if (response.first) {
+      if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
         auto partial = this->partials.find(response.second);
         auto uri = std::string(partial->second.mercuryHeader.uri);
         if (this->subscriptions.count(uri) > 0) {
           this->subscriptions[uri](partial->second);
         }
+        this->partials.erase(partial);
       }
       break;
     }
