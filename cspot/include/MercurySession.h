@@ -51,6 +51,11 @@ class MercurySession : public bell::Task, public cspot::Session {
     COUNTRY_CODE_RESPONSE = 0x1B,
   };
 
+  enum class ResponseFlag : uint8_t {
+    FINAL = 0x01,
+    PARTIAL = 0x02,
+  };
+
   std::unordered_map<RequestType, std::string> RequestTypeMap = {
       {RequestType::GET, "GET"},
       {RequestType::SEND, "SEND"},

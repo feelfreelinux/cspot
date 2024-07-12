@@ -174,7 +174,7 @@ void MercurySession::handlePacket() {
       CSPOT_LOG(debug, "Received mercury packet");
 
       auto response = this->decodeResponse(packet.data);
-      if (response.first == 1) {
+      if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
         auto partial = this->partials.find(response.second);
         if (this->callbacks.count(response.second)) {
           this->callbacks[response.second](partial->second);
@@ -223,16 +223,17 @@ void MercurySession::failAllPending() {
 std::pair<int, int64_t> MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
   auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-  int64_t sequenceId;
+  uint64_t sequenceId;
   uint8_t flag;
   if (sequenceLength == 2)
-    sequenceId = ntohs(extract<int16_t>(data, 2));
+    sequenceId = ntohs(extract<uint16_t>(data, 2));
   else if (sequenceLength == 4)
-    sequenceId = ntohl(extract<int32_t>(data, 2));
+    sequenceId = ntohl(extract<uint32_t>(data, 2));
   else if (sequenceLength == 8)
-    sequenceId = hton64(extract<int64_t>(data, 2));
+    sequenceId = hton64(extract<uint64_t>(data, 2));
   else
     return std::make_pair(0, 0);
+
   size_t pos = 2 + sequenceLength;
   flag = (uint8_t)data[pos];
   pos++;
@@ -240,16 +241,15 @@ std::pair<int, int64_t> MercurySession::decodeResponse(
   pos += 2;
   auto partial = partials.find(sequenceId);
   if (partial == partials.end()) {
-    CSPOT_LOG(
-        debug,
-        "Creating new Mercury Response, seq: %lld, flags: %i, parts: %i\n",
-        sequenceId, flag, parts);
+    CSPOT_LOG(debug,
+              "Creating new Mercury Response, seq: %llu, flags: %i, parts: %i",
+              sequenceId, flag, parts);
     partial = this->partials.insert({sequenceId, Response()}).first;
     partial->second.parts = {};
     partial->second.fail = false;
   } else
     CSPOT_LOG(debug,
-              "Adding to Mercury Response, seq: %lld, flags: %i, parts: %i\n",
+              "Adding to Mercury Response, seq: %llu, flags: %i, parts: %i",
               sequenceId, flag, parts);
   uint8_t index = 0;
   while (parts) {

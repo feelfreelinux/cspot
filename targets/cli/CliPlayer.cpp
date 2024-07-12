@@ -118,8 +118,6 @@ void CliPlayer::runTask() {
         continue;
       } else {
         if (lastHash != chunk->trackHash) {
-          std::cout << " Last hash " << lastHash << " new hash "
-                    << chunk->trackHash << std::endl;
           lastHash = chunk->trackHash;
           this->handler->notifyAudioReachedPlayback();
         }
