@@ -174,9 +174,9 @@ void MercurySession::handlePacket() {
       CSPOT_LOG(debug, "Received mercury packet");
 
       auto response = this->decodeResponse(packet.data);
-      if(response.first == 1){
+      if (response.first == 1) {
         auto partial = this->partials.find(response.second);
-        if(this->callbacks.count(response.second)){
+        if (this->callbacks.count(response.second)) {
           this->callbacks[response.second](partial->second);
           this->callbacks.erase(this->callbacks.find(response.second));
         }
@@ -187,7 +187,7 @@ void MercurySession::handlePacket() {
     case RequestType::SUBRES: {
       auto response = decodeResponse(packet.data);
 
-      if(response.first){
+      if (response.first) {
         auto partial = this->partials.find(response.second);
         auto uri = std::string(partial->second.mercuryHeader.uri);
         if (this->subscriptions.count(uri) > 0) {
@@ -222,38 +222,52 @@ void MercurySession::failAllPending() {
 
 std::pair<int, int64_t> MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
-  auto sequenceLength = ntohs(extract<uint16_t>(data, 0));  
-  int64_t sequenceId; uint8_t flag;
-  if(sequenceLength == 2) sequenceId = ntohs(extract<int16_t>(data, 2));
-  else if(sequenceLength == 4) sequenceId = ntohl(extract<int32_t>(data, 2));
-  else if(sequenceLength == 8) sequenceId = hton64(extract<int64_t>(data, 2));
-  else return std::make_pair(0,0);
+  auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
+  int64_t sequenceId;
+  uint8_t flag;
+  if (sequenceLength == 2)
+    sequenceId = ntohs(extract<int16_t>(data, 2));
+  else if (sequenceLength == 4)
+    sequenceId = ntohl(extract<int32_t>(data, 2));
+  else if (sequenceLength == 8)
+    sequenceId = hton64(extract<int64_t>(data, 2));
+  else
+    return std::make_pair(0, 0);
   size_t pos = 2 + sequenceLength;
   flag = (uint8_t)data[pos];
   pos++;
   auto parts = ntohs(extract<uint16_t>(data, pos));
-  pos+= 2;
+  pos += 2;
   auto partial = partials.find(sequenceId);
-  if (partial==partials.end()) {
-  CSPOT_LOG(debug, "Creating new Mercury Response, seq: %lld, flags: %i, parts: %i\n", sequenceId, flag, parts);
-    partial = this->partials.insert({sequenceId,Response()}).first;
+  if (partial == partials.end()) {
+    CSPOT_LOG(
+        debug,
+        "Creating new Mercury Response, seq: %lld, flags: %i, parts: %i\n",
+        sequenceId, flag, parts);
+    partial = this->partials.insert({sequenceId, Response()}).first;
     partial->second.parts = {};
     partial->second.fail = false;
-  } else CSPOT_LOG(debug, "Adding to Mercury Response, seq: %lld, flags: %i, parts: %i\n", sequenceId, flag, parts);
+  } else
+    CSPOT_LOG(debug,
+              "Adding to Mercury Response, seq: %lld, flags: %i, parts: %i\n",
+              sequenceId, flag, parts);
   uint8_t index = 0;
-  while(parts){
-    if(data.size() <= pos || partial->second.fail) break;
+  while (parts) {
+    if (data.size() <= pos || partial->second.fail)
+      break;
     auto partSize = ntohs(extract<uint16_t>(data, pos));
     pos += 2;
-    if(!partial->second.mercuryHeader.has_uri){
+    if (!partial->second.mercuryHeader.has_uri) {
       partial->second.fail = false;
-      auto headerBytes =
-          std::vector<uint8_t>(data.begin() + pos, data.begin() + pos + partSize);
+      auto headerBytes = std::vector<uint8_t>(data.begin() + pos,
+                                              data.begin() + pos + partSize);
       pbDecode(partial->second.mercuryHeader, Header_fields, headerBytes);
-    }
-    else{    
-      if( index >= partial->second.parts.size() ) partial->second.parts.push_back(std::vector<uint8_t>{});
-      partial->second.parts[index].insert(partial->second.parts[index].end(),data.begin() + pos, data.begin() + pos + partSize);
+    } else {
+      if (index >= partial->second.parts.size())
+        partial->second.parts.push_back(std::vector<uint8_t>{});
+      partial->second.parts[index].insert(partial->second.parts[index].end(),
+                                          data.begin() + pos,
+                                          data.begin() + pos + partSize);
       index++;
     }
     pos += partSize;
