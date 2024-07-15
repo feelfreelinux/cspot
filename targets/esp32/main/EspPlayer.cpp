@@ -36,6 +36,7 @@ EspPlayer::EspPlayer(std::unique_ptr<AudioSink> sink,
 
   this->handler->setEventHandler(
       [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
+
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {
