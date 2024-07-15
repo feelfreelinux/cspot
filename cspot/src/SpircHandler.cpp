@@ -219,14 +219,16 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     }
     case MessageType_kMessageTypeShuffle: {
       CSPOT_LOG(debug, "Got shuffle frame");
-      playbackState->innerFrame.state.shuffle = playbackState->remoteFrame.state.shuffle;
+      playbackState->innerFrame.state.shuffle =
+          playbackState->remoteFrame.state.shuffle;
       trackQueue->shuffle_tracks(playbackState->remoteFrame.state.shuffle);
       this->notify();
       break;
     }
     case MessageType_kMessageTypeRepeat: {
       CSPOT_LOG(debug, "Got repeat frame");
-      playbackState->innerFrame.state.repeat = playbackState->remoteFrame.state.repeat;
+      playbackState->innerFrame.state.repeat =
+          playbackState->remoteFrame.state.repeat;
       trackQueue->prepareRepeat();
       this->notify();
       break;

@@ -177,9 +177,12 @@ void MercurySession::handlePacket() {
       auto response = this->decodeResponse(packet.data);
       if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
         auto partial = this->partials.find(response.second);
-        if (this->callbacks.count(response.second)) {
-          this->callbacks[response.second](partial->second);
-          this->callbacks.erase(this->callbacks.find(response.second));
+        //if the event-id is negative, they got sent without any request
+        if (response.first >= 0) {
+          if (this->callbacks.count(response.second)) {
+            this->callbacks[response.second](partial->second);
+            this->callbacks.erase(this->callbacks.find(response.second));
+          }
         }
         this->partials.erase(partial);
       }
@@ -228,11 +231,11 @@ std::pair<int, int64_t> MercurySession::decodeResponse(
   uint64_t sequenceId;
   uint8_t flag;
   if (sequenceLength == 2)
-    sequenceId = ntohs(extract<uint16_t>(data, 2));
+    sequenceId = ntohs(extract<int16_t>(data, 2));
   else if (sequenceLength == 4)
-    sequenceId = ntohl(extract<uint32_t>(data, 2));
+    sequenceId = ntohl(extract<int32_t>(data, 2));
   else if (sequenceLength == 8)
-    sequenceId = hton64(extract<uint64_t>(data, 2));
+    sequenceId = hton64(extract<int64_t>(data, 2));
   else
     return std::make_pair(0, 0);
 

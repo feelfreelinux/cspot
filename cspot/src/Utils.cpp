@@ -11,7 +11,8 @@
 #include <arpa/inet.h>
 #endif
 
-static std::string alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static std::string alphabet =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 unsigned long long getCurrentTimestamp() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -156,15 +157,16 @@ std::string urlDecode(std::string str) {
 }
 
 std::vector<uint8_t> base62Decode(std::string uri) {
-    std::vector<uint8_t> n = std::vector<uint8_t>({0});
-    auto it = uri.begin();
-    if(uri.find(":")!=std::string::npos) it += uri.rfind(":") + 1;
-    while(it!=uri.end()) {
-        size_t d = alphabet.find(*it);
-        n = bigNumMultiply(n, 62);
-        n = bigNumAdd(n, d);
-        it++;
-    }
+  std::vector<uint8_t> n = std::vector<uint8_t>({0});
+  auto it = uri.begin();
+  if (uri.find(":") != std::string::npos)
+    it += uri.rfind(":") + 1;
+  while (it != uri.end()) {
+    size_t d = alphabet.find(*it);
+    n = bigNumMultiply(n, 62);
+    n = bigNumAdd(n, d);
+    it++;
+  }
 
-    return n;
+  return n;
 }

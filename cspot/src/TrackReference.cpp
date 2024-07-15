@@ -5,7 +5,7 @@
 
 using namespace cspot;
 
-static std::string empty_string ="";
+static std::string empty_string = "";
 
 TrackReference::TrackReference() : type(Type::TRACK) {}
 
@@ -43,7 +43,7 @@ bool TrackReference::pbEncodeTrackList(pb_ostream_t* stream,
 
     msg.gid.arg = &trackRef.gid;
     msg.uri.arg = &trackRef.uri;
-    msg.context.arg = &empty_string;//&trackRef.context;
+    msg.context.arg = &empty_string;  //&trackRef.context;
     msg.queued.arg = &trackRef.queued;
 
     if (!pb_encode_submessage(stream, TrackRef_fields, &msg)) {

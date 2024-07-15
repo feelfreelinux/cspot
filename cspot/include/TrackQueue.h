@@ -5,11 +5,11 @@
 #include <deque>
 #include <functional>
 #include <mutex>
-#include <random> //for random_device and default_random_engine
+#include <random>  //for random_device and default_random_engine
 
 #include "BellTask.h"
+#include "EventManager.h"  // for TrackMetrics
 #include "PlaybackState.h"
-#include "EventManager.h" // for TrackMetrics
 #include "TrackReference.h"
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
@@ -64,7 +64,7 @@ class QueuedTrack {
   std::string identifier;
   bool loading = false;
   std::shared_ptr<cspot::TrackMetrics> trackMetrics;
-  
+
   // Will return nullptr if the track is not ready
   std::shared_ptr<cspot::CDNAudioFile> getAudioFile();
 
@@ -127,7 +127,7 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
-  std::vector<int32_t>alt_index;
+  std::vector<int32_t> alt_index;
   std::vector<TrackReference> currentTracks;
   std::vector<TrackReference> ghostTracks;
   std::mutex tracksMutex, runningMutex;

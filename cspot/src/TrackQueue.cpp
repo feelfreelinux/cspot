@@ -2,10 +2,10 @@
 #include <pb_decode.h>
 
 #include <algorithm>
-#include <random>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <random>
 
 #include "AccessKeyFetcher.h"
 #include "BellTask.h"
@@ -25,8 +25,9 @@
 
 using namespace cspot;
 
-static void randomizeIndex(std::vector<int32_t> &index, uint16_t offset, std::default_random_engine rng){
-        std::shuffle(index.begin() + offset, index.end(),rng);
+static void randomizeIndex(std::vector<int32_t>& index, uint16_t offset,
+                           std::default_random_engine rng) {
+  std::shuffle(index.begin() + offset, index.end(), rng);
 }
 
 namespace TrackDataUtils {
@@ -487,98 +488,111 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
   return preloadedTracks[offset];
 }
 
-void TrackQueue::update_ghost_tracks(int16_t offset){
-  if(currentTracksIndex + offset >= SEND_OLD_TRACKS) this->playbackState->innerFrame.state.index = SEND_OLD_TRACKS;
-  else this->playbackState->innerFrame.state.index = currentTracksIndex + offset;
+void TrackQueue::update_ghost_tracks(int16_t offset) {
+  if (currentTracksIndex + offset >= SEND_OLD_TRACKS)
+    this->playbackState->innerFrame.state.index = SEND_OLD_TRACKS;
+  else
+    this->playbackState->innerFrame.state.index = currentTracksIndex + offset;
   ghostTracks.clear();
-  uint16_t index = currentTracksIndex + offset > SEND_OLD_TRACKS ? currentTracksIndex + offset - SEND_OLD_TRACKS : 0;
+  uint16_t index = currentTracksIndex + offset > SEND_OLD_TRACKS
+                       ? currentTracksIndex + offset - SEND_OLD_TRACKS
+                       : 0;
   uint16_t end = currentTracksIndex + offset + SEND_FUTURE_TRACKS + 1;
-  if(end >= currentTracks.size())end = currentTracks.size();
-  for (uint16_t i = 0; i < end - index; i++){
-    ghostTracks.push_back(currentTracks[(index + i) >= currentTracksSize ? index + i : alt_index[ index + i]]);
+  if (end >= currentTracks.size())
+    end = currentTracks.size();
+  for (uint16_t i = 0; i < end - index; i++) {
+    ghostTracks.push_back(
+        currentTracks[(index + i) >= currentTracksSize ? index + i
+                                                       : alt_index[index + i]]);
   }
 }
 
-void TrackQueue::loadRadio(std::string req){
+void TrackQueue::loadRadio(std::string req) {
   size_t keepTracks = currentTracks.size() - currentTracksIndex;
-  keepTracks = keepTracks < inner_tracks_treshhold ? keepTracks : inner_tracks_treshhold;
-  if (keepTracks < inner_tracks_treshhold && continue_with_radio && currentTracks.size()) {
+  keepTracks =
+      keepTracks < inner_tracks_treshhold ? keepTracks : inner_tracks_treshhold;
+  if (keepTracks < inner_tracks_treshhold && continue_with_radio &&
+      currentTracks.size()) {
 
     //if currentTrack is over the treshhold, remove some tracks from the front
-    if (currentTracks.size() > inner_tracks_treshhold * 3){
+    if (currentTracks.size() > inner_tracks_treshhold * 3) {
       uint32_t int_offset = currentTracks.size() - inner_tracks_treshhold;
-      currentTracks.erase(currentTracks.begin(), currentTracks.begin() + int_offset);
+      currentTracks.erase(currentTracks.begin(),
+                          currentTracks.begin() + int_offset);
       currentTracksIndex -= int_offset;
     }
 
     std::string requestUrl = string_format(
-      "hm://radio-apollo/v3/stations/%s?autoplay=true&offset=%i",
-      &req[0],radio_offset);
+        "hm://radio-apollo/v3/stations/%s?autoplay=true&offset=%i", &req[0],
+        radio_offset);
 
     auto responseHandler = [this](MercurySession::Response& res) {
       std::scoped_lock lock(tracksMutex);
       CSPOT_LOG(info, "Fetched new radio tracks");
 
-      if (res.parts[0].size() == 0) return;      
+      if (res.parts[0].size() == 0)
+        return;
       auto jsonResult = nlohmann::json::parse(res.parts[0]);
       radio_offset += jsonResult["tracks"].size();
       std::string uri;
       for (int i = 0; i < jsonResult["tracks"].size(); i++) {
         currentTracks.push_back(
-          TrackReference(jsonResult["tracks"][i]["original_gid"], "radio")
-        );
+            TrackReference(jsonResult["tracks"][i]["original_gid"], "radio"));
       }
       this->ctx->playbackMetrics->correlation_id = jsonResult["correlation_id"];
-      if(preloadedTracks.size() < MAX_TRACKS_PRELOAD){
+      if (preloadedTracks.size() < MAX_TRACKS_PRELOAD) {
         queueNextTrack(preloadedTracks.size());
       }
-      };
+    };
     // Execute the request
-    ctx->session->execute(
-      MercurySession::RequestType::GET, requestUrl, responseHandler);
+    ctx->session->execute(MercurySession::RequestType::GET, requestUrl,
+                          responseHandler);
   }
 }
 
 void TrackQueue::resolveAutoplay() {
-  if(!this->playbackState->innerFrame.state.context_uri) return;
-  std::string requestUrl = string_format(
-    "hm://autoplay-enabled/query?uri=%s",
-    this->playbackState->innerFrame.state.context_uri);
+  if (!this->playbackState->innerFrame.state.context_uri)
+    return;
+  std::string requestUrl =
+      string_format("hm://autoplay-enabled/query?uri=%s",
+                    this->playbackState->innerFrame.state.context_uri);
   auto responseHandler = [this](MercurySession::Response& res) {
-    if(res.parts.size()){
-    loadRadio(std::string(res.parts[0].begin(), res.parts[0].end()));
+    if (res.parts.size()) {
+      loadRadio(std::string(res.parts[0].begin(), res.parts[0].end()));
     }
   };
   // Execute the request
-  ctx->session->execute(
-    MercurySession::RequestType::GET, requestUrl, responseHandler);
+  ctx->session->execute(MercurySession::RequestType::GET, requestUrl,
+                        responseHandler);
 }
 
-void TrackQueue::resolveContext() {   
-  std::scoped_lock lock(tracksMutex); 
-  std::string requestUrl = string_format(
-    "hm://context-resolve/v1/%s",
-    this->playbackState->innerFrame.state.context_uri);
-  auto responseHandler = [this](MercurySession::Response& res) {  
+void TrackQueue::resolveContext() {
+  std::scoped_lock lock(tracksMutex);
+  std::string requestUrl =
+      string_format("hm://context-resolve/v1/%s",
+                    this->playbackState->innerFrame.state.context_uri);
+  auto responseHandler = [this](MercurySession::Response& res) {
     std::scoped_lock lock(tracksMutex);
     auto jsonResult = nlohmann::json::parse(res.parts[0]);
     //do nothing if last track is the same as last track in currentTracks
-    for(auto pages_itr:jsonResult["pages"]) {
+    for (auto pages_itr : jsonResult["pages"]) {
       TrackReference _ref;
       int32_t front = 0;
-      if(pages_itr.find("tracks")==pages_itr.end())continue;
-      if(this->playbackState->innerFrame.state.shuffle) {
+      if (pages_itr.find("tracks") == pages_itr.end())
+        continue;
+      if (this->playbackState->innerFrame.state.shuffle) {
         std::vector<int32_t> new_alt_index;
         std::vector<TrackReference> alt_tracks;
-        for(int i = 0; i < pages_itr["tracks"].size(); i++)
+        for (int i = 0; i < pages_itr["tracks"].size(); i++)
           new_alt_index.push_back(i);
         //not written yet
-        for(auto itr:pages_itr["tracks"]) {
+        for (auto itr : pages_itr["tracks"]) {
           _ref = TrackReference(itr["uri"]);
           auto currentTracksIter =
-            std::find(currentTracks.begin(), currentTracks.end(), _ref);
-          if(currentTracksIter != currentTracks.end()) {
-            int32_t old_index = std::distance(currentTracks.begin(), currentTracksIter);
+              std::find(currentTracks.begin(), currentTracks.end(), _ref);
+          if (currentTracksIter != currentTracks.end()) {
+            int32_t old_index =
+                std::distance(currentTracks.begin(), currentTracksIter);
             new_alt_index[front] = new_alt_index[alt_index[old_index]];
             new_alt_index[alt_index[old_index]] = front;
             alt_index[old_index] = -1;
@@ -587,52 +601,55 @@ void TrackQueue::resolveContext() {
           front++;
         }
         // in case of smartshuffle, we currently just put the few already recieved "smart-tracks" in order and reshuffle the whole playlist
-        for(size_t i = 0; i < alt_index.size(); i++ ) {
-          if(alt_index[i] >= 0) {
+        for (size_t i = 0; i < alt_index.size(); i++) {
+          if (alt_index[i] >= 0) {
             new_alt_index.push_back(new_alt_index[alt_index[i]]);
             new_alt_index[alt_index[i]] = alt_tracks.size();
             alt_tracks.push_back(currentTracks[alt_index[i]]);
           }
         }
-        randomizeIndex(new_alt_index,currentTracks.size(),rng);
+        randomizeIndex(new_alt_index, currentTracks.size(), rng);
         alt_index = new_alt_index;
         currentTracks = alt_tracks;
       } else {
         auto altref = currentTracks.front().gid;
         uint8_t loop_pointer = 0;
-        for(auto itr:pages_itr["tracks"]){
+        for (auto itr : pages_itr["tracks"]) {
           _ref = TrackReference(itr["uri"]);
-          switch(loop_pointer){
-            case 0 :
-              if(_ref.gid==altref) {
+          switch (loop_pointer) {
+            case 0:
+              if (_ref.gid == altref) {
                 loop_pointer++;
                 altref = currentTracks.back().gid;
-                if(altref == base62Decode(pages_itr["tracks"].back()["uri"])) goto exit_loop;
+                if (altref == base62Decode(pages_itr["tracks"].back()["uri"]))
+                  goto exit_loop;
               } else {
-              //for completion of the trasklist in case of shuffle, add missing item too the front
-              currentTracks.insert(currentTracks.begin() + front, _ref);
-              front++;
+                //for completion of the trasklist in case of shuffle, add missing item too the front
+                currentTracks.insert(currentTracks.begin() + front, _ref);
+                front++;
               }
               break;
-            case 1 :
-              if(_ref.gid == altref) loop_pointer++;
+            case 1:
+              if (_ref.gid == altref)
+                loop_pointer++;
               break;
-            case 2 :
+            case 2:
               //add missing tracks to the back
               currentTracks.push_back(_ref);
               break;
             default:
               break;
-              
           }
-        } exit_loop: ;
+        }
+      exit_loop:;
         currentTracksIndex += front;
-        CSPOT_LOG(info, "Resolved context, new currentTracks-size = %i", currentTracks.size());
+        CSPOT_LOG(info, "Resolved context, new currentTracks-size = %i",
+                  currentTracks.size());
       }
     }
   };
-  ctx->session->execute(
-    MercurySession::RequestType::GET, requestUrl, responseHandler);
+  ctx->session->execute(MercurySession::RequestType::GET, requestUrl,
+                        responseHandler);
 }
 
 void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
@@ -647,14 +664,15 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
     case QueuedTrack::State::CDN_REQUIRED:
       track->stepLoadCDNUrl(accessKey);
 
-      if (track->state == QueuedTrack::State::READY) {      
-        if(!context_resolved) {
+      if (track->state == QueuedTrack::State::READY) {
+        if (!context_resolved) {
           resolveContext();
           context_resolved = true;
         }
-        if(continue_with_radio)
-          if(preloadedTracks.size() + currentTracksIndex >= currentTracks.size())
-              resolveAutoplay();
+        if (continue_with_radio)
+          if (preloadedTracks.size() + currentTracksIndex >=
+              currentTracks.size())
+            resolveAutoplay();
         if (preloadedTracks.size() < MAX_TRACKS_PRELOAD) {
           // Queue a new track to preload
           queueNextTrack(preloadedTracks.size());
@@ -669,7 +687,9 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
 
 bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   int requestedRefIndex = offset + currentTracksIndex;
-  if(playbackState->innerFrame.state.shuffle && requestedRefIndex < alt_index.size()) requestedRefIndex = alt_index[requestedRefIndex];
+  if (playbackState->innerFrame.state.shuffle &&
+      requestedRefIndex < alt_index.size())
+    requestedRefIndex = alt_index[requestedRefIndex];
 
   if (requestedRefIndex < 0 || requestedRefIndex >= currentTracks.size()) {
     return false;
@@ -693,9 +713,10 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 }
 
 void TrackQueue::prepareRepeat() {
-  if(currentTracksIndex)currentTracksIndex--;
-  preloadedTracks.push_front(std::make_shared<QueuedTrack>(
-      currentTracks[currentTracksIndex], ctx, 0));
+  if (currentTracksIndex)
+    currentTracksIndex--;
+  preloadedTracks.push_front(
+      std::make_shared<QueuedTrack>(currentTracks[currentTracksIndex], ctx, 0));
 }
 
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
@@ -760,13 +781,15 @@ bool TrackQueue::isFinished() {
 }
 
 void TrackQueue::shuffle_tracks(bool shuffleTracks) {
-  if(!shuffleTracks)currentTracksIndex = alt_index[currentTracksIndex];
+  if (!shuffleTracks)
+    currentTracksIndex = alt_index[currentTracksIndex];
   alt_index.clear();
-  for(int i = 0; i < currentTracksSize; i++) alt_index.push_back(i);
-  if(shuffleTracks) {
+  for (int i = 0; i < currentTracksSize; i++)
+    alt_index.push_back(i);
+  if (shuffleTracks) {
     alt_index[currentTracksIndex] = 0;
     alt_index[0] = currentTracksIndex;
-    randomizeIndex(alt_index,1, rng);
+    randomizeIndex(alt_index, 1, rng);
     currentTracksIndex = 0;
   }
   update_ghost_tracks();
@@ -781,7 +804,7 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
 
   if (initial) {
     // initialize new random_engine
-    rng = std::default_random_engine { rd() };
+    rng = std::default_random_engine{rd()};
     // Copy requested track list
     currentTracks = playbackState->remoteTracks;
     currentTracksIndex = playbackState->innerFrame.state.playing_track_index;
@@ -789,7 +812,8 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
 
     // Revert the alternative Index to it's inital Index structure
     alt_index.clear();
-    for(int i = 0; i < playbackState->remoteTracks.size(); i++) alt_index.push_back(i);
+    for (int i = 0; i < playbackState->remoteTracks.size(); i++)
+      alt_index.push_back(i);
 
     // Clear preloaded tracks
     preloadedTracks.clear();
@@ -806,9 +830,12 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
     playableSemaphore->give();
   } else {
     auto prevTrackIter = currentTracks.begin() + alt_index.size();
-    alt_index.insert(alt_index.begin() + currentTracksIndex + 1, alt_index.size());
-    
-    currentTracks.insert(prevTrackIter, playbackState->remoteTracks[playbackState->innerFrame.state.index + 1]);
+    alt_index.insert(alt_index.begin() + currentTracksIndex + 1,
+                     alt_index.size());
+
+    currentTracks.insert(
+        prevTrackIter,
+        playbackState->remoteTracks[playbackState->innerFrame.state.index + 1]);
 
     if (preloadedTracks[0]->loading) {
       // try to not re-load track if we are still loading it
