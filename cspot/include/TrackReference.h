@@ -5,17 +5,17 @@
 #include <string_view>
 #include <vector>
 #include "NanoPBHelper.h"
-#include "Utils.h" //for base62decode
+#include "Utils.h"  //for base62decode
 #include "pb_decode.h"
 #include "protobuf/spirc.pb.h"
 
 namespace cspot {
 struct TrackReference {
-  TrackReference();  
+  TrackReference();
   TrackReference(std::string uri, std::string context) : type(Type::TRACK) {
     this->gid = base62Decode(uri);
     //this->uri=uri;
-    this->context=context;
+    this->context = context;
   }
   TrackReference(std::string uri) : type(Type::TRACK) {
     gid = base62Decode(uri);
