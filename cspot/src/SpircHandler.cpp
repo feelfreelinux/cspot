@@ -82,7 +82,9 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 void SpircHandler::notifyAudioEnded() {
   playbackState->updatePositionMs(0);
   notify();
+#ifndef CONFIG_BELL_NOCODEC
   trackPlayer->resetState(true);
+#endif
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -91,18 +93,8 @@ void SpircHandler::notifyAudioReachedPlayback() {
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
 
-  // Do not execute when meta is already updated
-  if (trackQueue->notifyPending) {
-    trackQueue->notifyPending = false;
-
-    playbackState->updatePositionMs(currentTrack->requestedPosition);
-
-    // Reset position in queued track
-    currentTrack->requestedPosition = 0;
-  } else {
-    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
-    playbackState->updatePositionMs(0);
-
+  if (!playbackState->innerFrame.state.repeat) {
+    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT);
     // we moved to next track, re-acquire currentTrack again
     currentTrack = trackQueue->consumeTrack(nullptr, offset);
   }
@@ -227,11 +219,17 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
     }
     case MessageType_kMessageTypeShuffle: {
       CSPOT_LOG(debug, "Got shuffle frame");
+      playbackState->innerFrame.state.shuffle =
+          playbackState->remoteFrame.state.shuffle;
+      trackQueue->shuffle_tracks(playbackState->remoteFrame.state.shuffle);
       this->notify();
       break;
     }
     case MessageType_kMessageTypeRepeat: {
       CSPOT_LOG(debug, "Got repeat frame");
+      playbackState->innerFrame.state.repeat =
+          playbackState->remoteFrame.state.repeat;
+      trackQueue->prepareRepeat();
       this->notify();
       break;
     }

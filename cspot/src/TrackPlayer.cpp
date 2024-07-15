@@ -5,8 +5,9 @@
 #include <type_traits>  // for remove_extent_t
 #include <vector>       // for vector, vector<>::value_type
 
-#include "BellLogger.h"        // for AbstractLogger
-#include "BellUtils.h"         // for BELL_SLEEP_MS
+#include "BellLogger.h"  // for AbstractLogger
+#include "BellUtils.h"   // for BELL_SLEEP_MS
+#include "CSpotContext.h"
 #include "Logger.h"            // for CSPOT_LOG
 #include "Packet.h"            // for cspot
 #include "TrackQueue.h"        // for CDNTrackStream, CDNTrackStream::TrackInfo
@@ -88,8 +89,13 @@ void TrackPlayer::start() {
     startTask();
     this->ctx->playbackMetrics->start_reason = PlaybackMetrics::REMOTE;
     this->ctx->playbackMetrics->start_source = "unknown";
+<<<<<<< HEAD
   }
   else this->ctx->playbackMetrics->end_reason = PlaybackMetrics::END_PLAY;
+=======
+  } else
+    this->ctx->playbackMetrics->end_reason = PlaybackMetrics::END_PLAY;
+>>>>>>> master
 }
 
 void TrackPlayer::stop() {
@@ -124,9 +130,14 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
+<<<<<<< HEAD
   std::shared_ptr<QueuedTrack> track= nullptr, newTrack = nullptr;
+=======
+  std::shared_ptr<QueuedTrack> track = nullptr, newTrack = nullptr;
+>>>>>>> master
 
   int trackOffset = 0;
+  size_t tracksPlayed = 0;
   bool eof = false;
   bool endOfQueueReached = false;
 
@@ -156,6 +167,7 @@ void TrackPlayer::runTask() {
     }
 
     newTrack = trackQueue->consumeTrack(track, trackOffset);
+    this->trackQueue->update_ghost_tracks(trackOffset);
 
     if (newTrack == nullptr) {
       if (trackOffset == -1) {
@@ -208,33 +220,35 @@ void TrackPlayer::runTask() {
         startPaused = false;
       }
 
+      track->trackMetrics->track_size = currentTrackStream->getSize();
       int32_t r =
           ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
 #else
       size_t start_offset = 0;
       size_t write_offset = 0;
       while (!start_offset) {
-        size_t ret = this->currentTrackStream->readBytes(&pcmBuffer[0], pcmBuffer.size());
+        size_t ret = this->currentTrackStream->readBytes(&pcmBuffer[0],
+                                                         pcmBuffer.size());
         size_t written = 0;
         size_t toWrite = ret;
         while (toWrite) {
-          written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-            toWrite, track->identifier, 0);
+          written = dataCallback(pcmBuffer.data() + (ret - toWrite), toWrite,
+                                 tracksPlayed, 0);
           if (written == 0) {
             BELL_SLEEP_MS(1000);
           }
           toWrite -= written;
         }
         track->written_bytes += ret;
-        start_offset = seekable_callback(track->identifier);       
-        if(this->spaces_available(track->identifier)<pcmBuffer.size()){
-              BELL_SLEEP_MS(50);
+        start_offset = seekable_callback(tracksPlayed);
+        if (this->spaces_available(tracksPlayed) < pcmBuffer.size()) {
+          BELL_SLEEP_MS(50);
           continue;
         }
-        if(ret == 0) printf("re == null");
       }
-      track->trackMetrics->track_size = currentTrackStream->getSize();
-      float duration_lambda = 1.0 * (currentTrackStream->getSize() - start_offset) / track->trackInfo.duration;
+      float duration_lambda = 1.0 *
+                              (currentTrackStream->getSize() - start_offset) /
+                              track->trackInfo.duration;
 #endif
       if (pendingSeekPositionMs > 0) {
         track->requestedPosition = pendingSeekPositionMs;
@@ -242,12 +256,14 @@ void TrackPlayer::runTask() {
         pendingSeekPositionMs = 0;
 #endif
       }
+      ctx->playbackMetrics->end_reason = PlaybackMetrics::REMOTE;
 
       if (track->requestedPosition > 0) {
 #ifndef CONFIG_BELL_NOCODEC
         VORBIS_SEEK(&vorbisFile, track->requestedPosition);
 #else
-        size_t seekPosition = track->requestedPosition * duration_lambda + start_offset;
+        size_t seekPosition =
+            track->requestedPosition * duration_lambda + start_offset;
         currentTrackStream->seek(seekPosition);
         skipped = true;
 #endif
@@ -256,6 +272,8 @@ void TrackPlayer::runTask() {
       eof = false;
       track->loading = true;
       track->trackMetrics->startTrack(track->requestedPosition);
+      //in case of a repeatedtrack, set requested position to 0
+      track->requestedPosition = 0;
 
       CSPOT_LOG(info, "Playing");
 
@@ -270,7 +288,7 @@ void TrackPlayer::runTask() {
 #else
           seekPosition = seekPosition * duration_lambda + start_offset;
           currentTrackStream->seek(seekPosition);
-      track->trackMetrics->newPosition(pendingSeekPositionMs);
+          track->trackMetrics->newPosition(pendingSeekPositionMs);
           skipped = true;
 #endif
 
@@ -278,13 +296,13 @@ void TrackPlayer::runTask() {
           pendingSeekPositionMs = 0;
         }
 
-
         long ret =
 #ifdef CONFIG_BELL_NOCODEC
-          this->currentTrackStream->readBytes(&pcmBuffer[0], pcmBuffer.size());
+            this->currentTrackStream->readBytes(&pcmBuffer[0],
+                                                pcmBuffer.size());
 #else
-          VORBIS_READ(&vorbisFile, (char*)&pcmBuffer[0],
-            pcmBuffer.size(), &currentSection);
+            VORBIS_READ(&vorbisFile, (char*)&pcmBuffer[0], pcmBuffer.size(),
+                        &currentSection);
 #endif
 
         if (ret == 0) {
@@ -312,11 +330,20 @@ void TrackPlayer::runTask() {
                 }
 #endif
                 written = dataCallback(pcmBuffer.data() + (ret - toWrite),
+<<<<<<< HEAD
                                        toWrite, track->identifier
                                        #ifdef CONFIG_BELL_NOCODEC
                                        ,skipped
                                        #endif
                                        );
+=======
+                                       toWrite, tracksPlayed
+#ifdef CONFIG_BELL_NOCODEC
+                                       ,
+                                       skipped
+#endif
+                );
+>>>>>>> master
               }
               if (written == 0) {
                 BELL_SLEEP_MS(50);
@@ -327,6 +354,10 @@ void TrackPlayer::runTask() {
           }
         }
       }
+<<<<<<< HEAD
+=======
+      tracksPlayed++;
+>>>>>>> master
 #ifndef CONFIG_BELL_NOCODEC
       ov_clear(&vorbisFile);
 #endif
@@ -337,7 +368,12 @@ void TrackPlayer::runTask() {
       currentTrackStream = nullptr;
       track->loading = false;
       track->trackMetrics->endTrack();
+<<<<<<< HEAD
       std::vector <uint8_t> result = this->ctx->playbackMetrics->sendEvent(track);
+=======
+      std::vector<uint8_t> result =
+          this->ctx->playbackMetrics->sendEvent(track);
+>>>>>>> master
     }
 
     if (eof) {
@@ -391,10 +427,21 @@ long TrackPlayer::_vorbisTell() {
 }
 #endif
 
+<<<<<<< HEAD
 void TrackPlayer::setDataCallback(DataCallback callback, SeekableCallback seekable_callback, SeekableCallback spaces_available ) {
   this->dataCallback = callback;
   #ifdef CONFIG_BELL_NOCODEC
   this->seekable_callback = seekable_callback;
   this->spaces_available = spaces_available;
   #endif
+=======
+void TrackPlayer::setDataCallback(DataCallback callback,
+                                  SeekableCallback seekable_callback,
+                                  SeekableCallback spaces_available) {
+  this->dataCallback = callback;
+#ifdef CONFIG_BELL_NOCODEC
+  this->seekable_callback = seekable_callback;
+  this->spaces_available = spaces_available;
+#endif
+>>>>>>> master
 }

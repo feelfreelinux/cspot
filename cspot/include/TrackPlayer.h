@@ -36,16 +36,16 @@ class TrackPlayer : bell::Task {
   // Callback types
   typedef std::function<void(std::shared_ptr<QueuedTrack>, bool)>
       TrackLoadedCallback;
-  typedef std::function<size_t(uint8_t*, size_t, std::string_view  
+  typedef std::function<size_t(uint8_t*, size_t, size_t
 
 #ifdef CONFIG_BELL_NOCODEC
-                                       , bool
+                               ,
+                               bool
 #endif
-                                       )>
+                               )>
       DataCallback;
   typedef std::function<void()> EOFCallback;
-  typedef std::function<size_t(std::string_view)> SeekableCallback;
-
+  typedef std::function<size_t(size_t)> SeekableCallback;
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,
               std::shared_ptr<cspot::TrackQueue> trackQueue,
@@ -54,7 +54,9 @@ class TrackPlayer : bell::Task {
 
   void loadTrackFromRef(TrackReference& ref, size_t playbackMs,
                         bool startAutomatically);
-  void setDataCallback(DataCallback callback, SeekableCallback seekable_callback = nullptr, SeekableCallback spaces_available = nullptr);
+  void setDataCallback(DataCallback callback,
+                       SeekableCallback seekable_callback = nullptr,
+                       SeekableCallback spaces_available = nullptr);
 
   // CDNTrackStream::TrackInfo getCurrentTrackInfo();
   void seekMs(size_t ms);
