@@ -1,7 +1,7 @@
 #include "EventManager.h"
 #include "CSpotContext.h"  // for Context::ConfigState, Context (ptr o...
 #include "Logger.h"        // for CSPOT_LOG
-#include "TrackQueue.h"    
+#include "TrackQueue.h"
 
 using namespace cspot;
 

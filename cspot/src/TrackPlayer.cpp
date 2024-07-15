@@ -321,20 +321,12 @@ void TrackPlayer::runTask() {
                 }
 #endif
                 written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-<<<<<<< HEAD
-                                       toWrite, track->identifier
-                                       #ifdef CONFIG_BELL_NOCODEC
-                                       ,skipped
-                                       #endif
-                                       );
-=======
                                        toWrite, tracksPlayed
 #ifdef CONFIG_BELL_NOCODEC
                                        ,
                                        skipped
 #endif
                 );
->>>>>>> master
               }
               if (written == 0) {
                 BELL_SLEEP_MS(50);
@@ -345,10 +337,7 @@ void TrackPlayer::runTask() {
           }
         }
       }
-<<<<<<< HEAD
-=======
       tracksPlayed++;
->>>>>>> master
 #ifndef CONFIG_BELL_NOCODEC
       ov_clear(&vorbisFile);
 #endif
@@ -359,12 +348,8 @@ void TrackPlayer::runTask() {
       currentTrackStream = nullptr;
       track->loading = false;
       track->trackMetrics->endTrack();
-<<<<<<< HEAD
-      std::vector <uint8_t> result = this->ctx->playbackMetrics->sendEvent(track);
-=======
       std::vector<uint8_t> result =
           this->ctx->playbackMetrics->sendEvent(track);
->>>>>>> master
     }
 
     if (eof) {
@@ -418,14 +403,6 @@ long TrackPlayer::_vorbisTell() {
 }
 #endif
 
-<<<<<<< HEAD
-void TrackPlayer::setDataCallback(DataCallback callback, SeekableCallback seekable_callback, SeekableCallback spaces_available ) {
-  this->dataCallback = callback;
-  #ifdef CONFIG_BELL_NOCODEC
-  this->seekable_callback = seekable_callback;
-  this->spaces_available = spaces_available;
-  #endif
-=======
 void TrackPlayer::setDataCallback(DataCallback callback,
                                   SeekableCallback seekable_callback,
                                   SeekableCallback spaces_available) {
@@ -434,5 +411,4 @@ void TrackPlayer::setDataCallback(DataCallback callback,
   this->seekable_callback = seekable_callback;
   this->spaces_available = spaces_available;
 #endif
->>>>>>> master
 }

@@ -10,7 +10,6 @@
 #include "BellTask.h"
 #include "EventManager.h"  // for TrackMetrics
 #include "PlaybackState.h"
-#include "EventManager.h" // for TrackMetrics
 #include "TrackReference.h"
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
