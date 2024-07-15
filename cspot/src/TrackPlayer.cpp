@@ -89,13 +89,8 @@ void TrackPlayer::start() {
     startTask();
     this->ctx->playbackMetrics->start_reason = PlaybackMetrics::REMOTE;
     this->ctx->playbackMetrics->start_source = "unknown";
-<<<<<<< HEAD
-  }
-  else this->ctx->playbackMetrics->end_reason = PlaybackMetrics::END_PLAY;
-=======
   } else
     this->ctx->playbackMetrics->end_reason = PlaybackMetrics::END_PLAY;
->>>>>>> master
 }
 
 void TrackPlayer::stop() {
@@ -130,11 +125,7 @@ void TrackPlayer::seekMs(size_t ms) {
 void TrackPlayer::runTask() {
   std::scoped_lock lock(runningMutex);
 
-<<<<<<< HEAD
-  std::shared_ptr<QueuedTrack> track= nullptr, newTrack = nullptr;
-=======
   std::shared_ptr<QueuedTrack> track = nullptr, newTrack = nullptr;
->>>>>>> master
 
   int trackOffset = 0;
   size_t tracksPlayed = 0;
