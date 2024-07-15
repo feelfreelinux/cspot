@@ -12,7 +12,6 @@
 #include "Packet.h"            // for cspot
 #include "TrackQueue.h"        // for CDNTrackStream, CDNTrackStream::TrackInfo
 #include "WrappedSemaphore.h"  // for WrappedSemaphore
-#include "CSpotContext.h"
 
 #ifndef CONFIG_BELL_NOCODEC
 #ifdef BELL_VORBIS_FLOAT
