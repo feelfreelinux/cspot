@@ -33,7 +33,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
 #endif
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this](uint8_t* data, size_t bytes, std::string_view trackId) {
+      [this](uint8_t* data, size_t bytes, size_t trackId) {
 
         return this->centralAudioBuffer->writePCM(data, bytes, trackId);
       });
