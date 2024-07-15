@@ -26,19 +26,16 @@ EspPlayer::EspPlayer(std::unique_ptr<AudioSink> sink,
 
   this->circularBuffer = std::make_shared<bell::CircularBuffer>(1024 * 128);
 
-  auto hashFunc = std::hash<std::string_view>();
-
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
-        this->feedData(data, bytes, hash);
+      [this](uint8_t* data, size_t bytes, size_t trackId) {
+        this->feedData(data, bytes, trackId);
         return bytes;
       });
 
   this->isPaused = false;
 
   this->handler->setEventHandler(
-      [this, &hashFunc](std::unique_ptr<cspot::SpircHandler::Event> event) {
+      [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {
@@ -103,7 +100,6 @@ void EspPlayer::runTask() {
       size_t read = this->circularBuffer->read(outBuf.data(), outBuf.size());
       if (this->pauseRequested) {
         this->pauseRequested = false;
-        std::cout << "Pause requested!" << std::endl;
         this->isPaused = true;
       }
 

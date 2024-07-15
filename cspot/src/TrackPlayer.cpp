@@ -127,6 +127,7 @@ void TrackPlayer::runTask() {
   std::shared_ptr<QueuedTrack> track= nullptr, newTrack = nullptr;
 
   int trackOffset = 0;
+  size_t tracksPlayed = 0;
   bool eof = false;
   bool endOfQueueReached = false;
 
@@ -156,6 +157,7 @@ void TrackPlayer::runTask() {
     }
 
     newTrack = trackQueue->consumeTrack(track, trackOffset);
+    this->trackQueue->update_ghost_tracks(trackOffset);
 
     if (newTrack == nullptr) {
       if (trackOffset == -1) {
@@ -208,6 +210,7 @@ void TrackPlayer::runTask() {
         startPaused = false;
       }
 
+      track->trackMetrics->track_size = currentTrackStream->getSize();
       int32_t r =
           ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
 #else
@@ -219,21 +222,19 @@ void TrackPlayer::runTask() {
         size_t toWrite = ret;
         while (toWrite) {
           written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-            toWrite, track->identifier, 0);
+            toWrite, tracksPlayed, 0);
           if (written == 0) {
             BELL_SLEEP_MS(1000);
           }
           toWrite -= written;
         }
         track->written_bytes += ret;
-        start_offset = seekable_callback(track->identifier);       
-        if(this->spaces_available(track->identifier)<pcmBuffer.size()){
+        start_offset = seekable_callback(tracksPlayed);       
+        if(this->spaces_available(tracksPlayed)<pcmBuffer.size()){
               BELL_SLEEP_MS(50);
           continue;
         }
-        if(ret == 0) printf("re == null");
       }
-      track->trackMetrics->track_size = currentTrackStream->getSize();
       float duration_lambda = 1.0 * (currentTrackStream->getSize() - start_offset) / track->trackInfo.duration;
 #endif
       if (pendingSeekPositionMs > 0) {
@@ -242,6 +243,7 @@ void TrackPlayer::runTask() {
         pendingSeekPositionMs = 0;
 #endif
       }
+      ctx->playbackMetrics->end_reason = PlaybackMetrics::REMOTE;
 
       if (track->requestedPosition > 0) {
 #ifndef CONFIG_BELL_NOCODEC
@@ -256,6 +258,8 @@ void TrackPlayer::runTask() {
       eof = false;
       track->loading = true;
       track->trackMetrics->startTrack(track->requestedPosition);
+      //in case of a repeatedtrack, set requested position to 0
+      track->requestedPosition = 0;
 
       CSPOT_LOG(info, "Playing");
 
@@ -312,7 +316,7 @@ void TrackPlayer::runTask() {
                 }
 #endif
                 written = dataCallback(pcmBuffer.data() + (ret - toWrite),
-                                       toWrite, track->identifier
+                                       toWrite, tracksPlayed
                                        #ifdef CONFIG_BELL_NOCODEC
                                        ,skipped
                                        #endif
@@ -327,6 +331,7 @@ void TrackPlayer::runTask() {
           }
         }
       }
+      tracksPlayed++;
 #ifndef CONFIG_BELL_NOCODEC
       ov_clear(&vorbisFile);
 #endif

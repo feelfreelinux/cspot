@@ -173,6 +173,9 @@ std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ) {
   innerFrame.has_device_state = true;
   innerFrame.has_typ = true;
   innerFrame.has_state_update_id = true;
+  innerFrame.state.playing_track_index = innerFrame.state.index;
+  innerFrame.state.has_playing_track_index = true;
+  innerFrame.state.has_index = true;
 
   this->seqNum += 1;
 

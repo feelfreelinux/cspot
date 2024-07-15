@@ -32,13 +32,10 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
 #endif
 
-  auto hashFunc = std::hash<std::string_view>();
-
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
+      [this](uint8_t* data, size_t bytes, std::string_view trackId) {
 
-        return this->centralAudioBuffer->writePCM(data, bytes, hash);
+        return this->centralAudioBuffer->writePCM(data, bytes, trackId);
       });
 
   this->isPaused = false;

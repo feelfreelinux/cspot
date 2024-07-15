@@ -1,28 +1,18 @@
 #include "TrackReference.h"
 
 #include "NanoPBExtensions.h"
-#include "Utils.h"
 #include "protobuf/spirc.pb.h"
 
 using namespace cspot;
 
-static constexpr auto base62Alphabet =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static std::string empty_string ="";
 
 TrackReference::TrackReference() : type(Type::TRACK) {}
 
 void TrackReference::decodeURI() {
   if (gid.size() == 0) {
     // Episode GID is being fetched via base62 encoded URI
-    auto idString = uri.substr(uri.find_last_of(":") + 1, uri.size());
-    gid = {0};
-
-    std::string_view alphabet(base62Alphabet);
-    for (int x = 0; x < idString.size(); x++) {
-      size_t d = alphabet.find(idString[x]);
-      gid = bigNumMultiply(gid, 62);
-      gid = bigNumAdd(gid, d);
-    }
+    gid = base62Decode(uri);
 
     if (uri.find("episode:") != std::string::npos) {
       type = Type::EPISODE;
@@ -53,7 +43,7 @@ bool TrackReference::pbEncodeTrackList(pb_ostream_t* stream,
 
     msg.gid.arg = &trackRef.gid;
     msg.uri.arg = &trackRef.uri;
-    msg.context.arg = &trackRef.context;
+    msg.context.arg = &empty_string;//&trackRef.context;
     msg.queued.arg = &trackRef.queued;
 
     if (!pb_encode_submessage(stream, TrackRef_fields, &msg)) {

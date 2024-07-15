@@ -5,6 +5,7 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <random> //for random_device and default_random_engine
 
 #include "BellTask.h"
 #include "PlaybackState.h"
@@ -12,6 +13,11 @@
 #include "TrackReference.h"
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
+
+#define inner_tracks_treshhold 10
+#define SEND_OLD_TRACKS 2
+#define SEND_FUTURE_TRACKS 2
+#define GET_RADIO_TRACKS 10
 
 namespace bell {
 class WrappedSemaphore;
@@ -96,11 +102,15 @@ class TrackQueue : public bell::Task {
   enum class SkipDirection { NEXT, PREV };
 
   std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
+  std::shared_ptr<PlaybackState> playbackState;
   std::atomic<bool> notifyPending = false;
 
   void runTask() override;
   void stopTask();
 
+  void prepareRepeat();
+  void shuffle_tracks(bool shuffleTracks);
+  void update_ghost_tracks(int16_t offset = 0);
   bool hasTracks();
   bool isFinished();
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
@@ -113,12 +123,13 @@ class TrackQueue : public bell::Task {
   static const int MAX_TRACKS_PRELOAD = 3;
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
-  std::shared_ptr<PlaybackState> playbackState;
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
+  std::vector<int32_t>alt_index;
   std::vector<TrackReference> currentTracks;
+  std::vector<TrackReference> ghostTracks;
   std::mutex tracksMutex, runningMutex;
 
   // PB data
@@ -126,12 +137,22 @@ class TrackQueue : public bell::Task {
   Episode pbEpisode;
 
   std::string accessKey;
+  uint32_t radio_offset = 0;
 
   int16_t currentTracksIndex = -1;
+  int16_t currentTracksSize = 0;
 
   bool isRunning = false;
+  bool context_resolved = false;
+  bool continue_with_radio = true;
 
+  std::random_device rd;
+  std::default_random_engine rng;
+
+  void resolveAutoplay();
+  void resolveContext();
   void processTrack(std::shared_ptr<QueuedTrack> track);
   bool queueNextTrack(int offset = 0, uint32_t positionMs = 0);
+  void loadRadio(std::string req);
 };
 }  // namespace cspot
