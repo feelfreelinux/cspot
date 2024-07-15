@@ -502,8 +502,8 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
     end = currentTracks.size();
   for (uint16_t i = 0; i < end - index; i++) {
     ghostTracks.push_back(
-        currentTracks[(index + i) >= currentTracksSize ? index + i
-                                                       : alt_index[index + i]]);
+        currentTracks[(index + i) >= alt_index.size() ? index + i
+                                                      : alt_index[index + i]]);
   }
 }
 
@@ -611,6 +611,7 @@ void TrackQueue::resolveContext() {
         randomizeIndex(new_alt_index, currentTracks.size(), rng);
         alt_index = new_alt_index;
         currentTracks = alt_tracks;
+        currentTracksSize = currentTracks.size();
       } else {
         auto altref = currentTracks.front().gid;
         uint8_t loop_pointer = 0;
@@ -846,7 +847,6 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
       // Push a song on the preloaded queue
       CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
       queueNextTrack(1);
-
       cleared = false;
     } else {
       // Clear preloaded tracks
