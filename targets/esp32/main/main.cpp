@@ -11,7 +11,6 @@
 #include "BellTask.h"
 #include "civetweb.h"
 #include "esp_event.h"
-#include "esp_log.h"
 #include "esp_spiffs.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
@@ -32,6 +31,7 @@
 
 #include "BellUtils.h"
 #include "Logger.h"
+#include "esp_log.h"
 
 #define DEVICE_NAME CONFIG_CSPOT_DEVICE_NAME
 
@@ -241,11 +241,12 @@ void init_spiffs() {
 
   if (ret != ESP_OK) {
     if (ret == ESP_FAIL) {
-      ESP_LOGE(TAG, "Failed to mount or format filesystem");
+      ESP_LOGE("SPIFFS", "Failed to mount or format filesystem");
     } else if (ret == ESP_ERR_NOT_FOUND) {
-      ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+      ESP_LOGE("SPIFFS", "Failed to find SPIFFS partition");
     } else {
-      ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+      ESP_LOGE("SPIFFS", "Failed to initialize SPIFFS (%s)",
+                esp_err_to_name(ret));
     }
     return;
   }
@@ -253,10 +254,10 @@ void init_spiffs() {
   size_t total = 0, used = 0;
   ret = esp_spiffs_info(conf.partition_label, &total, &used);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)",
-             esp_err_to_name(ret));
+    ESP_LOGE("SPIFFS", "Failed to get SPIFFS partition information (%s)",
+              esp_err_to_name(ret));
   } else {
-    ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    CSPOT_LOG(info, "Partition size: total: %d, used: %d", total, used);
   }
 }
 
@@ -283,7 +284,8 @@ void app_main(void) {
 
   // statusLed->setStatus(StatusLed::WIFI_CONNECTED);
 
-  ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
+  
+  ESP_LOGI("MAIN", "Connected to AP, start spotify receiver");
   //auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 12*1024, NULL, 5, NULL, 1);
   /*auto taskHandle = */
   bell::setDefaultLogger();

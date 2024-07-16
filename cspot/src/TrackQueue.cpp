@@ -714,8 +714,7 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 void TrackQueue::prepareRepeat() {
   if (currentTracksIndex > 0)
     preloadedTracks.clear();
-  preloadedTracks.push_front(
-      std::make_shared<QueuedTrack>(currentTracks[currentTracksIndex], ctx, 0));
+  queueNextTrack(0);
 }
 
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
