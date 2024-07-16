@@ -82,9 +82,27 @@ void SpircHandler::loadTrackFromURI(const std::string& uri) {}
 void SpircHandler::notifyAudioEnded() {
   playbackState->updatePositionMs(0);
   notify();
-#ifndef CONFIG_BELL_NOCODEC
   trackPlayer->resetState(true);
-#endif
+}
+void SpircHandler::notifyAudioReachedPlaybackEnd() {
+  int offset = 0;
+
+  // get HEAD track
+  auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
+
+  if (trackQueue->notifyPending) {
+    trackQueue->notifyPending = false;
+
+    playbackState->updatePositionMs(currentTrack->requestedPosition);
+
+    // Reset position in queued track
+    currentTrack->requestedPosition = 0;
+  } else if (!playbackState->innerFrame.state.repeat) {
+    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
+    // we moved to next track, re-acquire currentTrack again
+    currentTrack = trackQueue->consumeTrack(nullptr, offset);
+  }
+  playbackState->updatePositionMs(0);
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -92,13 +110,6 @@ void SpircHandler::notifyAudioReachedPlayback() {
 
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
-
-  if (!playbackState->innerFrame.state.repeat) {
-    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT);
-    // we moved to next track, re-acquire currentTrack again
-    currentTrack = trackQueue->consumeTrack(nullptr, offset);
-  }
-
   this->notify();
 
   sendEvent(EventType::TRACK_INFO, currentTrack->trackInfo);

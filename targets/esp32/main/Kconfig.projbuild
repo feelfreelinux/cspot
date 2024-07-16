@@ -8,10 +8,12 @@ menu "CSPOT Configuration"
 
     choice CSPOT_SINK
         prompt "Sink Device"
-        default CSPOT_SINK_AC101
+        default CSPOT_SINK_INTERNAL
         help
             Select audio sink device
         
+        config BELL_NOCODEC
+            bool "VS1053"
         config CSPOT_SINK_INTERNAL
             bool "Built-in DAC"
         config CSPOT_SINK_AC101
@@ -28,16 +30,29 @@ menu "CSPOT Configuration"
 
     choice CSPOT_QUALITY
         prompt "Audio Quality (BPS)"
-        default CSPOT_QUALITY_320
+        default VORBIS_160
         help
             Audio quality (not used currently)
-        config CSPOT_QUALITY_320
+        config VORBIS_320
             bool "320 bps"
-        config CSPOT_QUALITY_160
+        config VORBIS_160
             bool "160 bps"
-        config CSPOT_QUALITY_96
+        config VORBIS_96
             bool "96 bps"
     endchoice
+
+    config CSPOT_AUDIO_FORMAT
+        int
+        default 0 if VORBIS_96
+        default 1 if VORBIS_160
+        default 2 if VORBIS_320
+        default 3 if MP3_256
+        default 4 if MP3_320
+        default 5 if MP3_160
+        default 6 if MP3_96
+        default 7 if MP3_160_ENC
+        default 8 if AAC_24
+        default 9 if AAC_48
 
     choice CSPOT_STATUS_LED_TYPE
         prompt "Status LED type"
