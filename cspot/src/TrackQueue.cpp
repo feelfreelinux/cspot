@@ -581,37 +581,31 @@ void TrackQueue::resolveContext() {
       if (pages_itr.find("tracks") == pages_itr.end())
         continue;
       if (this->playbackState->innerFrame.state.shuffle) {
-        std::vector<int32_t> new_alt_index;
-        std::vector<TrackReference> alt_tracks;
-        for (int i = 0; i < pages_itr["tracks"].size(); i++)
-          new_alt_index.push_back(i);
-        //not written yet
-        for (auto itr : pages_itr["tracks"]) {
-          _ref = TrackReference(itr["uri"]);
+        std::vector<int32_t> new_index = {};
+        std::vector<TrackReference> new_tracks = {};
+        for (const auto& track : pages_itr["tracks"]) {
+          new_tracks.push_back(TrackReference(track["uri"]));
+        }
+        for (const auto& itr : currentTracks) {
           auto currentTracksIter =
-              std::find(currentTracks.begin(), currentTracks.end(), _ref);
-          if (currentTracksIter != currentTracks.end()) {
+              std::find(new_tracks.begin(), new_tracks.end(), itr);
+          if (currentTracksIter != new_tracks.end()) {
             int32_t old_index =
-                std::distance(currentTracks.begin(), currentTracksIter);
-            new_alt_index[front] = new_alt_index[alt_index[old_index]];
-            new_alt_index[alt_index[old_index]] = front;
-            alt_index[old_index] = -1;
-          }
-          alt_tracks.push_back(_ref);
-          front++;
-        }
-        // in case of smartshuffle, we currently just put the few already recieved "smart-tracks" in order and reshuffle the whole playlist
-        for (size_t i = 0; i < alt_index.size(); i++) {
-          if (alt_index[i] >= 0) {
-            new_alt_index.push_back(new_alt_index[alt_index[i]]);
-            new_alt_index[alt_index[i]] = alt_tracks.size();
-            alt_tracks.push_back(currentTracks[alt_index[i]]);
+                std::distance(new_tracks.begin(), currentTracksIter);
+            new_index.push_back(old_index);
+          } else {
+            int newIndex = new_tracks.size();
+            new_tracks.push_back(itr);
+            new_index.push_back(newIndex);
           }
         }
-        randomizeIndex(new_alt_index, currentTracks.size(), rng);
-        alt_index = new_alt_index;
-        currentTracks = alt_tracks;
-        currentTracksSize = currentTracks.size();
+        for (uint32_t i = 0; i < new_index.size(); i++)
+          if (std::find(new_index.begin(), new_index.end(), i) ==
+              new_index.end())
+            new_index.push_back(i);
+        randomizeIndex(new_index, currentTracks.size(), rng);
+        alt_index = new_index;
+        currentTracks = new_tracks;
       } else {
         auto altref = currentTracks.front().gid;
         uint8_t loop_pointer = 0;
@@ -644,9 +638,13 @@ void TrackQueue::resolveContext() {
         }
       exit_loop:;
         currentTracksIndex += front;
-        CSPOT_LOG(info, "Resolved context, new currentTracks-size = %i",
-                  currentTracks.size());
+        alt_index.clear();
+        for (int32_t i = 0; i < currentTracks.size(); i++)
+          alt_index.push_back(i);
       }
+      currentTracksSize = currentTracks.size();
+      CSPOT_LOG(info, "Resolved context, new currentTracks-size = %i",
+                currentTracksSize);
     }
   };
   ctx->session->execute(MercurySession::RequestType::GET, requestUrl,
