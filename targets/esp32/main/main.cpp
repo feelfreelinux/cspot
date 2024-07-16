@@ -257,7 +257,7 @@ void init_spiffs() {
     ESP_LOGE("SPIFFS", "Failed to get SPIFFS partition information (%s)",
               esp_err_to_name(ret));
   } else {
-    CSPOT_LOG(info, "Partition size: total: %d, used: %d", total, used);
+    ESP_LOGE("SPIFFS", "Partition size: total: %d, used: %d", total, used);
   }
 }
 
