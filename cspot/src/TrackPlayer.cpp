@@ -127,7 +127,7 @@ void TrackPlayer::runTask() {
   std::shared_ptr<QueuedTrack> track = nullptr, newTrack = nullptr;
 
   int trackOffset = 0;
-  size_t tracksPlayed = 0;
+  size_t tracksPlayed = 1;
   bool eof = false;
   bool endOfQueueReached = false;
 
@@ -295,14 +295,15 @@ void TrackPlayer::runTask() {
                         &currentSection);
 #endif
 
-        if (ret == 0) {
-          CSPOT_LOG(info, "EOF");
-          // and done :)
-          eof = true;
-        } else if (ret < 0) {
+        if (ret < 0) {
           CSPOT_LOG(error, "An error has occured in the stream %d", ret);
           currentSongPlaying = false;
         } else {
+          if (ret == 0) {
+            CSPOT_LOG(info, "EOF");
+            // and done :)
+            eof = true;
+          }
           if (this->dataCallback != nullptr) {
             auto toWrite = ret;
 

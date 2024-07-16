@@ -26,17 +26,20 @@ EspPlayer::EspPlayer(std::unique_ptr<AudioSink> sink,
 
   this->circularBuffer = std::make_shared<bell::CircularBuffer>(1024 * 128);
 
-  this->handler->getTrackPlayer()->setDataCallback(
-      [this](uint8_t* data, size_t bytes, size_t trackId) {
-        this->feedData(data, bytes, trackId);
-        return bytes;
-      });
+  this->handler->getTrackPlayer()->setDataCallback([this](uint8_t* data,
+                                                          size_t bytes,
+#ifdef CONFIG_BELL_NOCODEC
+                                                          bool STORAGE_VOLATILE,
+#endif
+                                                          size_t trackId) {
+    this->feedData(data, bytes, trackId);
+    return bytes;
+  });
 
   this->isPaused = false;
 
   this->handler->setEventHandler(
       [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
-
         switch (event->eventType) {
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {
@@ -77,16 +80,19 @@ EspPlayer::EspPlayer(std::unique_ptr<AudioSink> sink,
 void EspPlayer::feedData(uint8_t* data, size_t len, size_t trackId) {
   size_t toWrite = len;
 
-  while (toWrite > 0) {
-    this->current_hash = trackId;
-    size_t written =
-        this->circularBuffer->write(data + (len - toWrite), toWrite);
-    if (written == 0) {
-      BELL_SLEEP_MS(10);
-    }
+  if (!len)
+    this->handler->notifyAudioReachedPlaybackEnd();
+  else
+    while (toWrite > 0) {
+      this->current_hash = trackId;
+      size_t written =
+          this->circularBuffer->write(data + (len - toWrite), toWrite);
+      if (written == 0) {
+        BELL_SLEEP_MS(10);
+      }
 
-    toWrite -= written;
-  }
+      toWrite -= written;
+    }
 }
 
 void EspPlayer::runTask() {
