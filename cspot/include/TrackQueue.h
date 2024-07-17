@@ -15,6 +15,9 @@
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
 
+#ifndef CONFIG_UPDATE_FUTURE_TRACKS
+#define CONFIG_UPDATE_FUTURE_TRACKS 10
+#endif
 #define inner_tracks_treshhold 10
 #define SEND_OLD_TRACKS 2
 
