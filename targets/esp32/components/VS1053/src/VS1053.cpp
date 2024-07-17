@@ -291,37 +291,37 @@ void VS1053_SINK::run_feed(size_t FILL_BUFFER_BEFORE_PLAYBACK) {
               this->sdi_send_buffer(item, itemSize);
               pos++;
             }
+            break;
+          case VS1053_TRACK::VS_TRACK_STATE::tsSoftCancel:
+            if (xStreamBufferBytesAvailable(track->dataBuffer))
+              goto tsPlaybackSeekable;
+            this->new_state(track->state,
+                            VS1053_TRACK::VS_TRACK_STATE::tsCancel);
+            [[fallthrough]];
+          case VS1053_TRACK::VS_TRACK_STATE::tsCancel:
+            free(item);
+            track->empty_feed();
+            this->cancel_track(&track->state);
+            [[fallthrough]];
+          case VS1053_TRACK::VS_TRACK_STATE::tsCancelAwait:
+            if (this->is_cancelled(&track->state, endFillByte, endFillBytes)) {}
+            break;
+          default:
+            vTaskDelay(20 / portTICK_PERIOD_MS);
+            break;
         }
-        break;
-        case VS1053_TRACK::VS_TRACK_STATE::tsSoftCancel:
-          if (xStreamBufferBytesAvailable(track->dataBuffer))
-            goto tsPlaybackSeekable;
-          this->new_state(track->state, VS1053_TRACK::VS_TRACK_STATE::tsCancel);
-          [[fallthrough]];
-        case VS1053_TRACK::VS_TRACK_STATE::tsCancel:
-          free(item);
-          track->empty_feed();
-          this->cancel_track(&track->state);
-          [[fallthrough]];
-        case VS1053_TRACK::VS_TRACK_STATE::tsCancelAwait:
-          if (this->is_cancelled(&track->state, endFillByte, endFillBytes)) {}
-          break;
-        default:
-          vTaskDelay(20 / portTICK_PERIOD_MS);
-          break;
+        if (pos >= nextReportPos) {
+          nextReportPos += this->get_track_info(pos, endFillByte, endFillBytes);
+        }
       }
-      if (pos >= nextReportPos) {
-        nextReportPos += this->get_track_info(pos, endFillByte, endFillBytes);
-      }
+      vStreamBufferDelete(track->dataBuffer);
+      track->dataBuffer = NULL;
+      tracks.pop_front();
     }
-    vStreamBufferDelete(track->dataBuffer);
-    track->dataBuffer = NULL;
-    tracks.pop_front();
+    vTaskDelay(50 / portTICK_PERIOD_MS);
   }
-  vTaskDelay(50 / portTICK_PERIOD_MS);
-}
-task_handle = NULL;
-vTaskDelete(NULL);
+  task_handle = NULL;
+  vTaskDelete(NULL);
 }
 // FEED FUNCTIONS
 
