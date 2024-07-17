@@ -228,7 +228,7 @@ void MercurySession::failAllPending() {
 std::pair<int, int64_t> MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
   auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-  uint64_t sequenceId;
+  int64_t sequenceId;
   uint8_t flag;
   if (sequenceLength == 2)
     sequenceId = ntohs(extract<int16_t>(data, 2));
@@ -242,19 +242,19 @@ std::pair<int, int64_t> MercurySession::decodeResponse(
   size_t pos = 2 + sequenceLength;
   flag = (uint8_t)data[pos];
   pos++;
-  auto parts = ntohs(extract<uint16_t>(data, pos));
+  uint16_t parts = ntohs(extract<uint16_t>(data, pos));
   pos += 2;
   auto partial = partials.find(sequenceId);
   if (partial == partials.end()) {
     CSPOT_LOG(debug,
-              "Creating new Mercury Response, seq: %llu, flags: %i, parts: %i",
+              "Creating new Mercury Response, seq: %lli, flags: %i, parts: %i",
               sequenceId, flag, parts);
     partial = this->partials.insert({sequenceId, Response()}).first;
     partial->second.parts = {};
     partial->second.fail = false;
   } else
     CSPOT_LOG(debug,
-              "Adding to Mercury Response, seq: %llu, flags: %i, parts: %i",
+              "Adding to Mercury Response, seq: %lli, flags: %i, parts: %i",
               sequenceId, flag, parts);
   uint8_t index = 0;
   while (parts) {

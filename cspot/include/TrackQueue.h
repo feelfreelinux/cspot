@@ -5,7 +5,8 @@
 #include <deque>
 #include <functional>
 #include <mutex>
-#include <random>  //for random_device and default_random_engine
+#include <random>   //for random_device and default_random_engine
+#include <utility>  // for pair
 
 #include "BellTask.h"
 #include "EventManager.h"  // for TrackMetrics
@@ -16,8 +17,6 @@
 
 #define inner_tracks_treshhold 10
 #define SEND_OLD_TRACKS 2
-#define SEND_FUTURE_TRACKS 2
-#define GET_RADIO_TRACKS 10
 
 namespace bell {
 class WrappedSemaphore;
@@ -125,6 +124,7 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
+  std::deque<std::pair<uint32_t, TrackReference>> queuedTracks;
   std::vector<int32_t> alt_index;
   std::vector<TrackReference> currentTracks;
   std::vector<TrackReference> ghostTracks;

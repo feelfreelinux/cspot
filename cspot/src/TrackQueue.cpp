@@ -494,16 +494,29 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
   else
     this->playbackState->innerFrame.state.index = currentTracksIndex + offset;
   ghostTracks.clear();
-  uint16_t index = currentTracksIndex + offset > SEND_OLD_TRACKS
-                       ? currentTracksIndex + offset - SEND_OLD_TRACKS
-                       : 0;
-  uint16_t end = currentTracksIndex + offset + SEND_FUTURE_TRACKS + 1;
-  if (end >= currentTracks.size())
-    end = currentTracks.size();
-  for (uint16_t i = 0; i < end - index; i++) {
-    ghostTracks.push_back(
-        currentTracks[(index + i) >= alt_index.size() ? index + i
-                                                      : alt_index[index + i]]);
+  //add SEND_OLD_TRACKS already played tracks
+  size_t ghostindex;
+  size_t index = currentTracksIndex + offset;
+  for (int i = 1; i <= this->playbackState->innerFrame.state.index; i++) {
+    ghostindex = index - i;
+    if (ghostindex < alt_index.size())
+      ghostindex = alt_index[ghostindex];
+    ghostTracks.push_back(currentTracks[ghostindex]);
+  }
+  if (queuedTracks.size()) {
+    if (index != queuedTracks[0].first) {
+      ghostTracks.push_back(currentTracks[index]);
+      index++;
+    }
+    for (auto track : queuedTracks)
+      ghostTracks.push_back(track.second);
+  }
+  ghostindex = index;
+  while (ghostTracks.size() < SEND_OLD_TRACKS + CONFIG_UPDATE_FUTURE_TRACKS &&
+         index < currentTracks.size()) {
+    ghostindex = index < alt_index.size() ? index : alt_index[index];
+    ghostTracks.push_back(currentTracks[ghostindex]);
+    index++;
   }
 }
 
@@ -572,6 +585,8 @@ void TrackQueue::resolveContext() {
       string_format("hm://context-resolve/v1/%s",
                     this->playbackState->innerFrame.state.context_uri);
   auto responseHandler = [this](MercurySession::Response& res) {
+    if (!res.parts.size())
+      return;
     std::scoped_lock lock(tracksMutex);
     auto jsonResult = nlohmann::json::parse(res.parts[0]);
     //do nothing if last track is the same as last track in currentTracks
@@ -686,6 +701,21 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
 
 bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   int requestedRefIndex = offset + currentTracksIndex;
+  if (queuedTracks.size()) {
+    for (auto track : queuedTracks) {
+      if (preloadedTracks.size() >= MAX_TRACKS_PRELOAD)
+        return true;
+      for (auto loaded_track : preloadedTracks) {
+        if (track.second.gid == loaded_track->ref.gid)
+          goto loadedTrackAlready;
+      }
+      preloadedTracks.push_back(
+          std::make_shared<QueuedTrack>(track.second, ctx, 0));
+    loadedTrackAlready:;
+    }
+    if (preloadedTracks.size() >= MAX_TRACKS_PRELOAD)
+      return true;
+  }
   if (playbackState->innerFrame.state.shuffle &&
       requestedRefIndex < alt_index.size())
     requestedRefIndex = alt_index[requestedRefIndex];
@@ -736,13 +766,37 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
     }
   } else {
     if (currentTracks.size() > currentTracksIndex + 1) {
-      preloadedTracks.pop_front();
-
-      if (!queueNextTrack(preloadedTracks.size() + 1)) {
-        CSPOT_LOG(info, "Failed to queue next track");
+      if (queuedTracks.size() > 0) {
+        if (currentTracksIndex == queuedTracks[0].first) {
+          queuedTracks.pop_front();
+          preloadedTracks.pop_front();
+          if (queuedTracks.size() <= 0) {
+            currentTracksIndex--;
+            queueNextTrack(1);
+            currentTracksIndex++;
+          }
+        } else {
+          preloadedTracks.pop_front();
+          currentTracksIndex++;
+        }
+        for (auto track : queuedTracks) {
+          if (preloadedTracks.size() >= MAX_TRACKS_PRELOAD)
+            break;
+          for (auto loaded_track : preloadedTracks) {
+            if (track.second.gid == loaded_track->ref.gid)
+              goto loadedTrackAlready;
+          }
+          preloadedTracks.push_back(
+              std::make_shared<QueuedTrack>(track.second, ctx, 0));
+        loadedTrackAlready:;
+        }
+      } else {
+        preloadedTracks.pop_front();
+        if (!queueNextTrack(preloadedTracks.size() + 1)) {
+          CSPOT_LOG(info, "Failed to queue next track");
+        }
+        currentTracksIndex++;
       }
-
-      currentTracksIndex++;
     } else {
       skipped = false;
     }
@@ -773,6 +827,7 @@ bool TrackQueue::isFinished() {
 }
 
 void TrackQueue::shuffle_tracks(bool shuffleTracks) {
+  std::scoped_lock lock(tracksMutex);
   if (!shuffleTracks)
     currentTracksIndex = alt_index[currentTracksIndex];
   alt_index.clear();
@@ -821,32 +876,14 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
 
     playableSemaphore->give();
   } else {
-    auto prevTrackIter = currentTracks.begin() + alt_index.size();
-    alt_index.insert(alt_index.begin() + currentTracksIndex + 1,
-                     alt_index.size());
-
-    currentTracks.insert(
-        prevTrackIter,
-        playbackState->remoteTracks[playbackState->innerFrame.state.index + 1]);
-
-    if (preloadedTracks[0]->loading) {
-      // try to not re-load track if we are still loading it
-
-      // remove everything except first track
-      preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
-
-      // Push a song on the preloaded queue
-      CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
-      queueNextTrack(1);
-      cleared = false;
-    } else {
-      // Clear preloaded tracks
-      preloadedTracks.clear();
-
-      // Push a song on the preloaded queue
-      CSPOT_LOG(info, "Re-loading current track");
-      queueNextTrack(0, requestedPosition);
-    }
+    std::cout << "insert" << std::endl;
+    queuedTracks.push_back(std::make_pair(
+        currentTracksIndex + 1,
+        playbackState->remoteTracks[playbackState->innerFrame.state.index + 1 +
+                                    queuedTracks.size()]));
+    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
+    queueNextTrack(1);
+    cleared = false;
   }
   update_ghost_tracks();
 
