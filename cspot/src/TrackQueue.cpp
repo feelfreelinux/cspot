@@ -711,12 +711,6 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   return true;
 }
 
-void TrackQueue::prepareRepeat() {
-  if (currentTracksIndex > 0)
-    preloadedTracks.clear();
-  queueNextTrack(0);
-}
-
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   bool skipped = true;
   std::scoped_lock lock(tracksMutex);

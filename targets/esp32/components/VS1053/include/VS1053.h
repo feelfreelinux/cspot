@@ -55,8 +55,7 @@
 class VS1053_SINK;
 class VS1053_TRACK {
  public:
-  VS1053_TRACK(VS1053_SINK* vsSink, size_t track_id = 0,
-               size_t buffer_size = BUF_SIZE_FEED);
+  VS1053_TRACK(size_t track_id = 0, size_t buffer_size = BUF_SIZE_FEED);
   ~VS1053_TRACK();
   /**
      * feed data to dataBuffer
@@ -68,8 +67,6 @@ class VS1053_TRACK {
   size_t feed_data(uint8_t* data, size_t len, bool STORAGE_VOLATILE = 0);
   void empty_feed();
   void run_track(size_t FILL_BUFFER_BEFORE_PLAYSTART = 0);
-  VS1053_SINK* audioSink;
-  TaskHandle_t track_handle = NULL;
   enum VS_TRACK_STATE {
     tsPlaybackStart = 0,
     tsPlayback = 1,
@@ -79,7 +76,7 @@ class VS1053_TRACK {
     tsCancel = 5,
     tsCancelAwait = 6,
     tsStopped = 7
-  } track_state = tsStopped;
+  } state = tsPlaybackStart;
   size_t header_size = 0;
   size_t track_id;
   StreamBufferHandle_t dataBuffer;
@@ -168,6 +165,9 @@ class VS1053_SINK {
      * @return `ESP_ERR_NOT_FOUND` if the chipNumber is not recognized.
      */
   esp_err_t test_comm(const char* header);
+
+  void run_feed(size_t);
+
   std::function<void(uint8_t)> state_callback = nullptr;
   enum Audio_Format {
     afUnknown,
@@ -203,37 +203,37 @@ class VS1053_SINK {
       this->track = nullptr;
   };
   void start_track(std::shared_ptr<VS1053_TRACK>, size_t);
-  bool is_seekable(VS1053_TRACK::VS_TRACK_STATE* state);
   size_t track_seekable(size_t);
   void cancel_track(VS1053_TRACK::VS_TRACK_STATE* state);
-  bool is_cancelled(VS1053_TRACK::VS_TRACK_STATE* state);
-  size_t get_track_info(size_t);
-  void new_state(VS1053_TRACK::VS_TRACK_STATE);
+  bool is_cancelled(VS1053_TRACK::VS_TRACK_STATE* state, uint8_t, size_t);
+  size_t get_track_info(size_t, uint8_t&, size_t&);
+  void new_state(VS1053_TRACK::VS_TRACK_STATE&, VS1053_TRACK::VS_TRACK_STATE);
   void new_track(std::shared_ptr<VS1053_TRACK> track);
-  VS1053_TRACK newTrack(size_t track_id, size_t buffer_size = BUF_SIZE_FEED);
 
-  void delete_track(void);
+  void delete_all_tracks(void);
   size_t spaces_available(size_t);
   std::shared_ptr<VS1053_TRACK> track = nullptr;
   std::shared_ptr<VS1053_TRACK> future_track = nullptr;
   size_t command_pointer = 0, command_reader = 0;
   std::deque<command_callback> command_callbacks;
+  std::deque<std::shared_ptr<VS1053_TRACK>> tracks;
+  bool isRunning = false;
 
  private:
   spi_device_handle_t SPIHandleLow;
   spi_device_handle_t SPIHandleFast;
-  uint8_t curvol;           // Current volume setting 0..100%
-  uint8_t endFillByte = 0;  // Byte to send when stopping song
-  size_t endFillBytes = SDI_END_FILL_BYTES;
+  uint8_t curvol;  // Current volume setting 0..100%
   int playMode = 0;
   uint8_t chipVersion;  // Version of hardware
   SemaphoreHandle_t* SPI_semaphore = NULL;
   TaskHandle_t VS_TASK;
   void await_data_request();
-  bool sdi_send_fillers(size_t len);
+  bool is_seekable(VS1053_TRACK::VS_TRACK_STATE* state);
+  bool sdi_send_fillers(uint8_t, size_t len);
   void wram_write(uint16_t address, uint16_t data);
   uint16_t wram_read(uint16_t address);
   size_t (*data_callback)(uint8_t*, size_t) = NULL;
+  TaskHandle_t task_handle = NULL;
 };
 
 #endif

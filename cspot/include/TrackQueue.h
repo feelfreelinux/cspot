@@ -107,7 +107,6 @@ class TrackQueue : public bell::Task {
   void runTask() override;
   void stopTask();
 
-  void prepareRepeat();
   void shuffle_tracks(bool shuffleTracks);
   void update_ghost_tracks(int16_t offset = 0);
   bool hasTracks();

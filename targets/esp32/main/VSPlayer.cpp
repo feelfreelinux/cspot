@@ -20,14 +20,12 @@ VSPlayer::VSPlayer(std::shared_ptr<cspot::SpircHandler> handler,
       [this](uint8_t* data, size_t bytes, size_t trackId,
              bool STORAGE_VOLATILE) {
         if (!this->track) {
-          this->track = std::make_shared<VS1053_TRACK>(this->vsSink.get(),
-                                                       trackId, 4098 * 16);
+          this->track = std::make_shared<VS1053_TRACK>(trackId, 4098 * 16);
           this->vsSink->new_track(this->track);
         }
         if (trackId != this->track->track_id) {
           this->vsSink->soft_stop_feed();
-          this->track = std::make_shared<VS1053_TRACK>(this->vsSink.get(),
-                                                       trackId, 4098 * 16);
+          this->track = std::make_shared<VS1053_TRACK>(trackId, 4098 * 16);
           this->vsSink->new_track(this->track);
         }
         return this->track->feed_data(data, bytes, STORAGE_VOLATILE);
@@ -45,14 +43,17 @@ VSPlayer::VSPlayer(std::shared_ptr<cspot::SpircHandler> handler,
           case cspot::SpircHandler::EventType::PLAY_PAUSE:
             if (std::get<bool>(event->data)) {
               if (this->track)
-                this->vsSink->new_state(VS1053_TRACK::tsPlaybackPaused);
+                this->vsSink->new_state(this->vsSink->tracks[0]->state,
+                                        VS1053_TRACK::tsPlaybackPaused);
             } else {
               if (this->track)
-                this->vsSink->new_state(VS1053_TRACK::tsPlaybackSeekable);
+                this->vsSink->new_state(this->vsSink->tracks[0]->state,
+                                        VS1053_TRACK::tsPlaybackSeekable);
             }
             break;
           case cspot::SpircHandler::EventType::DISC:
             this->track = nullptr;
+            this->vsSink->delete_all_tracks();
             this->vsSink->stop_feed();
             break;
           case cspot::SpircHandler::EventType::FLUSH:

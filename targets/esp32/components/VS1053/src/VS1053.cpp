@@ -4,8 +4,8 @@
 #include "esp_log.h"
 
 static const char* TAG = "VS_SINK";
-void vs_feed(void* track) {
-  ((VS1053_TRACK*)track)->run_track(1024);
+void vs_feed(void* sink) {
+  ((VS1053_SINK*)sink)->run_feed(1024);
 }
 
 unsigned char pcm_wav_header[44] = {
@@ -40,6 +40,7 @@ VS1053_SINK::VS1053_SINK() {
   // PIN CONFIG
   // DREQ
   ESP_LOGI(TAG, "VS1053_DREQ=%d", CONFIG_GPIO_VS_DREQ);
+  isRunning = true;
   gpio_config_t gpio_conf;
   gpio_conf.mode = GPIO_MODE_INPUT;
   gpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;
@@ -120,89 +121,68 @@ esp_err_t VS1053_SINK::init(spi_host_device_t SPI,
   //load_user_code(PLUGIN, PLUGIN_SIZE);
 #endif
   vTaskDelay(100 / portTICK_PERIOD_MS);
+  xTaskCreate(vs_feed, "track_feed", 4098, (void*)this, 1, &task_handle);
   return ESP_OK;
 }
 
-VS1053_SINK::~VS1053_SINK() {}
-VS1053_TRACK VS1053_SINK::newTrack(size_t track_id, size_t buffer_size) {
-  return VS1053_TRACK(this, track_id, buffer_size);
+VS1053_SINK::~VS1053_SINK() {
+  if (task_handle != NULL)
+    vTaskDelete(task_handle);
+  task_handle = NULL;
+  isRunning = false;
 }
 // LOOP
-VS1053_TRACK::VS1053_TRACK(VS1053_SINK* vsSink, size_t track_id,
-                           size_t buffer_size) {
+VS1053_TRACK::VS1053_TRACK(size_t track_id, size_t buffer_size) {
   this->track_id = track_id;
-  this->audioSink = vsSink;
   this->dataBuffer = xStreamBufferCreate(buffer_size, 1);
   // this->run_track();
 }
 VS1053_TRACK::~VS1053_TRACK() {
-  if (this->track_state != tsStopped)
-    this->audioSink->new_state(tsCancel);
-  while (this->track_handle)
-    vTaskDelay(10 / portTICK_PERIOD_MS);
   if (dataBuffer != NULL)
     vStreamBufferDelete(dataBuffer);
   dataBuffer = NULL;
 }
 
-void runTrack() {}
-void VS1053_SINK::start_track(std::shared_ptr<VS1053_TRACK> track,
-                              size_t buf_fill) {
-  this->track = track;
-  endFillByte = 0;
-  playMode = read_mem(PAR_PLAY_MODE);
-  endFillBytes = SDI_END_FILL_BYTES;  // How many of those to send
-  sdi_send_fillers(endFillBytes);
-  write_register(SCI_DECODE_TIME, 0);  // Reset DECODE_TIME
-  xTaskCreate(vs_feed, "track_feed", 4098, (void*)this->track.get(), 5,
-              &this->track->track_handle);
-  new_state(VS1053_TRACK::VS_TRACK_STATE::tsPlaybackStart);
-}
 void VS1053_SINK::new_track(std::shared_ptr<VS1053_TRACK> track) {
-  if (this->track)
-    this->future_track = track;
-  else
-    this->start_track(track, 1024);
+  tracks.push_back(track);
 }
 bool VS1053_SINK::is_seekable(VS1053_TRACK::VS_TRACK_STATE* state) {
   if (read_register(SCI_STATUS) >> SS_DO_NOT_JUMP_B == 0) {
-    new_state(VS1053_TRACK::VS_TRACK_STATE::tsPlaybackSeekable);
+    new_state(*state, VS1053_TRACK::VS_TRACK_STATE::tsPlaybackSeekable);
     return true;
   }
   return false;
 }
 size_t VS1053_SINK::track_seekable(size_t track_id) {
-  if (this->track)
-    if (this->track->track_id == track_id)
-      return this->track->header_size;
+  if (tracks.size())
+    if (tracks[0]->track_id == track_id)
+      return tracks[0]->header_size;
   return 0;
 }
 void VS1053_SINK::cancel_track(VS1053_TRACK::VS_TRACK_STATE* state) {
   unsigned short oldMode;
   oldMode = read_register(SCI_MODE);
   write_register(SCI_MODE, oldMode | SM_CANCEL);
-  new_state(VS1053_TRACK::VS_TRACK_STATE::tsCancelAwait);
+  new_state(*state, VS1053_TRACK::VS_TRACK_STATE::tsCancelAwait);
 }
-bool VS1053_SINK::is_cancelled(VS1053_TRACK::VS_TRACK_STATE* state) {
+bool VS1053_SINK::is_cancelled(VS1053_TRACK::VS_TRACK_STATE* state,
+                               uint8_t endFillByte, size_t endFillBytes) {
   if (read_register(SCI_MODE) & SM_CANCEL)
-    sdi_send_fillers(2);
+    sdi_send_fillers(endFillByte, 2);
   else {
-    sdi_send_fillers(endFillBytes);
-    new_state(VS1053_TRACK::VS_TRACK_STATE::tsStopped);
+    sdi_send_fillers(endFillByte, endFillBytes);
+    new_state(*state, VS1053_TRACK::VS_TRACK_STATE::tsStopped);
     return true;
   }
   return false;
 }
-void VS1053_SINK::delete_track(void) {
-  if (this->future_track) {
-    this->track = this->future_track;
-    this->future_track = nullptr;
-    this->start_track(this->track, 1024);
-  } else {
-    this->remove_track(this->track);
-  }
+void VS1053_SINK::delete_all_tracks(void) {
+  this->tracks.erase(tracks.begin() + 1, tracks.end());
+  if (this->tracks[0]->state != VS1053_TRACK::VS_TRACK_STATE::tsStopped)
+    new_state(this->tracks[0]->state, VS1053_TRACK::VS_TRACK_STATE::tsCancel);
 }
-size_t VS1053_SINK::get_track_info(size_t pos) {
+size_t VS1053_SINK::get_track_info(size_t pos, uint8_t& endFillByte,
+                                   size_t& endFillBytes) {
 #ifdef CONFIG_REPORT_ON_SCREEN
   uint16_t sampleRate;
   uint32_t byteRate;
@@ -210,9 +190,9 @@ size_t VS1053_SINK::get_track_info(size_t pos) {
   get_audio_format(&audioFormat, &endFillBytes);
 
   /* It is important to collect endFillByte while still in normal
-    playback. If we need to later cancel playback or run into any
-    trouble with e.g. a broken file, we need to be able to repeatedly
-    send this byte until the decoder has been able to exit. */
+      playback. If we need to later cancel playback or run into any
+      trouble with e.g. a broken file, we need to be able to repeatedly
+      send this byte until the decoder has been able to exit. */
 
   endFillByte = read_mem(PAR_END_FILL_BYTE);
 #ifdef CONFIG_REPORT_ON_SCREEN
@@ -220,8 +200,8 @@ size_t VS1053_SINK::get_track_info(size_t pos) {
   sampleRate = read_register(SCI_AUDATA);
   byteRate = read_mem(PAR_BYTERATE);
   /* FLAC:   byteRate = bitRate / 32
-       Others: byteRate = bitRate /  8
-       Here we compensate for that difference. */
+         Others: byteRate = bitRate /  8
+         Here we compensate for that difference. */
   if (audioFormat == afFlac)
     byteRate *= 4;
 
@@ -250,81 +230,98 @@ size_t VS1053_TRACK::feed_data(uint8_t* data, size_t len,
   return res;
 }
 size_t VS1053_SINK::spaces_available(size_t track_id) {
-  if (this->track == nullptr)
-    return 0;
-  if (this->track->track_id == track_id)
-    return xStreamBufferSpacesAvailable(this->track->dataBuffer);
-  else
-    return xStreamBufferSpacesAvailable(this->future_track->dataBuffer);
+  if (this->tracks.size())
+    for (auto track : tracks)
+      if (track->track_id == track_id)
+        return xStreamBufferSpacesAvailable(track->dataBuffer);
+  return 0;
 }
 void VS1053_TRACK::empty_feed() {
   if (this->dataBuffer != NULL)
     xStreamBufferReset(this->dataBuffer);
 }
-void VS1053_SINK::new_state(VS1053_TRACK::VS_TRACK_STATE state) {
-  this->track->track_state = state;
+void VS1053_SINK::new_state(VS1053_TRACK::VS_TRACK_STATE& state,
+                            VS1053_TRACK::VS_TRACK_STATE new_state) {
+  state = new_state;
   if (state_callback != NULL) {
-    state_callback(state);
+    state_callback((uint8_t)new_state);
   }
 }
 
-void VS1053_TRACK::run_track(size_t FILL_BUFFER_BEFORE_PLAYBACK) {
-  uint32_t pos = 0;
-  long nextReportPos = 0;  // File pointer where to next collect/report
-  size_t itemSize = 0;
-  uint8_t* item = (uint8_t*)malloc(VS1053_PACKET_SIZE);
+void VS1053_SINK::run_feed(size_t FILL_BUFFER_BEFORE_PLAYBACK) {
+  while (isRunning) {
+    uint8_t* item = (uint8_t*)malloc(VS1053_PACKET_SIZE);
+    if (tracks.size()) {
+      size_t itemSize = 0;
+      uint32_t pos = 0;
+      long nextReportPos = 0;  // File pointer where to next collect/report
+      std::shared_ptr<VS1053_TRACK> track = tracks.front();
+      uint8_t endFillByte = 0;  // Byte to send when stopping song
+      size_t endFillBytes = SDI_END_FILL_BYTES;
+      playMode = read_mem(PAR_PLAY_MODE);
+      sdi_send_fillers(endFillByte, endFillBytes);
+      write_register(SCI_DECODE_TIME, 0);  // Reset DECODE_TIME
+      new_state(track->state, VS1053_TRACK::VS_TRACK_STATE::tsPlaybackStart);
+      if (FILL_BUFFER_BEFORE_PLAYBACK <
+          xStreamBufferBytesAvailable(track->dataBuffer))
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+      while (track->state != VS1053_TRACK::VS_TRACK_STATE::tsStopped) {
+        if (this->command_callbacks.size()) {
+          this->command_callbacks[0](track->track_id);
+          this->command_callbacks.pop_front();
+        }
 
-  if (FILL_BUFFER_BEFORE_PLAYBACK <
-      xStreamBufferBytesAvailable(this->dataBuffer))
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-  while (this->track_state != tsStopped) {
-    if (this->audioSink->command_callbacks.size()) {
-      this->audioSink->command_callbacks[0](track_id);
-      this->audioSink->command_callbacks.pop_front();
-    }
-    switch (this->track_state) {
-      case tsPlaybackStart:
-        this->audioSink->new_state(tsPlayback);
-        goto tsPlaybackSeekable;
-      case tsPlayback:
-        if (this->audioSink->is_seekable(&this->track_state))
-          if (!this->header_size)
-            this->header_size = VS1053_PACKET_SIZE * pos;
-        goto tsPlaybackSeekable;
-      case tsPlaybackSeekable:
+        switch (track->state) {
+          case VS1053_TRACK::VS_TRACK_STATE::tsPlaybackStart:
+            this->new_state(
+                track->state,
+                VS1053_TRACK::VS1053_TRACK::VS_TRACK_STATE::tsPlayback);
+            goto tsPlaybackSeekable;
+          case VS1053_TRACK::VS_TRACK_STATE::tsPlayback:
+            if (this->is_seekable(&track->state))
+              if (!track->header_size)
+                track->header_size = VS1053_PACKET_SIZE * pos;
+            goto tsPlaybackSeekable;
+          case VS1053_TRACK::VS_TRACK_STATE::tsPlaybackSeekable:
 
-      tsPlaybackSeekable:
-        itemSize = xStreamBufferReceive(this->dataBuffer, (void*)item,
-                                        VS1053_PACKET_SIZE, 10);
-        if (itemSize) {
-          this->audioSink->sdi_send_buffer(item, itemSize);
-          pos++;
+          tsPlaybackSeekable:
+            itemSize = xStreamBufferReceive(track->dataBuffer, (void*)item,
+                                            VS1053_PACKET_SIZE, 10);
+            if (itemSize) {
+              this->sdi_send_buffer(item, itemSize);
+              pos++;
+            }
         }
         break;
-      case tsSoftCancel:
-        if (xStreamBufferBytesAvailable(this->dataBuffer))
-          goto tsPlaybackSeekable;
-        this->audioSink->new_state(tsCancel);
-        [[fallthrough]];
-      case tsCancel:
-        free(item);
-        this->empty_feed();
-        this->audioSink->cancel_track(&this->track_state);
-        [[fallthrough]];
-      case tsCancelAwait:
-        if (this->audioSink->is_cancelled(&this->track_state)) {}
-        break;
-      default:
-        vTaskDelay(20 / portTICK_PERIOD_MS);
-        break;
+        case VS1053_TRACK::VS_TRACK_STATE::tsSoftCancel:
+          if (xStreamBufferBytesAvailable(track->dataBuffer))
+            goto tsPlaybackSeekable;
+          this->new_state(track->state, VS1053_TRACK::VS_TRACK_STATE::tsCancel);
+          [[fallthrough]];
+        case VS1053_TRACK::VS_TRACK_STATE::tsCancel:
+          free(item);
+          track->empty_feed();
+          this->cancel_track(&track->state);
+          [[fallthrough]];
+        case VS1053_TRACK::VS_TRACK_STATE::tsCancelAwait:
+          if (this->is_cancelled(&track->state, endFillByte, endFillBytes)) {}
+          break;
+        default:
+          vTaskDelay(20 / portTICK_PERIOD_MS);
+          break;
+      }
+      if (pos >= nextReportPos) {
+        nextReportPos += this->get_track_info(pos, endFillByte, endFillBytes);
+      }
     }
-    if (pos >= nextReportPos) {
-      nextReportPos += this->audioSink->get_track_info(pos);
-    }
+    vStreamBufferDelete(track->dataBuffer);
+    track->dataBuffer = NULL;
+    tracks.pop_front();
   }
-  this->track_handle = NULL;
-  this->audioSink->delete_track();
-  vTaskDelete(NULL);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+}
+task_handle = NULL;
+vTaskDelete(NULL);
 }
 // FEED FUNCTIONS
 
@@ -333,23 +330,20 @@ size_t VS1053_SINK::data_request() {
 }
 
 void VS1053_SINK::stop_feed() {
-  if (this->future_track != nullptr)
-    this->future_track.reset();  //
-  if ((uint8_t)this->track->track_state < 3)
-    new_state(VS1053_TRACK::VS_TRACK_STATE::tsCancel);
+  if (this->tracks[0]->state < 3)
+    new_state(this->tracks[0]->state, VS1053_TRACK::VS_TRACK_STATE::tsCancel);
 }
 void VS1053_SINK::soft_stop_feed() {
-  if (this->future_track != nullptr)
-    this->future_track.reset();  //
-  if ((uint8_t)this->track->track_state < 3)
-    new_state(VS1053_TRACK::VS_TRACK_STATE::tsSoftCancel);
+  if (this->tracks[0]->state < 3)
+    new_state(this->tracks[0]->state,
+              VS1053_TRACK::VS_TRACK_STATE::tsSoftCancel);
 }
 
 // COMMAND FUCNTIONS
 /* The command pipeline recieves command in a structure of uint8_t[].
  */
 uint8_t VS1053_SINK::feed_command(command_callback commandCallback) {
-  if (this->track) {
+  if (this->tracks.size()) {
     command_callbacks.push_back(commandCallback);
   } else
     commandCallback(0);
@@ -623,13 +617,13 @@ bool VS1053_SINK::sdi_send_buffer(uint8_t* data, size_t len) {
   return true;
 }
 
-bool VS1053_SINK::sdi_send_fillers(size_t len) {
+bool VS1053_SINK::sdi_send_fillers(uint8_t endFillByte, size_t len) {
   size_t chunk_length;  // Length of chunk 32 byte or shorter
   spi_transaction_t SPITransaction;
   esp_err_t ret;
   uint8_t data[VS1053_CHUNK_SIZE];
   for (int i = 0; i < VS1053_CHUNK_SIZE; i++)
-    data[i] = this->endFillByte;
+    data[i] = endFillByte;
   if (SPI_semaphore != NULL)
     while (xSemaphoreTake(*SPI_semaphore, 1) != pdTRUE)
       vTaskDelay(1);

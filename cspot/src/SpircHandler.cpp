@@ -240,7 +240,6 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       CSPOT_LOG(debug, "Got repeat frame");
       playbackState->innerFrame.state.repeat =
           playbackState->remoteFrame.state.repeat;
-      trackQueue->prepareRepeat();
       this->notify();
       break;
     }
