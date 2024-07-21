@@ -132,6 +132,7 @@ void TrackPlayer::runTask() {
   bool endOfQueueReached = false;
 
   while (isRunning) {
+    bool properStream = true;
     // Ensure we even have any tracks to play
     if (!this->trackQueue->hasTracks() ||
         (!pendingReset && endOfQueueReached && trackQueue->isFinished())) {
@@ -297,6 +298,7 @@ void TrackPlayer::runTask() {
         if (ret < 0) {
           CSPOT_LOG(error, "An error has occured in the stream %d", ret);
           currentSongPlaying = false;
+          properStream = false;
         } else {
           if (ret == 0) {
             CSPOT_LOG(info, "EOF");
@@ -352,9 +354,8 @@ void TrackPlayer::runTask() {
       if (trackQueue->isFinished()) {
         endOfQueueReached = true;
       }
-
-      this->eofCallback(true);
     }
+    this->eofCallback(properStream);
   }
 }
 
