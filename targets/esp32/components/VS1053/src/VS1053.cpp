@@ -121,7 +121,7 @@ esp_err_t VS1053_SINK::init(spi_host_device_t SPI,
   //load_user_code(PLUGIN, PLUGIN_SIZE);
 #endif
   vTaskDelay(100 / portTICK_PERIOD_MS);
-  xTaskCreate(vs_feed, "track_feed", 4098, (void*)this, 1, &task_handle);
+  xTaskCreate(vs_feed, "track_feed", 4098, (void*)this, 10, &task_handle);
   return ESP_OK;
 }
 
@@ -177,7 +177,8 @@ bool VS1053_SINK::is_cancelled(VS1053_TRACK::VS_TRACK_STATE* state,
   return false;
 }
 void VS1053_SINK::delete_all_tracks(void) {
-  this->tracks.erase(tracks.begin() + 1, tracks.end());
+  if (this->tracks.size() > 1)
+    this->tracks.erase(tracks.begin() + 1, tracks.end());
   if (this->tracks[0]->state != VS1053_TRACK::VS_TRACK_STATE::tsStopped)
     new_state(this->tracks[0]->state, VS1053_TRACK::VS_TRACK_STATE::tsCancel);
 }

@@ -176,15 +176,20 @@ void MercurySession::handlePacket() {
 
       auto response = this->decodeResponse(packet.data);
       if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
-        auto partial = this->partials.find(response.second);
-        //if the event-id is negative, they got sent without any request
-        if (response.first >= 0) {
-          if (this->callbacks.count(response.second)) {
-            this->callbacks[response.second](partial->second);
-            this->callbacks.erase(this->callbacks.find(response.second));
+
+        auto partial = partials.begin();
+        while (partial != partials.end() && partial->first != response.second)
+          partial++;  // if(partial.first == sequenceId)
+        if (partial != partials.end()) {
+          //if the event-id is negative, they got sent without any request
+          if (response.first >= 0) {
+            if (this->callbacks.count(response.second)) {
+              this->callbacks[response.second](partial->second);
+              this->callbacks.erase(this->callbacks.find(response.second));
+            }
           }
+          this->partials.erase(partial);
         }
-        this->partials.erase(partial);
       }
       break;
     }
@@ -192,12 +197,16 @@ void MercurySession::handlePacket() {
       auto response = decodeResponse(packet.data);
 
       if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
-        auto partial = this->partials.find(response.second);
-        auto uri = std::string(partial->second.mercuryHeader.uri);
-        if (this->subscriptions.count(uri) > 0) {
-          this->subscriptions[uri](partial->second);
+        auto partial = partials.begin();
+        while (partial != partials.end() && partial->first != response.second)
+          partial++;  // if(partial.first == sequenceId)
+        if (partial != partials.end()) {
+          auto uri = std::string(partial->second.mercuryHeader.uri);
+          if (this->subscriptions.count(uri) > 0) {
+            this->subscriptions[uri](partial->second);
+          }
+          this->partials.erase(partial);
         }
-        this->partials.erase(partial);
       }
       break;
     }
@@ -244,12 +253,15 @@ std::pair<int, int64_t> MercurySession::decodeResponse(
   pos++;
   uint16_t parts = ntohs(extract<uint16_t>(data, pos));
   pos += 2;
-  auto partial = partials.find(sequenceId);
+  auto partial = partials.begin();
+  while (partial != partials.end() && partial->first != sequenceId)
+    partial++;  // if(partial.first == sequenceId)
   if (partial == partials.end()) {
     CSPOT_LOG(debug,
               "Creating new Mercury Response, seq: %lli, flags: %i, parts: %i",
               sequenceId, flag, parts);
-    partial = this->partials.insert({sequenceId, Response()}).first;
+    this->partials.push_back(std::make_pair(sequenceId, Response()));
+    partial = partials.end() - 1;
     partial->second.parts = {};
     partial->second.fail = false;
   } else

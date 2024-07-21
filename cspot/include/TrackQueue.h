@@ -11,6 +11,7 @@
 #include "BellTask.h"
 #include "EventManager.h"  // for TrackMetrics
 #include "PlaybackState.h"
+#include "PlayerContext.h"
 #include "TrackReference.h"
 
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
@@ -61,6 +62,9 @@ class QueuedTrack {
   TrackReference ref;           // Holds GID, URI and Context
   TrackInfo trackInfo;  // Full track information fetched from spotify, name etc
 
+  // PB data
+  Track pbTrack = Track_init_zero;
+  Episode pbEpisode = Episode_init_zero;
   uint32_t requestedPosition;
   uint64_t written_bytes = 0;
   std::string identifier;
@@ -113,6 +117,7 @@ class TrackQueue : public bell::Task {
   void update_ghost_tracks(int16_t offset = 0);
   bool hasTracks();
   bool isFinished();
+  void reloadTracks(uint8_t offset = 1);
   bool skipTrack(SkipDirection dir, bool expectNotify = true);
   bool updateTracks(uint32_t requestedPosition = 0, bool initial = false);
   TrackInfo getTrackInfo(std::string_view identifier);
@@ -120,28 +125,23 @@ class TrackQueue : public bell::Task {
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
 
  private:
-  static const int MAX_TRACKS_PRELOAD = 3;
+  static const int MAX_TRACKS_PRELOAD = 2;
 
   std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
+  std::unique_ptr<cspot::PlayerContext> playerContext;
 
   std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
-  std::deque<std::pair<uint32_t, TrackReference>> queuedTracks;
-  std::vector<int32_t> alt_index;
+  std::deque<std::pair<int64_t, TrackReference>> queuedTracks = {};
   std::vector<TrackReference> currentTracks;
   std::vector<TrackReference> ghostTracks;
   std::mutex tracksMutex, runningMutex;
 
-  // PB data
-  Track pbTrack;
-  Episode pbEpisode;
-
   std::string accessKey;
   uint32_t radio_offset = 0;
 
-  int16_t currentTracksIndex = -1;
-  int16_t currentTracksSize = 0;
+  uint32_t currentTracksIndex = -1;
 
   bool isRunning = false;
   bool context_resolved = false;

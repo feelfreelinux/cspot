@@ -42,13 +42,18 @@ uint64_t TrackMetrics::getPosition() {
       (this->ctx->timeProvider->getSyncedTimestamp() - currentInterval->start));
 }
 
-void TrackMetrics::startTrackDecoding() {
+void TrackMetrics::startTrack() {
   trackHeaderTime = this->ctx->timeProvider->getSyncedTimestamp();
   audioKeyTime = trackHeaderTime - timestamp;
 }
 
-void TrackMetrics::startTrack(uint64_t pos) {
-  audioKeyTime = this->ctx->timeProvider->getSyncedTimestamp() - audioKeyTime;
+void TrackMetrics::startTrackDecoding() {
+  trackHeaderTime =
+      this->ctx->timeProvider->getSyncedTimestamp() - trackHeaderTime;
+}
+
+void TrackMetrics::startTrackPlaying(uint64_t pos) {
+  trackLatency = this->ctx->timeProvider->getSyncedTimestamp() - audioKeyTime;
   currentInterval = std::make_shared<TrackInterval>(
       this->ctx->timeProvider->getSyncedTimestamp(), pos);
 }
@@ -151,7 +156,9 @@ std::vector<uint8_t> PlaybackMetrics::sendEvent(
                             .amount));  //total amount of time skipped forward
   append(
       &msg,
-      "15");  //randomNumber; biggest value so far 260, usually biggert than 1 //spotify says play latencie
+      std::to_string(
+          track->trackMetrics
+              ->trackLatency));  //randomNumber; biggest value so far 260, usually biggert than 1 //spotify says play latency
   append(&msg, "-1");  // usually -1, if paused positive, probablly in seconds
   append(&msg, "context");
   append(&msg, std::to_string(

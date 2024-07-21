@@ -41,15 +41,16 @@ class TrackMetrics {
   uint64_t longestInterval = 0, totalAmountOfPlayTime = 0,
            totalMsOfPlayedTrack = 0, totalAmountPlayed = 0, audioKeyTime = 0,
            trackHeaderTime = 0, written_bytes = 0, track_size = 0,
-           timestamp = 0;
+           timestamp = 0, trackLatency = 0;
   std::vector<std::pair<uint64_t, uint64_t>> intervals;
   skip skipped_backward, skipped_forward;
 
   void newPosition(uint64_t pos);
   void endInterval(uint64_t pos);
   void endTrack();
+  void startTrack();
   void startTrackDecoding();
-  void startTrack(uint64_t pos);
+  void startTrackPlaying(uint64_t pos);
   uint64_t getPosition();
 
  private:

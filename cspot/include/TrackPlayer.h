@@ -44,7 +44,7 @@ class TrackPlayer : bell::Task {
 #endif
                                )>
       DataCallback;
-  typedef std::function<void()> EOFCallback;
+  typedef std::function<void(bool)> EOFCallback;
   typedef std::function<size_t(size_t)> SeekableCallback;
 
   TrackPlayer(std::shared_ptr<cspot::Context> ctx,

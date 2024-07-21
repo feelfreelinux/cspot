@@ -25,10 +25,12 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
   this->playbackState = std::make_shared<PlaybackState>(ctx);
   this->trackQueue = std::make_shared<cspot::TrackQueue>(ctx, playbackState);
 
-  auto EOFCallback = [this]() {
+  auto EOFCallback = [this](bool loaded) {
     if (trackQueue->isFinished()) {
       sendEvent(EventType::DEPLETED);
     }
+    if (!loaded)
+      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
   };
 
   auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track,
@@ -98,6 +100,8 @@ void SpircHandler::notifyAudioReachedPlaybackEnd() {
     // Reset position in queued track
     currentTrack->requestedPosition = 0;
   } else if (!playbackState->innerFrame.state.repeat) {
+    currentTrack->trackMetrics->endTrack();
+    ctx->playbackMetrics->sendEvent(currentTrack);
     trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
     // we moved to next track, re-acquire currentTrack again
     currentTrack = trackQueue->consumeTrack(nullptr, offset);
@@ -110,6 +114,8 @@ void SpircHandler::notifyAudioReachedPlayback() {
 
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
+  currentTrack->trackMetrics->startTrackPlaying(
+      currentTrack->requestedPosition);
   this->notify();
 
   sendEvent(EventType::TRACK_INFO, currentTrack->trackInfo);

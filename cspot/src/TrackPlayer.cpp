@@ -180,7 +180,7 @@ void TrackPlayer::runTask() {
 
       if (track->state != QueuedTrack::State::READY) {
         CSPOT_LOG(error, "Track failed to load, skipping it");
-        this->eofCallback();
+        this->eofCallback(false);
         continue;
       }
     }
@@ -193,9 +193,8 @@ void TrackPlayer::runTask() {
       std::scoped_lock lock(playbackMutex);
       bool skipped = 0;
 
+      track->trackMetrics->startTrack();
       currentTrackStream = track->getAudioFile();
-
-      track->trackMetrics->startTrackDecoding();
 
       // Open the stream
       currentTrackStream->openStream();
@@ -203,6 +202,8 @@ void TrackPlayer::runTask() {
       if (pendingReset || !currentSongPlaying) {
         continue;
       }
+      track->trackMetrics->startTrackDecoding();
+      track->trackMetrics->track_size = currentTrackStream->getSize();
 
 #ifndef CONFIG_BELL_NOCODEC
       if (trackOffset == 0 && pendingSeekPositionMs == 0) {
@@ -210,7 +211,6 @@ void TrackPlayer::runTask() {
         startPaused = false;
       }
 
-      track->trackMetrics->track_size = currentTrackStream->getSize();
       int32_t r =
           ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
 #else
@@ -261,7 +261,6 @@ void TrackPlayer::runTask() {
 
       eof = false;
       track->loading = true;
-      track->trackMetrics->startTrack(track->requestedPosition);
       //in case of a repeatedtrack, set requested position to 0
       track->requestedPosition = 0;
 
@@ -347,9 +346,6 @@ void TrackPlayer::runTask() {
       // always move back to LOADING (ensure proper seeking after last track has been loaded)
       currentTrackStream = nullptr;
       track->loading = false;
-      track->trackMetrics->endTrack();
-      std::vector<uint8_t> result =
-          this->ctx->playbackMetrics->sendEvent(track);
     }
 
     if (eof) {
@@ -357,7 +353,7 @@ void TrackPlayer::runTask() {
         endOfQueueReached = true;
       }
 
-      this->eofCallback();
+      this->eofCallback(true);
     }
   }
 }

@@ -114,7 +114,7 @@ class MercurySession : public bell::Task, public cspot::Session {
   void reconnect();
 
   std::unordered_map<int64_t, ResponseCallback> callbacks;
-  std::unordered_map<int64_t, Response> partials;
+  std::deque<std::pair<int64_t, Response>> partials;
   std::unordered_map<std::string, ResponseCallback> subscriptions;
   std::unordered_map<uint32_t, AudioKeyCallback> audioKeyCallbacks;
 
