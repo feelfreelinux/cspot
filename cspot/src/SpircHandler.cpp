@@ -30,7 +30,7 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
       sendEvent(EventType::DEPLETED);
     }
     if (!loaded)
-      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
+      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, true);
   };
 
   auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track,
@@ -92,21 +92,13 @@ void SpircHandler::notifyAudioReachedPlaybackEnd() {
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
 
-  if (trackQueue->notifyPending) {
-    trackQueue->notifyPending = false;
-
-    playbackState->updatePositionMs(currentTrack->requestedPosition);
-
-    // Reset position in queued track
-    currentTrack->requestedPosition = 0;
-  } else if (!playbackState->innerFrame.state.repeat) {
+  if (!playbackState->innerFrame.state.repeat) {
     currentTrack->trackMetrics->endTrack();
     ctx->playbackMetrics->sendEvent(currentTrack);
-    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
+    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, true);
     // we moved to next track, re-acquire currentTrack again
     currentTrack = trackQueue->consumeTrack(nullptr, offset);
   }
-  playbackState->updatePositionMs(0);
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -116,6 +108,14 @@ void SpircHandler::notifyAudioReachedPlayback() {
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
   currentTrack->trackMetrics->startTrackPlaying(
       currentTrack->requestedPosition);
+  if (trackQueue->notifyPending) {
+    trackQueue->notifyPending = false;
+
+    playbackState->updatePositionMs(currentTrack->requestedPosition);
+
+    // Reset position in queued track
+    currentTrack->requestedPosition = 0;
+  }
   this->notify();
 
   sendEvent(EventType::TRACK_INFO, currentTrack->trackInfo);

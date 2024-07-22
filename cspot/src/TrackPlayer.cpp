@@ -158,7 +158,6 @@ void TrackPlayer::runTask() {
     }
 
     newTrack = trackQueue->consumeTrack(track, trackOffset);
-    this->trackQueue->update_ghost_tracks(trackOffset);
 
     if (newTrack == nullptr) {
       if (trackOffset == -1) {
@@ -299,6 +298,7 @@ void TrackPlayer::runTask() {
           CSPOT_LOG(error, "An error has occured in the stream %d", ret);
           currentSongPlaying = false;
           properStream = false;
+          eof = true;
         } else {
           if (ret == 0) {
             CSPOT_LOG(info, "EOF");
@@ -354,8 +354,8 @@ void TrackPlayer::runTask() {
       if (trackQueue->isFinished()) {
         endOfQueueReached = true;
       }
+      this->eofCallback(properStream);
     }
-    this->eofCallback(properStream);
   }
 }
 

@@ -424,6 +424,7 @@ void TrackQueue::runTask() {
     }
 
     for (auto& track : trackQueue) {
+      std::scoped_lock lock(tracksMutex);
       if (track) {
         this->processTrack(track);
       }
@@ -494,7 +495,7 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
     index++;
   }
   if (queuedTracks.size() > 0) {
-    if (preloadedTracks[offset]->ref.gid != queuedTracks[0].second.gid) {
+    if (preloadedTracks[0]->ref.gid != queuedTracks[0].second.gid) {
       ghostTracks.push_back(currentTracks[index]);
       index++;
     } else
@@ -502,7 +503,7 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
     for (auto track : queuedTracks) {
       if (track.first != -1)
         break;
-      if (preloadedTracks[offset]->ref.gid != track.second.gid) {
+      if (preloadedTracks[0]->ref.gid != track.second.gid) {
         ghostTracks.push_back(track.second);
       }
     }
@@ -514,7 +515,7 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
         if (track.first == index &&
             preloadedTracks[offset]->ref.gid != track.second.gid) {
           ghostTracks.push_back(track.second);
-        } else
+        } else if (track.first > index)
           break;
       }
     }
@@ -556,16 +557,14 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
 bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
   int requestedRefIndex = offset + currentTracksIndex;
   if (queuedTracks.size()) {
-    if (requestedRefIndex != queuedTracks[0].first &&
-        queuedTracks[0].first != -1)
-      goto queueNext;
     for (auto track : queuedTracks) {
+      if (track.first > requestedRefIndex)
+        goto queueNext;
       for (auto loaded_track : preloadedTracks) {
-        if (track.second.gid == loaded_track->ref.gid)
+        if (track.second.gid == loaded_track->ref.gid) {
+          requestedRefIndex--;
           goto noNeedToLoadTrack;
-        else if (requestedRefIndex != queuedTracks[0].first &&
-                 queuedTracks[0].first != -1)
-          goto queueNext;
+        }
       }
       preloadedTracks.push_back(
           std::make_shared<QueuedTrack>(track.second, ctx, 0));
@@ -574,8 +573,6 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
     }
   }
 queueNext:;
-  if (preloadedTracks[0]->ref.gid == queuedTracks[0].second.gid)
-    requestedRefIndex--;
 
   if (requestedRefIndex < 0 || requestedRefIndex >= currentTracks.size()) {
     return false;
@@ -622,21 +619,12 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
     }
   } else {
     if (currentTracks.size() > currentTracksIndex + 1) {
-      if (queuedTracks.size() > 0 &&
-          (currentTracksIndex == queuedTracks[0].first ||
-           queuedTracks[0].first == -1)) {
-        if (preloadedTracks[0]->ref.gid == queuedTracks[0].second.gid) {
+      {
+        if (queuedTracks.size() > 0 &&
+            preloadedTracks[0]->ref.gid == queuedTracks[0].second.gid) {
+          currentTracksIndex--;
           queuedTracks.pop_front();
-          preloadedTracks.pop_front();
-          if (queuedTracks.size() <= 0 ||
-              currentTracksIndex != queuedTracks[0].first) {
-            queueNextTrack(preloadedTracks.size());
-          }
-        } else {
-          preloadedTracks.pop_front();
-          queueNextTrack(preloadedTracks.size() + 1);
         }
-      } else {
         preloadedTracks.pop_front();
         if (!queueNextTrack(preloadedTracks.size() + 1)) {
           CSPOT_LOG(info, "Failed to queue next track");
@@ -657,6 +645,7 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
       notifyPending = true;
     }
   }
+  update_ghost_tracks();
 
   return skipped;
 }
@@ -678,10 +667,10 @@ void TrackQueue::shuffle_tracks(bool shuffleTracks) {
       this->playbackState->innerFrame.state.context_uri);
 }
 void TrackQueue::reloadTracks(uint8_t offset) {
-  preloadedTracks.erase(preloadedTracks.begin() + offset,
-                        preloadedTracks.end());
+  if (preloadedTracks.size())
+    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
   //preloadedTracks.clear();
-  queueNextTrack(1);
+  queueNextTrack(preloadedTracks.size());
   update_ghost_tracks();
   //this->ctx->handler->notify();
 }
@@ -710,7 +699,6 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
     }
 
     // We already updated track meta, mark it
-    notifyPending = true;
     radio_offset = 0;
 
     playableSemaphore->give();

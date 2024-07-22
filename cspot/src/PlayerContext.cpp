@@ -203,6 +203,6 @@ bool PlayerContext::resolveInitial(uint32_t index, bool shuffle,
   last_index = shuffle ? index : new_index[index];
   last_resolve_shuffled = shuffle;
   *this->index = 0;
-  //static_cast<cspot::TrackQueue*>(queue)->reloadTracks();
+  static_cast<cspot::TrackQueue*>(queue)->reloadTracks();
   return true;
 }
