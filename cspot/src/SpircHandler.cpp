@@ -106,8 +106,6 @@ void SpircHandler::notifyAudioReachedPlayback() {
 
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
-  currentTrack->trackMetrics->startTrackPlaying(
-      currentTrack->requestedPosition);
   if (trackQueue->notifyPending) {
     trackQueue->notifyPending = false;
 

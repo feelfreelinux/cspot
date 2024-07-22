@@ -263,6 +263,7 @@ void TrackPlayer::runTask() {
       track->loading = true;
       //in case of a repeatedtrack, set requested position to 0
       track->requestedPosition = 0;
+      track->trackMetrics->startTrackPlaying(track->requestedPosition);
 
       CSPOT_LOG(info, "Playing");
 
