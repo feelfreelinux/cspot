@@ -24,18 +24,18 @@ PlayerContext::PlayerContext(
   this->index = index;
   rng = std::default_random_engine{rd()};
   std::string requestUrl = string_format("hm://context-resolve/v1/%s", uri);
-  auto responseHandler = [this, shuffle](MercurySession::Response& res) {
+  auto responseHandler = [this, shuffle, uri](MercurySession::Response& res) {
     if (!res.parts.size())
       return;
     if (!res.parts[0].size())
       return;
     this->resolveInitial(*this->index, shuffle, res.parts[0]);
+    if (this->track_list->size() < 30)
+      resolveContext(*this->index, shuffle, uri);
   };
 
   ctx->session->execute(MercurySession::RequestType::GET, requestUrl,
                         responseHandler);
-  if (track_list->size() < 30)
-    resolveContext(*this->index, shuffle, uri);
 }
 
 static void randomizeIndex(std::vector<uint32_t>& index, uint16_t offset,
@@ -111,8 +111,6 @@ bool PlayerContext::resolveTracklist(uint32_t index, bool shuffle,
   index = *this->index;
   std::scoped_lock lock(*trackMutex);
   auto jsonResult = nlohmann::json::parse(data);
-  if (queued_list->at(0).first == 0 || queued_list->at(0).first == -1)
-    index--;
   for (uint32_t i = 0; i < queued_list->size(); i++)
     if (queued_list->at(i).first != -1)
       queued_list->at(i).first -= index;
@@ -199,10 +197,8 @@ bool PlayerContext::resolveInitial(uint32_t index, bool shuffle,
     }
     randomizeIndex(alternative_index, new_index.size(), rng);
   }
-  track_list->erase(track_list->begin(), track_list->begin() + index);
-  last_index = shuffle ? index : new_index[index];
+  last_index = shuffle ? 0 : new_index[0];
   last_resolve_shuffled = shuffle;
-  *this->index = 0;
   static_cast<cspot::TrackQueue*>(queue)->reloadTracks();
   return true;
 }

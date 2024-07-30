@@ -444,7 +444,8 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     std::shared_ptr<QueuedTrack> prevTrack, int& offset) {
   std::scoped_lock lock(tracksMutex);
 
-  if (currentTracksIndex == -1 || currentTracksIndex >= currentTracks.size()) {
+  if ((currentTracksIndex == -1 && !currentTracks.size()) ||
+      currentTracksIndex >= currentTracks.size()) {
     return nullptr;
   }
 
@@ -495,7 +496,7 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
     index++;
   }
   if (queuedTracks.size() > 0) {
-    if (preloadedTracks[0]->ref.gid != queuedTracks[0].second.gid) {
+    if (preloadedTracks[offset]->ref.gid != queuedTracks[0].second.gid) {
       ghostTracks.push_back(currentTracks[index]);
       index++;
     } else
@@ -503,7 +504,7 @@ void TrackQueue::update_ghost_tracks(int16_t offset) {
     for (auto track : queuedTracks) {
       if (track.first != -1)
         break;
-      if (preloadedTracks[0]->ref.gid != track.second.gid) {
+      if (preloadedTracks[offset]->ref.gid != track.second.gid) {
         ghostTracks.push_back(track.second);
       }
     }
@@ -538,10 +539,13 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
 
       if (track->state == QueuedTrack::State::READY) {
         if (preloadedTracks.size() + currentTracksIndex + 1 >=
-            currentTracks.size())
+                currentTracks.size() &&
+            !contextResolved) {
           playerContext->resolveContext(
               currentTracksIndex, this->playbackState->innerFrame.state.shuffle,
               this->playbackState->innerFrame.state.context_uri);
+          contextResolved = true;
+        }
         if (preloadedTracks.size() < MAX_TRACKS_PRELOAD) {
           // Queue a new track to preload
           queueNextTrack(preloadedTracks.size());
@@ -672,13 +676,16 @@ void TrackQueue::reloadTracks(uint8_t offset) {
   //preloadedTracks.clear();
   queueNextTrack(preloadedTracks.size());
   update_ghost_tracks();
-  //this->ctx->handler->notify();
+  this->notifyCallback();
+  contextResolved = false;
 }
 bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
   std::scoped_lock lock(tracksMutex);
   bool cleared = true;
 
   if (initial) {
+    if (preloadedTracks.size())
+      notifyPending = true;
     // initialize new random_engine
     rng = std::default_random_engine{rd()};
     // Copy requested track list
@@ -703,9 +710,18 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
 
     playableSemaphore->give();
   } else {
-    queuedTracks.push_back(std::make_pair(
-        -1, playbackState->remoteTracks[playbackState->innerFrame.state.index +
-                                        1 + queuedTracks.size()]));
+    auto track_it = queuedTracks.begin();
+    uint32_t offset = 0;
+    while (track_it->first < 0) {
+      track_it++;
+      offset++;
+    }
+    queuedTracks.insert(
+        track_it,
+        std::make_pair(
+            -1,
+            playbackState->remoteTracks[playbackState->innerFrame.state.index +
+                                        1 + offset]));
     preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
     queueNextTrack(1);
     cleared = false;

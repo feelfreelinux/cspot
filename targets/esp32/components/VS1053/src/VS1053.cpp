@@ -121,7 +121,8 @@ esp_err_t VS1053_SINK::init(spi_host_device_t SPI,
   //load_user_code(PLUGIN, PLUGIN_SIZE);
 #endif
   vTaskDelay(100 / portTICK_PERIOD_MS);
-  xTaskCreate(vs_feed, "track_feed", 4098, (void*)this, 10, &task_handle);
+  xTaskCreatePinnedToCore(vs_feed, "track_feed", 4098, (void*)this, 10,
+                          &task_handle, 0);
   return ESP_OK;
 }
 
@@ -263,9 +264,6 @@ void VS1053_SINK::run_feed(size_t FILL_BUFFER_BEFORE_PLAYBACK) {
       sdi_send_fillers(endFillByte, endFillBytes);
       write_register(SCI_DECODE_TIME, 0);  // Reset DECODE_TIME
       new_state(track->state, VS1053_TRACK::VS_TRACK_STATE::tsPlaybackStart);
-      if (FILL_BUFFER_BEFORE_PLAYBACK <
-          xStreamBufferBytesAvailable(track->dataBuffer))
-        vTaskDelay(10 / portTICK_PERIOD_MS);
       while (track->state != VS1053_TRACK::VS_TRACK_STATE::tsStopped) {
         if (this->command_callbacks.size()) {
           this->command_callbacks[0](track->track_id);
