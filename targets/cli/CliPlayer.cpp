@@ -32,13 +32,11 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
 #endif
 
-  auto hashFunc = std::hash<std::string_view>();
-
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
-
-        return this->centralAudioBuffer->writePCM(data, bytes, hash);
+      [this](uint8_t* data, size_t bytes, size_t trackId) {
+        if (!bytes)
+          this->handler->notifyAudioReachedPlaybackEnd();
+        return this->centralAudioBuffer->writePCM(data, bytes, trackId);
       });
 
   this->isPaused = false;
@@ -111,8 +109,8 @@ void CliPlayer::runTask() {
 
       if (!chunk || chunk->pcmSize == 0) {
         if (this->playlistEnd) {
-            this->handler->notifyAudioEnded();
-            this->playlistEnd = false;
+          this->handler->notifyAudioEnded();
+          this->playlistEnd = false;
         }
         BELL_SLEEP_MS(10);
         continue;

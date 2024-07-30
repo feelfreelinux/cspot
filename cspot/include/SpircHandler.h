@@ -52,23 +52,23 @@ class SpircHandler {
 
   bool nextSong();
 
+  void notifyAudioReachedPlaybackEnd();
   void notifyAudioReachedPlayback();
   void notifyAudioEnded();
   void updatePositionMs(uint32_t position);
   void setRemoteVolume(int volume);
   void loadTrackFromURI(const std::string& uri);
   std::shared_ptr<cspot::TrackQueue> getTrackQueue() { return trackQueue; }
+  std::shared_ptr<cspot::TrackPlayer> trackPlayer;
+  std::shared_ptr<cspot::TrackQueue> trackQueue;
+  std::shared_ptr<cspot::PlaybackState> playbackState;
 
   void disconnect();
 
  private:
   std::shared_ptr<cspot::Context> ctx;
-  std::shared_ptr<cspot::TrackPlayer> trackPlayer;
-  std::shared_ptr<cspot::TrackQueue> trackQueue;
 
   EventHandler eventHandler = nullptr;
-
-  std::shared_ptr<cspot::PlaybackState> playbackState;
 
   void sendCmd(MessageType typ);
 
