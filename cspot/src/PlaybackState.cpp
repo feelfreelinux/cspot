@@ -116,6 +116,17 @@ void PlaybackState::syncWithRemote() {
 
   strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
 
+  if (remoteFrame.state.context_description != NULL) {
+    innerFrame.state.context_description =
+        (char*)realloc(innerFrame.state.context_description,
+                       strlen(remoteFrame.state.context_description) + 1);
+    strcpy(innerFrame.state.context_description,
+           remoteFrame.state.context_description);
+  } else {
+    free(innerFrame.state.context_description);
+    innerFrame.state.context_description = NULL;
+  }
+
   innerFrame.state.has_playing_track_index = true;
   innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
   innerFrame.state.has_shuffle = remoteFrame.state.has_shuffle;

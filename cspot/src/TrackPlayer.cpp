@@ -205,12 +205,12 @@ void TrackPlayer::runTask() {
       track->trackMetrics->startTrackDecoding();
       track->trackMetrics->track_size = currentTrackStream->getSize();
 
-#ifndef CONFIG_BELL_NOCODEC
       if (trackOffset == 0 && pendingSeekPositionMs == 0) {
         this->trackLoaded(track, startPaused);
         startPaused = false;
       }
 
+#ifndef CONFIG_BELL_NOCODEC
       int32_t r =
           ov_open_callbacks(this, &vorbisFile, NULL, 0, vorbisCallbacks);
 #else
@@ -262,6 +262,10 @@ void TrackPlayer::runTask() {
       eof = false;
       track->loading = true;
       //in case of a repeatedtrack, set requested position to 0
+      track->trackMetrics->startTrackPlaying(track->requestedPosition);
+      this->trackQueue->playbackState->updatePositionMs(
+          track->requestedPosition);
+      this->trackQueue->notifyCallback();
       track->requestedPosition = 0;
 
       CSPOT_LOG(info, "Playing");
@@ -280,6 +284,9 @@ void TrackPlayer::runTask() {
           track->trackMetrics->newPosition(pendingSeekPositionMs);
           skipped = true;
 #endif
+          this->trackQueue->playbackState->updatePositionMs(
+              pendingSeekPositionMs);
+          this->trackQueue->notifyCallback();
 
           // Reset the pending seek position
           pendingSeekPositionMs = 0;

@@ -109,6 +109,7 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
   std::shared_ptr<PlaybackState> playbackState;
   std::atomic<bool> notifyPending = false;
+  std::function<void()> notifyCallback;
 
   void runTask() override;
   void stopTask();
@@ -123,6 +124,7 @@ class TrackQueue : public bell::Task {
   TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
+  std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
 
  private:
   static const int MAX_TRACKS_PRELOAD = 3;
@@ -132,9 +134,8 @@ class TrackQueue : public bell::Task {
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
   std::unique_ptr<cspot::PlayerContext> playerContext;
 
-  std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
   std::deque<std::pair<int64_t, TrackReference>> queuedTracks = {};
-  std::vector<TrackReference> currentTracks;
+  std::vector<TrackReference> currentTracks = {};
   std::vector<TrackReference> ghostTracks;
   std::mutex tracksMutex, runningMutex;
 
@@ -144,7 +145,7 @@ class TrackQueue : public bell::Task {
   uint32_t currentTracksIndex = -1;
 
   bool isRunning = false;
-  bool context_resolved = false;
+  bool contextResolved = false;
   bool continue_with_radio = true;
 
   std::random_device rd;

@@ -25,12 +25,16 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
   this->playbackState = std::make_shared<PlaybackState>(ctx);
   this->trackQueue = std::make_shared<cspot::TrackQueue>(ctx, playbackState);
 
+  trackQueue->notifyCallback = [this]() {
+    this->notify();
+  };
+
   auto EOFCallback = [this](bool loaded) {
     if (trackQueue->isFinished()) {
       sendEvent(EventType::DEPLETED);
     }
     if (!loaded)
-      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, true);
+      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
   };
 
   auto trackLoadedCallback = [this](std::shared_ptr<QueuedTrack> track,
@@ -38,8 +42,6 @@ SpircHandler::SpircHandler(std::shared_ptr<cspot::Context> ctx) {
     playbackState->setPlaybackState(paused ? PlaybackState::State::Paused
                                            : PlaybackState::State::Playing);
     playbackState->updatePositionMs(track->requestedPosition);
-
-    this->notify();
 
     // Send playback start event, pause/unpause per request
     sendEvent(EventType::PLAYBACK_START, (int)track->requestedPosition);
@@ -95,10 +97,13 @@ void SpircHandler::notifyAudioReachedPlaybackEnd() {
   if (!playbackState->innerFrame.state.repeat) {
     currentTrack->trackMetrics->endTrack();
     ctx->playbackMetrics->sendEvent(currentTrack);
-    trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, true);
-    // we moved to next track, re-acquire currentTrack again
-    currentTrack = trackQueue->consumeTrack(nullptr, offset);
+    if (!trackQueue->notifyPending)
+      trackQueue->skipTrack(TrackQueue::SkipDirection::NEXT, false);
+    else
+      trackQueue->notifyPending = false;
   }
+  trackQueue->update_ghost_tracks();
+  notify();
 }
 
 void SpircHandler::notifyAudioReachedPlayback() {
@@ -106,18 +111,6 @@ void SpircHandler::notifyAudioReachedPlayback() {
 
   // get HEAD track
   auto currentTrack = trackQueue->consumeTrack(nullptr, offset);
-  currentTrack->trackMetrics->startTrackPlaying(
-      currentTrack->requestedPosition);
-  if (trackQueue->notifyPending) {
-    trackQueue->notifyPending = false;
-
-    playbackState->updatePositionMs(currentTrack->requestedPosition);
-
-    // Reset position in queued track
-    currentTrack->requestedPosition = 0;
-  }
-  this->notify();
-
   sendEvent(EventType::TRACK_INFO, currentTrack->trackInfo);
 }
 
@@ -150,16 +143,12 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
         ctx->playbackMetrics->end_source = influence;
         this->trackPlayer->stop();
         sendEvent(EventType::DISC);
+        trackQueue->preloadedTracks.clear();
       }
       break;
     }
     case MessageType_kMessageTypeSeek: {
       this->trackPlayer->seekMs(playbackState->remoteFrame.position);
-
-      playbackState->updatePositionMs(playbackState->remoteFrame.position);
-
-      notify();
-
       sendEvent(EventType::SEEK, (int)playbackState->remoteFrame.position);
       break;
     }
