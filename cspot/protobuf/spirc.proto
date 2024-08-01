@@ -43,6 +43,8 @@ message State {
     optional string context_description = 0x8;
     optional bool shuffle = 0xd;
     optional bool repeat = 0xe;
+    optional string last_command_ident = 0x14;
+    optional uint32 last_command_msgid = 0x15;
     optional uint32 playing_track_index = 0x1a;
     repeated TrackRef track = 0x1b;
 }

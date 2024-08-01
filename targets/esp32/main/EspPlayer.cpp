@@ -1,4 +1,4 @@
-#include "CliPlayer.h"
+#include "EspPlayer.h"
 
 #include <cstdint>      // for uint8_t
 #include <functional>   // for __base
@@ -11,33 +11,30 @@
 #include <variant>      // for get
 #include <vector>       // for vector
 
-#include "BellDSP.h"             // for BellDSP, BellDSP::FadeEffect, BellDS...
-#include "BellUtils.h"           // for BELL_SLEEP_MS
-#include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
+#include "BellUtils.h"  // for BELL_SLEEP_MS
+#include "CircularBuffer.h"
 #include "Logger.h"
 #include "SpircHandler.h"  // for SpircHandler, SpircHandler::EventType
 #include "StreamInfo.h"    // for BitWidth, BitWidth::BW_16
 #include "TrackPlayer.h"   // for TrackPlayer
 
-CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
+EspPlayer::EspPlayer(std::unique_ptr<AudioSink> sink,
                      std::shared_ptr<cspot::SpircHandler> handler)
-    : bell::Task("player", 1024, 0, 0) {
+    : bell::Task("player", 32 * 1024, 0, 1) {
   this->handler = handler;
   this->audioSink = std::move(sink);
 
-  this->centralAudioBuffer =
-      std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
+  this->circularBuffer = std::make_shared<bell::CircularBuffer>(1024 * 128);
 
-#ifndef BELL_DISABLE_CODECS
-  this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
+  this->handler->getTrackPlayer()->setDataCallback([this](uint8_t* data,
+                                                          size_t bytes,
+#ifdef CONFIG_BELL_NOCODEC
+                                                          bool STORAGE_VOLATILE,
 #endif
-
-  this->handler->getTrackPlayer()->setDataCallback(
-      [this](uint8_t* data, size_t bytes, size_t trackId) {
-        if (!bytes)
-          this->handler->notifyAudioReachedPlaybackEnd();
-        return this->centralAudioBuffer->writePCM(data, bytes, trackId);
-      });
+                                                          size_t trackId) {
+    this->feedData(data, bytes, trackId);
+    return bytes;
+  });
 
   this->isPaused = false;
 
@@ -52,20 +49,19 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
               this->pauseRequested = false;
             }
             break;
-          case cspot::SpircHandler::EventType::FLUSH: {
-            this->centralAudioBuffer->clearBuffer();
-            break;
-          }
           case cspot::SpircHandler::EventType::DISC:
-            this->centralAudioBuffer->clearBuffer();
+            this->circularBuffer->emptyBuffer();
+            break;
+          case cspot::SpircHandler::EventType::FLUSH:
+            this->circularBuffer->emptyBuffer();
             break;
           case cspot::SpircHandler::EventType::SEEK:
-            this->centralAudioBuffer->clearBuffer();
+            this->circularBuffer->emptyBuffer();
             break;
           case cspot::SpircHandler::EventType::PLAYBACK_START:
             this->isPaused = true;
             this->playlistEnd = false;
-            this->centralAudioBuffer->clearBuffer();
+            this->circularBuffer->emptyBuffer();
             break;
           case cspot::SpircHandler::EventType::DEPLETED:
             this->playlistEnd = true;
@@ -81,33 +77,42 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   startTask();
 }
 
-void CliPlayer::feedData(uint8_t* data, size_t len) {}
+void EspPlayer::feedData(uint8_t* data, size_t len, size_t trackId) {
+  size_t toWrite = len;
 
-void CliPlayer::runTask() {
+  if (!len)
+    this->handler->notifyAudioReachedPlaybackEnd();
+  else
+    while (toWrite > 0) {
+      this->current_hash = trackId;
+      size_t written =
+          this->circularBuffer->write(data + (len - toWrite), toWrite);
+      if (written == 0) {
+        BELL_SLEEP_MS(10);
+      }
+
+      toWrite -= written;
+    }
+}
+
+void EspPlayer::runTask() {
   std::vector<uint8_t> outBuf = std::vector<uint8_t>(1024);
 
   std::scoped_lock lock(runningMutex);
-  bell::CentralAudioBuffer::AudioChunk* chunk;
 
   size_t lastHash = 0;
 
   while (isRunning) {
     if (!this->isPaused) {
-      chunk = this->centralAudioBuffer->readChunk();
-
+      size_t read = this->circularBuffer->read(outBuf.data(), outBuf.size());
       if (this->pauseRequested) {
         this->pauseRequested = false;
-        std::cout << "Pause requested!" << std::endl;
-#ifndef BELL_DISABLE_CODECS
-        auto effect = std::make_unique<bell::BellDSP::FadeEffect>(
-            44100 / 2, false, [this]() { this->isPaused = true; });
-        this->dsp->queryInstantEffect(std::move(effect));
-#else
         this->isPaused = true;
-#endif
       }
 
-      if (!chunk || chunk->pcmSize == 0) {
+      this->audioSink->feedPCMFrames(outBuf.data(), read);
+
+      if (read == 0) {
         if (this->playlistEnd) {
           this->handler->notifyAudioEnded();
           this->playlistEnd = false;
@@ -115,24 +120,18 @@ void CliPlayer::runTask() {
         BELL_SLEEP_MS(10);
         continue;
       } else {
-        if (lastHash != chunk->trackHash) {
-          lastHash = chunk->trackHash;
+        if (lastHash != current_hash) {
+          lastHash = current_hash;
           this->handler->notifyAudioReachedPlayback();
         }
-
-#ifndef BELL_DISABLE_CODECS
-        this->dsp->process(chunk->pcmData, chunk->pcmSize, 2, 44100,
-                           bell::BitWidth::BW_16);
-#endif
-        this->audioSink->feedPCMFrames(chunk->pcmData, chunk->pcmSize);
       }
     } else {
-      BELL_SLEEP_MS(10);
+      BELL_SLEEP_MS(100);
     }
   }
 }
 
-void CliPlayer::disconnect() {
+void EspPlayer::disconnect() {
   isRunning = false;
   std::scoped_lock lock(runningMutex);
 }

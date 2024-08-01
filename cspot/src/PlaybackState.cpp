@@ -116,8 +116,25 @@ void PlaybackState::syncWithRemote() {
 
   strcpy(innerFrame.state.context_uri, remoteFrame.state.context_uri);
 
+  if (remoteFrame.state.context_description != NULL) {
+    innerFrame.state.context_description =
+        (char*)realloc(innerFrame.state.context_description,
+                       strlen(remoteFrame.state.context_description) + 1);
+    strcpy(innerFrame.state.context_description,
+           remoteFrame.state.context_description);
+  } else {
+    free(innerFrame.state.context_description);
+    innerFrame.state.context_description = NULL;
+  }
+
   innerFrame.state.has_playing_track_index = true;
   innerFrame.state.playing_track_index = remoteFrame.state.playing_track_index;
+  innerFrame.state.has_shuffle = remoteFrame.state.has_shuffle;
+  innerFrame.state.shuffle = remoteFrame.state.shuffle;
+  innerFrame.state.has_repeat = remoteFrame.state.has_repeat;
+  innerFrame.state.repeat = remoteFrame.state.repeat;
+  innerFrame.state.has_index = true;
+  innerFrame.state.index = remoteFrame.state.index;
 }
 
 bool PlaybackState::isActive() {
@@ -167,6 +184,9 @@ std::vector<uint8_t> PlaybackState::encodeCurrentFrame(MessageType typ) {
   innerFrame.has_device_state = true;
   innerFrame.has_typ = true;
   innerFrame.has_state_update_id = true;
+  innerFrame.state.playing_track_index = innerFrame.state.index;
+  innerFrame.state.has_playing_track_index = true;
+  innerFrame.state.has_index = true;
 
   this->seqNum += 1;
 

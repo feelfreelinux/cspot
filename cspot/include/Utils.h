@@ -55,6 +55,14 @@ std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n);
 
 unsigned char h2int(char c);
 
+/**
+ * @brief Extracts the spotify id from a spotify uri and decodes its base62-format
+ * 
+ * @param uri spotify uri/spotify id(base62) string
+ * @return std::vector<uint8_t> gid
+ */
+std::vector<uint8_t> base62Decode(std::string uri);
+
 std::string urlDecode(std::string str);
 
 /**

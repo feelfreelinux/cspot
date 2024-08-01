@@ -68,6 +68,7 @@ void MercurySession::reconnect() {
   try {
     this->conn = nullptr;
     this->shanConn = nullptr;
+    this->partials.clear();
 
     this->connectWithRandomAp();
     this->authenticate(this->authBlob);
@@ -174,19 +175,38 @@ void MercurySession::handlePacket() {
       CSPOT_LOG(debug, "Received mercury packet");
 
       auto response = this->decodeResponse(packet.data);
-      if (this->callbacks.count(response.sequenceId) > 0) {
-        auto seqId = response.sequenceId;
-        this->callbacks[response.sequenceId](response);
-        this->callbacks.erase(this->callbacks.find(seqId));
+      if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
+
+        auto partial = partials.begin();
+        while (partial != partials.end() && partial->first != response.second)
+          partial++;  // if(partial.first == sequenceId)
+        if (partial != partials.end()) {
+          //if the event-id is negative, they got sent without any request
+          if (response.first >= 0) {
+            if (this->callbacks.count(response.second)) {
+              this->callbacks[response.second](partial->second);
+              this->callbacks.erase(this->callbacks.find(response.second));
+            }
+          }
+          this->partials.erase(partial);
+        }
       }
       break;
     }
     case RequestType::SUBRES: {
       auto response = decodeResponse(packet.data);
 
-      auto uri = std::string(response.mercuryHeader.uri);
-      if (this->subscriptions.count(uri) > 0) {
-        this->subscriptions[uri](response);
+      if (response.first == static_cast<uint8_t>(ResponseFlag::FINAL)) {
+        auto partial = partials.begin();
+        while (partial != partials.end() && partial->first != response.second)
+          partial++;  // if(partial.first == sequenceId)
+        if (partial != partials.end()) {
+          auto uri = std::string(partial->second.mercuryHeader.uri);
+          if (this->subscriptions.count(uri) > 0) {
+            this->subscriptions[uri](partial->second);
+          }
+          this->partials.erase(partial);
+        }
       }
       break;
     }
@@ -214,33 +234,63 @@ void MercurySession::failAllPending() {
   this->callbacks = {};
 }
 
-MercurySession::Response MercurySession::decodeResponse(
+std::pair<int, int64_t> MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
-  Response response = {};
-  response.parts = {};
-
   auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-  response.sequenceId = hton64(extract<uint64_t>(data, 2));
+  int64_t sequenceId;
+  uint8_t flag;
+  if (sequenceLength == 2)
+    sequenceId = ntohs(extract<int16_t>(data, 2));
+  else if (sequenceLength == 4)
+    sequenceId = ntohl(extract<int32_t>(data, 2));
+  else if (sequenceLength == 8)
+    sequenceId = hton64(extract<int64_t>(data, 2));
+  else
+    return std::make_pair(0, 0);
 
-  auto partsNumber = ntohs(extract<uint16_t>(data, 11));
-
-  auto headerSize = ntohs(extract<uint16_t>(data, 13));
-  auto headerBytes =
-      std::vector<uint8_t>(data.begin() + 15, data.begin() + 15 + headerSize);
-
-  auto pos = 15 + headerSize;
-  while (pos < data.size()) {
+  size_t pos = 2 + sequenceLength;
+  flag = (uint8_t)data[pos];
+  pos++;
+  uint16_t parts = ntohs(extract<uint16_t>(data, pos));
+  pos += 2;
+  auto partial = partials.begin();
+  while (partial != partials.end() && partial->first != sequenceId)
+    partial++;  // if(partial.first == sequenceId)
+  if (partial == partials.end()) {
+    CSPOT_LOG(debug,
+              "Creating new Mercury Response, seq: %lli, flags: %i, parts: %i",
+              sequenceId, flag, parts);
+    this->partials.push_back(std::make_pair(sequenceId, Response()));
+    partial = partials.end() - 1;
+    partial->second.parts = {};
+    partial->second.fail = false;
+  } else
+    CSPOT_LOG(debug,
+              "Adding to Mercury Response, seq: %lli, flags: %i, parts: %i",
+              sequenceId, flag, parts);
+  uint8_t index = 0;
+  while (parts) {
+    if (data.size() <= pos || partial->second.fail)
+      break;
     auto partSize = ntohs(extract<uint16_t>(data, pos));
-
-    response.parts.push_back(std::vector<uint8_t>(
-        data.begin() + pos + 2, data.begin() + pos + 2 + partSize));
-    pos += 2 + partSize;
+    pos += 2;
+    if (!partial->second.mercuryHeader.has_uri) {
+      partial->second.fail = false;
+      auto headerBytes = std::vector<uint8_t>(data.begin() + pos,
+                                              data.begin() + pos + partSize);
+      pbDecode(partial->second.mercuryHeader, Header_fields, headerBytes);
+    } else {
+      if (index >= partial->second.parts.size())
+        partial->second.parts.push_back(std::vector<uint8_t>{});
+      partial->second.parts[index].insert(partial->second.parts[index].end(),
+                                          data.begin() + pos,
+                                          data.begin() + pos + partSize);
+      index++;
+    }
+    pos += partSize;
+    parts--;
   }
-
-  pbDecode(response.mercuryHeader, Header_fields, headerBytes);
-  response.fail = false;
-
-  return response;
+  return std::make_pair(flag, sequenceId);
 }
 
 uint64_t MercurySession::executeSubscription(RequestType method,

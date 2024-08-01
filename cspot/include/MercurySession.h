@@ -26,12 +26,9 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   struct Response {
     Header mercuryHeader;
-    uint8_t flags;
     DataParts parts;
-    uint64_t sequenceId;
     bool fail;
   };
-
   typedef std::function<void(Response&)> ResponseCallback;
   typedef std::function<void(bool, const std::vector<uint8_t>&)>
       AudioKeyCallback;
@@ -52,6 +49,11 @@ class MercurySession : public bell::Task, public cspot::Session {
     AUDIO_KEY_SUCCESS_RESPONSE = 0x0D,
     AUDIO_KEY_FAILURE_RESPONSE = 0x0E,
     COUNTRY_CODE_RESPONSE = 0x1B,
+  };
+
+  enum class ResponseFlag : uint8_t {
+    FINAL = 0x01,
+    PARTIAL = 0x02,
   };
 
   std::unordered_map<RequestType, std::string> RequestTypeMap = {
@@ -111,7 +113,8 @@ class MercurySession : public bell::Task, public cspot::Session {
   void runTask() override;
   void reconnect();
 
-  std::unordered_map<uint64_t, ResponseCallback> callbacks;
+  std::unordered_map<int64_t, ResponseCallback> callbacks;
+  std::deque<std::pair<int64_t, Response>> partials;
   std::unordered_map<std::string, ResponseCallback> subscriptions;
   std::unordered_map<uint32_t, AudioKeyCallback> audioKeyCallbacks;
 
@@ -129,6 +132,6 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   void failAllPending();
 
-  Response decodeResponse(const std::vector<uint8_t>& data);
+  std::pair<int, int64_t> decodeResponse(const std::vector<uint8_t>& data);
 };
 }  // namespace cspot
