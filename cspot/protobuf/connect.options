@@ -1,0 +1,79 @@
+DeviceInfo.name type:FT_POINTER
+DeviceInfo.device_id type:FT_POINTER
+DeviceInfo.client_id type:FT_POINTER
+DeviceInfo.spirc_version type:FT_POINTER
+//DeviceInfo.supported_types type:FT_POINTER
+DeviceInfo.device_software_version type:FT_POINTER
+DeviceInfo.capabilities max_count:27, fixed_count:false
+DeviceInfo.model type:FT_POINTER
+DeviceInfo.brand type:FT_POINTER
+PutStateRequest.callback_url type:FT_POINTER
+PutStateRequest.last_command_sent_by_device_id type:FT_POINTER
+Capabilities.stringValue max_count:50, max_size: 50
+Capabilities.intValue max_count:50
+Capabilities.supported_types type:FT_POINTER
+Capabilities.Supported_typesEntry type:FT_POINTER
+Cluster.device         max_count:10 fixed_count:false
+Cluster.DeviceEntry.key type:FT_POINTER
+Cluster.active_device_id type:FT_POINTER
+ProvidedTrack.uri type:FT_POINTER
+ProvidedTrack.uid type:FT_POINTER
+ProvidedTrack.metadata max_count:30, fixed_count:false
+ProvidedTrack.MetadataEntry type:FT_POINTER
+ProvidedTrack.removed type:FT_POINTER
+ProvidedTrack.blocked type:FT_POINTER
+ProvidedTrack.provider type:FT_POINTER
+ProvidedTrack.album_uri type:FT_POINTER
+ProvidedTrack.disallow_reasons type:FT_POINTER
+ProvidedTrack.artist_uri type:FT_POINTER
+ProvidedTrack.disallow_undecided type:FT_POINTER
+PlayOrigin.feature_identifier type:FT_POINTER
+PlayOrigin.feature_version type:FT_POINTER
+PlayOrigin.view_uri type:FT_POINTER
+PlayOrigin.external_referrer type:FT_POINTER
+PlayOrigin.referrer_identifier type:FT_POINTER
+PlayOrigin.device_identifier type:FT_POINTER
+PlayOrigin.feature_classes type:FT_POINTER
+PlayerState.playback_id type:FT_POINTER
+
+ContextPlayerOptions.context_enhancement max_count:2, fixed_count:false
+ContextPlayerOptions.ContextEnhancementEntry type:FT_POINTER
+
+Restrictions type:FT_POINTER
+
+PlayerState.context_uri type:FT_POINTER
+PlayerState.context_url type:FT_POINTER
+PlayerState.context_metadata type:FT_POINTER
+PlayerState.ContextMetadataEntry type:FT_POINTER
+PlayerState.page_metadata type:FT_POINTER
+PlayerState.PageMetadataEntry type:FT_POINTER
+PlayerState.session_id type:FT_POINTER
+PlayerState.queue_revision type:FT_POINTER
+PlayerState.entity_uri type:FT_POINTER
+PlayerState.playback_provider type:FT_POINTER
+PlayerState.random_message type:FT_POINTER
+
+Restrictions.disallow_pausing_reasons type:FT_POINTER
+Restrictions.disallow_resuming_reasons type:FT_POINTER
+Restrictions.disallow_seeking_reasons type:FT_POINTER
+Restrictions.disallow_peeking_prev_reasons type:FT_POINTER
+Restrictions.disallow_peeking_next_reasons type:FT_POINTER
+Restrictions.disallow_skipping_prev_reasons type:FT_POINTER
+Restrictions.disallow_skipping_next_reasons type:FT_POINTER
+Restrictions.disallow_toggling_repeat_context_reasons type:FT_POINTER
+Restrictions.disallow_toggling_repeat_track_reasons type:FT_POINTER
+Restrictions.disallow_toggling_shuffle_reasons type:FT_POINTER
+Restrictions.disallow_set_queue_reasons type:FT_POINTER
+Restrictions.disallow_interrupting_playback_reasons type:FT_POINTER
+Restrictions.disallow_transferring_playback_reasons type:FT_POINTER
+Restrictions.disallow_remote_control_reasons type:FT_POINTER
+Restrictions.disallow_inserting_into_next_tracks_reasons type:FT_POINTER
+Restrictions.disallow_inserting_into_context_tracks_reasons type:FT_POINTER
+Restrictions.disallow_reordering_in_next_tracks_reasons type:FT_POINTER
+Restrictions.disallow_reordering_in_context_tracks_reasons type:FT_POINTER
+Restrictions.disallow_removing_from_next_tracks_reasons type:FT_POINTER
+Restrictions.disallow_removing_from_context_tracks_reasons type:FT_POINTER
+Restrictions.disallow_updating_context_reasons type:FT_POINTER
+Restrictions.disallow_playing_reasons type:FT_POINTER
+Restrictions.disallow_stopping_reasons type:FT_POINTER
+Restrictions.disallow_loading_context_reasons type:FT_POINTER

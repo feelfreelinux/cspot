@@ -1,18 +1,18 @@
-#include <functional>   // for __base, function
+#include <fstream>
+#include <functional>  // for __base, function
+#include <iostream>
 #include <map>          // for operator!=, map, map<>::mapped_type
+#include <sstream>      // for std::osstringstream
 #include <stdexcept>    // for invalid_argument
 #include <type_traits>  // for remove_extent_t
 #include <vector>       // for vector
-#include <iostream>
-#include <fstream>
-#include <sstream> // for std::osstringstream
 
 #include "BellHTTPServer.h"       // for BellHTTPServer
 #include "BellLogger.h"           // for setDefaultLogger, AbstractLogger
 #include "CSpotContext.h"         // for Context, Context::ConfigState
 #include "CliPlayer.h"            // for CliPlayer
+#include "DeviceStateHandler.h"   // for DeviceStateHandler
 #include "MDNSService.h"          // for MDNSService
-#include "SpircHandler.h"         // for SpircHandler
 #include "WrappedSemaphore.h"     // for WrappedSemaphore
 #include "civetweb.h"             // for mg_header, mg_get_request_info
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
@@ -151,7 +151,8 @@ int main(int argc, char** argv) {
       std::cout << "-p, --password            your spotify password, note that "
                    "if you use facebook login you can set a password in your "
                    "account settings\n";
-      std::cout << "-c, --credentials         json file to store/load reusable credentials\n";
+      std::cout << "-c, --credentials         json file to store/load reusable "
+                   "credentials\n";
       std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
       std::cout << "\n";
       std::cout << "ddd 2022\n";
@@ -168,11 +169,11 @@ int main(int argc, char** argv) {
     }
     // reusable credentials
     else if (!args->credentials.empty()) {
-        std::ifstream file(args->credentials);
-        std::ostringstream credentials;
-        credentials << file.rdbuf();
-        loginBlob->loadJson(credentials.str());
-        loggedInSemaphore->give();
+      std::ifstream file(args->credentials);
+      std::ostringstream credentials;
+      credentials << file.rdbuf();
+      loginBlob->loadJson(credentials.str());
+      loggedInSemaphore->give();
     }
     // ZeroconfAuthenticator
     else {
@@ -200,12 +201,12 @@ int main(int argc, char** argv) {
     if (ctx->config.authData.size() > 0) {
       // when credentials file is set, then store reusable credentials
       if (!args->credentials.empty()) {
-          std::ofstream file(args->credentials);
-          file << ctx->getCredentialsJson();
+        std::ofstream file(args->credentials);
+        file << ctx->getCredentialsJson();
       }
 
-      // Start spirc task
-      auto handler = std::make_shared<cspot::SpircHandler>(ctx);
+      // Start DeviceStateHandler
+      auto handler = std::make_shared<cspot::DeviceStateHandler>(ctx);
 
       // Start handling mercury messages
       ctx->session->startTask();

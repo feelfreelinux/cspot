@@ -2,8 +2,10 @@
 
 #include <stdint.h>
 #include <memory>
+#include <random>  //for random_device and default_random_engine
 
 #include "Crypto.h"
+#include "EventManager.h"
 #include "LoginBlob.h"
 #include "MercurySession.h"
 #include "TimeProvider.h"
@@ -35,6 +37,9 @@ struct Context {
 
   std::shared_ptr<TimeProvider> timeProvider;
   std::shared_ptr<cspot::MercurySession> session;
+  std::shared_ptr<PlaybackMetrics> playbackMetrics;
+  std::random_device rd;
+  std::default_random_engine rng;
   std::string getCredentialsJson() {
 #ifdef BELL_ONLY_CJSON
     cJSON* json_obj = cJSON_CreateObject();
@@ -66,8 +71,10 @@ struct Context {
       std::shared_ptr<LoginBlob> blob) {
     auto ctx = std::make_shared<Context>();
     ctx->timeProvider = std::make_shared<TimeProvider>();
+    ctx->rng = std::default_random_engine{ctx->rd()};
 
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
+    ctx->playbackMetrics = std::make_shared<PlaybackMetrics>(ctx);
     ctx->config.deviceId = blob->getDeviceId();
     ctx->config.deviceName = blob->getDeviceName();
     ctx->config.authData = blob->authData;

@@ -14,13 +14,13 @@
 #include "BellDSP.h"             // for BellDSP, BellDSP::FadeEffect, BellDS...
 #include "BellUtils.h"           // for BELL_SLEEP_MS
 #include "CentralAudioBuffer.h"  // for CentralAudioBuffer::AudioChunk, Cent...
+#include "DeviceStateHandler.h"  // for DeviceStateHandler, DeviceStateHandler::CommandType
 #include "Logger.h"
-#include "SpircHandler.h"  // for SpircHandler, SpircHandler::EventType
-#include "StreamInfo.h"    // for BitWidth, BitWidth::BW_16
-#include "TrackPlayer.h"   // for TrackPlayer
+#include "StreamInfo.h"   // for BitWidth, BitWidth::BW_16
+#include "TrackPlayer.h"  // for TrackPlayer
 
 CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
-                     std::shared_ptr<cspot::SpircHandler> handler)
+                     std::shared_ptr<cspot::DeviceStateHandler> handler)
     : bell::Task("player", 1024, 0, 0) {
   this->handler = handler;
   this->audioSink = std::move(sink);
@@ -32,54 +32,70 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
 #endif
 
-  auto hashFunc = std::hash<std::string_view>();
-
-  this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
-
-        return this->centralAudioBuffer->writePCM(data, bytes, hash);
-      });
+  this->handler->trackPlayer->setDataCallback([this](uint8_t* data,
+                                                     size_t bytes,
+#ifdef CONFIG_BELL_NOCODEC
+                                                     bool STORAGE_VOLATILE,
+#endif
+                                                     size_t trackId) {
+    return this->centralAudioBuffer->writePCM(data, bytes, trackId);
+  });
 
   this->isPaused = false;
 
-  this->handler->setEventHandler(
-      [this](std::unique_ptr<cspot::SpircHandler::Event> event) {
-        switch (event->eventType) {
-          case cspot::SpircHandler::EventType::PLAY_PAUSE:
-            if (std::get<bool>(event->data)) {
-              this->pauseRequested = true;
-            } else {
-              this->isPaused = false;
-              this->pauseRequested = false;
-            }
+  this->handler->stateCallback =
+      [this](cspot::DeviceStateHandler::Command event) {
+        switch (event.commandType) {
+          case cspot::DeviceStateHandler::CommandType::PAUSE:
+            this->pauseRequested = true;
             break;
-          case cspot::SpircHandler::EventType::FLUSH: {
+          case cspot::DeviceStateHandler::CommandType::PLAY:
+            this->isPaused = false;
+            this->pauseRequested = false;
+            break;
+          case cspot::DeviceStateHandler::CommandType::FLUSH: {
             this->centralAudioBuffer->clearBuffer();
             break;
           }
-          case cspot::SpircHandler::EventType::DISC:
+          case cspot::DeviceStateHandler::CommandType::DISC:
             this->centralAudioBuffer->clearBuffer();
-            break;
-          case cspot::SpircHandler::EventType::SEEK:
-            this->centralAudioBuffer->clearBuffer();
-            break;
-          case cspot::SpircHandler::EventType::PLAYBACK_START:
-            this->isPaused = true;
-            this->playlistEnd = false;
-            this->centralAudioBuffer->clearBuffer();
-            break;
-          case cspot::SpircHandler::EventType::DEPLETED:
+            tracks.at(0)->trackMetrics->endTrack();
+            this->handler->ctx->playbackMetrics->sendEvent(tracks[0]);
+            tracks.clear();
             this->playlistEnd = true;
             break;
-          case cspot::SpircHandler::EventType::VOLUME: {
-            int volume = std::get<int>(event->data);
+          case cspot::DeviceStateHandler::CommandType::SEEK:
+            this->centralAudioBuffer->clearBuffer();
+            break;
+          case cspot::DeviceStateHandler::CommandType::SKIP_NEXT:
+          case cspot::DeviceStateHandler::CommandType::SKIP_PREV:
+            this->centralAudioBuffer->clearBuffer();
+            break;
+          case cspot::DeviceStateHandler::CommandType::PLAYBACK_START:
+            this->centralAudioBuffer->clearBuffer();
+            if (tracks.size())
+              tracks.clear();
+            this->isPaused = false;
+            this->playlistEnd = false;
+            break;
+          case cspot::DeviceStateHandler::CommandType::PLAYBACK:
+            tracks.push_back(
+                std::get<std::shared_ptr<cspot::QueuedTrack>>(event.data));
+            this->isPaused = false;
+            this->playlistEnd = false;
+            break;
+          case cspot::DeviceStateHandler::CommandType::DEPLETED:
+            this->centralAudioBuffer->clearBuffer();
+            this->playlistEnd = true;
+            break;
+          case cspot::DeviceStateHandler::CommandType::VOLUME: {
+            int volume = std::get<int32_t>(event.data);
             break;
           }
           default:
             break;
         }
-      });
+      };
   startTask();
 }
 
@@ -111,15 +127,28 @@ void CliPlayer::runTask() {
 
       if (!chunk || chunk->pcmSize == 0) {
         if (this->playlistEnd) {
-            this->handler->notifyAudioEnded();
-            this->playlistEnd = false;
+          this->playlistEnd = false;
+          if (tracks.size()) {
+            tracks.at(0)->trackMetrics->endTrack();
+            this->handler->ctx->playbackMetrics->sendEvent(tracks[0]);
+            tracks.clear();
+          }
+          lastHash = 0;
         }
         BELL_SLEEP_MS(10);
         continue;
       } else {
         if (lastHash != chunk->trackHash) {
+          if (lastHash) {
+            tracks.at(0)->trackMetrics->endTrack();
+            this->handler->ctx->playbackMetrics->sendEvent(tracks[0]);
+            tracks.pop_front();
+            this->handler->trackPlayer->eofCallback(true);
+          }
           lastHash = chunk->trackHash;
-          this->handler->notifyAudioReachedPlayback();
+          tracks.at(0)->trackMetrics->startTrackPlaying(
+              tracks.at(0)->requestedPosition);
+          this->handler->putPlayerState();
         }
 
 #ifndef BELL_DISABLE_CODECS

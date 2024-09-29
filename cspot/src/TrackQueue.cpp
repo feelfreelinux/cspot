@@ -5,9 +5,11 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <random>
 
 #include "AccessKeyFetcher.h"
 #include "BellTask.h"
+#include "BellUtils.h"  // for BELL_SLEEP_MS
 #include "CDNAudioFile.h"
 #include "CSpotContext.h"
 #include "HTTPClient.h"
@@ -23,6 +25,7 @@
 #include "protobuf/metadata.pb.h"
 
 using namespace cspot;
+
 namespace TrackDataUtils {
 bool countryListContains(char* countryList, const char* country) {
   uint16_t countryList_length = strlen(countryList);
@@ -120,14 +123,20 @@ void TrackInfo::loadPbEpisode(Episode* pbEpisode,
   duration = pbEpisode->duration;
 }
 
-QueuedTrack::QueuedTrack(TrackReference& ref,
+QueuedTrack::QueuedTrack(ProvidedTrack& ref,
                          std::shared_ptr<cspot::Context> ctx,
-                         uint32_t requestedPosition)
-    : requestedPosition(requestedPosition), ctx(ctx) {
-  this->ref = ref;
-
+                         int64_t requestedPosition)
+    : requestedPosition((uint32_t)requestedPosition), ctx(ctx) {
+  trackMetrics = std::make_shared<TrackMetrics>(ctx, requestedPosition);
   loadedSemaphore = std::make_shared<bell::WrappedSemaphore>();
-  state = State::QUEUED;
+  this->ref = ref;
+  if (ref.uid == NULL || !strstr(ref.uri, "spotify:delimiter")) {
+    this->gid = base62Decode(ref.uri);
+    state = State::QUEUED;
+  } else {
+    state = State::FAILED;
+    loadedSemaphore->give();
+  }
 }
 
 QueuedTrack::~QueuedTrack() {
@@ -141,6 +150,8 @@ QueuedTrack::~QueuedTrack() {
   if (pendingAudioKeyRequest != 0) {
     ctx->session->unregisterAudioKey(pendingAudioKeyRequest);
   }
+  pb_release(Track_fields, &pbTrack);
+  pb_release(Episode_fields, &pbEpisode);
 }
 
 std::shared_ptr<cspot::CDNAudioFile> QueuedTrack::getAudioFile() {
@@ -158,7 +169,7 @@ void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
 
   const char* countryCode = ctx->config.countryCode.c_str();
 
-  if (ref.type == TrackReference::Type::TRACK) {
+  if (gid.first == SpotifyFileType::TRACK) {
     CSPOT_LOG(info, "Track name: %s", pbTrack->name);
     CSPOT_LOG(info, "Track duration: %d", pbTrack->duration);
 
@@ -235,8 +246,6 @@ void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
     loadedSemaphore->give();
     return;
   }
-
-  // Assign track identifier
   identifier = bytesToHexString(fileId);
 
   state = State::KEY_REQUIRED;
@@ -282,9 +291,8 @@ void QueuedTrack::stepLoadCDNUrl(const std::string& accessKey) {
 
     std::string requestUrl = string_format(
         "https://api.spotify.com/v1/storage-resolve/files/audio/interactive/"
-        "%s?alt=json&product=9",
+        "%s?alt=json",
         bytesToHexString(fileId).c_str());
-
     auto req = bell::HTTPClient::get(
         requestUrl, {bell::HTTPClient::ValueHeader(
                         {"Authorization", "Bearer " + accessKey})});
@@ -302,7 +310,7 @@ void QueuedTrack::stepLoadCDNUrl(const std::string& accessKey) {
     cdnUrl = jsonResult["cdnurl"][0];
 #endif
 
-    CSPOT_LOG(info, "Received CDN URL, %s", cdnUrl.c_str());
+    // CSPOT_LOG(info, "Received CDN URL, %s", cdnUrl.c_str());
     state = State::READY;
     loadedSemaphore->give();
   } catch (...) {
@@ -322,12 +330,11 @@ void QueuedTrack::expire() {
 void QueuedTrack::stepLoadMetadata(
     Track* pbTrack, Episode* pbEpisode, std::mutex& trackListMutex,
     std::shared_ptr<bell::WrappedSemaphore> updateSemaphore) {
-
   // Prepare request ID
-  std::string requestUrl = string_format(
-      "hm://metadata/3/%s/%s",
-      ref.type == TrackReference::Type::TRACK ? "track" : "episode",
-      bytesToHexString(ref.gid).c_str());
+  std::string requestUrl =
+      string_format("hm://metadata/3/%s/%s",
+                    gid.first == SpotifyFileType::TRACK ? "track" : "episode",
+                    bytesToHexString(gid.second).c_str());
 
   auto responseHandler = [this, pbTrack, pbEpisode, &trackListMutex,
                           updateSemaphore](MercurySession::Response& res) {
@@ -342,7 +349,7 @@ void QueuedTrack::stepLoadMetadata(
     }
 
     // Parse the metadata
-    if (ref.type == TrackReference::Type::TRACK) {
+    if (gid.first == SpotifyFileType::TRACK) {
       pb_release(Track_fields, pbTrack);
       pbDecode(*pbTrack, Track_fields, res.parts[0]);
     } else {
@@ -356,28 +363,19 @@ void QueuedTrack::stepLoadMetadata(
     updateSemaphore->give();
   };
   // Execute the request
-  pendingMercuryRequest = ctx->session->execute(
-      MercurySession::RequestType::GET, requestUrl, responseHandler);
+  if (pbTrack != NULL || pbEpisode != NULL)
+    pendingMercuryRequest = ctx->session->execute(
+        MercurySession::RequestType::GET, requestUrl, responseHandler);
 
   // Set the state to pending
   state = State::PENDING_META;
 }
 
-TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
-                       std::shared_ptr<cspot::PlaybackState> state)
-    : bell::Task("CSpotTrackQueue", 1024 * 32, 2, 1),
-      playbackState(state),
-      ctx(ctx) {
+TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx)
+    : bell::Task("CSpotTrackQueue", 1024 * 32, 2, 1), ctx(ctx) {
   accessKeyFetcher = std::make_shared<cspot::AccessKeyFetcher>(ctx);
   processSemaphore = std::make_shared<bell::WrappedSemaphore>();
   playableSemaphore = std::make_shared<bell::WrappedSemaphore>();
-
-  // Assign encode callback to track list
-  playbackState->innerFrame.state.track.funcs.encode =
-      &TrackReference::pbEncodeTrackList;
-  playbackState->innerFrame.state.track.arg = &currentTracks;
-  pbTrack = Track_init_zero;
-  pbEpisode = Episode_init_zero;
 
   // Start the task
   startTask();
@@ -387,17 +385,6 @@ TrackQueue::~TrackQueue() {
   stopTask();
 
   std::scoped_lock lock(tracksMutex);
-
-  pb_release(Track_fields, &pbTrack);
-  pb_release(Episode_fields, &pbEpisode);
-}
-
-TrackInfo TrackQueue::getTrackInfo(std::string_view identifier) {
-  for (auto& track : preloadedTracks) {
-    if (track->identifier == identifier)
-      return track->trackInfo;
-  }
-  return TrackInfo{};
 }
 
 void TrackQueue::runTask() {
@@ -413,10 +400,9 @@ void TrackQueue::runTask() {
     // Make sure we have the newest access key
     accessKey = accessKeyFetcher->getAccessKey();
 
-    int loadedIndex = currentTracksIndex;
-
     // No tracks loaded yet
-    if (loadedIndex < 0) {
+    if (!preloadedTracks.size()) {
+      BELL_SLEEP_MS(50);
       continue;
     } else {
       std::scoped_lock lock(tracksMutex);
@@ -425,6 +411,7 @@ void TrackQueue::runTask() {
     }
 
     for (auto& track : trackQueue) {
+      std::scoped_lock lock(tracksMutex);
       if (track) {
         this->processTrack(track);
       }
@@ -444,23 +431,10 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     std::shared_ptr<QueuedTrack> prevTrack, int& offset) {
   std::scoped_lock lock(tracksMutex);
 
-  if (currentTracksIndex == -1 || currentTracksIndex >= currentTracks.size()) {
+  if (!preloadedTracks.size()) {
+    offset = -1;
     return nullptr;
   }
-
-  // No previous track, return head
-  if (prevTrack == nullptr) {
-    offset = 0;
-
-    return preloadedTracks[0];
-  }
-
-  // if (currentTracksIndex + preloadedTracks.size() >= currentTracks.size()) {
-  //   offset = -1;
-
-  //   // Last track in queue
-  //   return nullptr;
-  // }
 
   auto prevTrackIter =
       std::find(preloadedTracks.begin(), preloadedTracks.end(), prevTrack);
@@ -471,20 +445,17 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
   } else {
     offset = 0;
   }
-
   if (offset >= preloadedTracks.size()) {
     // Last track in preloaded queue
     return nullptr;
   }
-
-  // Return the current track
   return preloadedTracks[offset];
 }
 
 void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
   switch (track->state) {
     case QueuedTrack::State::QUEUED:
-      track->stepLoadMetadata(&pbTrack, &pbEpisode, tracksMutex,
+      track->stepLoadMetadata(&track->pbTrack, &track->pbEpisode, tracksMutex,
                               processSemaphore);
       break;
     case QueuedTrack::State::KEY_REQUIRED:
@@ -492,145 +463,8 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
       break;
     case QueuedTrack::State::CDN_REQUIRED:
       track->stepLoadCDNUrl(accessKey);
-
-      if (track->state == QueuedTrack::State::READY) {
-        if (preloadedTracks.size() < MAX_TRACKS_PRELOAD) {
-          // Queue a new track to preload
-          queueNextTrack(preloadedTracks.size());
-        }
-      }
-      break;
     default:
       // Do not perform any action
       break;
   }
-}
-
-bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
-  const int requestedRefIndex = offset + currentTracksIndex;
-
-  if (requestedRefIndex < 0 || requestedRefIndex >= currentTracks.size()) {
-    return false;
-  }
-
-  // in case we re-queue current track, make sure position is updated (0)
-  if (offset == 0 && preloadedTracks.size() &&
-      preloadedTracks[0]->ref == currentTracks[currentTracksIndex]) {
-    preloadedTracks.pop_front();
-  }
-
-  if (offset <= 0) {
-    preloadedTracks.push_front(std::make_shared<QueuedTrack>(
-        currentTracks[requestedRefIndex], ctx, positionMs));
-  } else {
-    preloadedTracks.push_back(std::make_shared<QueuedTrack>(
-        currentTracks[requestedRefIndex], ctx, positionMs));
-  }
-
-  return true;
-}
-
-bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
-  bool skipped = true;
-  std::scoped_lock lock(tracksMutex);
-
-  if (dir == SkipDirection::PREV) {
-    uint64_t position =
-        !playbackState->innerFrame.state.has_position_ms
-            ? 0
-            : playbackState->innerFrame.state.position_ms +
-                  ctx->timeProvider->getSyncedTimestamp() -
-                  playbackState->innerFrame.state.position_measured_at;
-
-    if (currentTracksIndex > 0 && position < 3000) {
-      queueNextTrack(-1);
-
-      if (preloadedTracks.size() > MAX_TRACKS_PRELOAD) {
-        preloadedTracks.pop_back();
-      }
-
-      currentTracksIndex--;
-    } else {
-      queueNextTrack(0);
-    }
-  } else {
-    if (currentTracks.size() > currentTracksIndex + 1) {
-      preloadedTracks.pop_front();
-
-      if (!queueNextTrack(preloadedTracks.size() + 1)) {
-        CSPOT_LOG(info, "Failed to queue next track");
-      }
-
-      currentTracksIndex++;
-    } else {
-      skipped = false;
-    }
-  }
-
-  if (skipped) {
-    // Update frame data
-    playbackState->innerFrame.state.playing_track_index = currentTracksIndex;
-
-    if (expectNotify) {
-      // Reset position to zero
-      notifyPending = true;
-    }
-  }
-
-  return skipped;
-}
-
-bool TrackQueue::hasTracks() {
-  std::scoped_lock lock(tracksMutex);
-
-  return currentTracks.size() > 0;
-}
-
-bool TrackQueue::isFinished() {
-  std::scoped_lock lock(tracksMutex);
-  return currentTracksIndex >= currentTracks.size() - 1;
-}
-
-bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
-  std::scoped_lock lock(tracksMutex);
-  bool cleared = true;
-
-  // Copy requested track list
-  currentTracks = playbackState->remoteTracks;
-  currentTracksIndex = playbackState->innerFrame.state.playing_track_index;
-
-  if (initial) {
-    // Clear preloaded tracks
-    preloadedTracks.clear();
-
-    if (currentTracksIndex < currentTracks.size()) {
-      // Push a song on the preloaded queue
-      queueNextTrack(0, requestedPosition);
-    }
-
-    // We already updated track meta, mark it
-    notifyPending = true;
-
-    playableSemaphore->give();
-  } else if (preloadedTracks[0]->loading) {
-    // try to not re-load track if we are still loading it
-
-    // remove everything except first track
-    preloadedTracks.erase(preloadedTracks.begin() + 1, preloadedTracks.end());
-
-    // Push a song on the preloaded queue
-    CSPOT_LOG(info, "Keeping current track %d", currentTracksIndex);
-    queueNextTrack(1);
-
-    cleared = false;
-  } else {
-    // Clear preloaded tracks
-    preloadedTracks.clear();
-
-    // Push a song on the preloaded queue
-    CSPOT_LOG(info, "Re-loading current track");
-    queueNextTrack(0, requestedPosition);
-  }
-
-  return cleared;
 }

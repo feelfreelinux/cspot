@@ -4,6 +4,7 @@
 #include <initializer_list>  // for initializer_list
 
 #include "BellLogger.h"                  // for AbstractLogger
+#include "BellUtils.h"                   // for getMacAddress
 #include "ConstantParameters.h"          // for brandName, cspot, protoc...
 #include "Logger.h"                      // for CSPOT_LOG
 #include "protobuf/authentication.pb.h"  // for AuthenticationType_AUTHE...
@@ -15,13 +16,38 @@
 #include "nlohmann/json_fwd.hpp"  // for json
 #endif
 
+#include <mbedtls/sha1.h>  //(for generating unique device id)
+
 using namespace cspot;
+
+std::string sha1_digest(const std::vector<uint8_t>& message) {
+  std::vector<uint8_t> digest(20);  // SHA1 digest size (160 bits)
+  mbedtls_sha1_context sha1Context;
+
+  mbedtls_sha1_init(&sha1Context);
+  mbedtls_sha1_starts(&sha1Context);
+  mbedtls_sha1_update(&sha1Context, message.data(), message.size());
+  mbedtls_sha1_finish(&sha1Context, digest.data());
+  mbedtls_sha1_free(&sha1Context);
+
+  // Convert digest to a hex string
+  std::ostringstream oss;
+  for (const auto& byte : digest) {
+    oss << std::hex << std::setw(2) << std::setfill('0')
+        << static_cast<int>(byte);
+  }
+
+  return oss.str();  // Return the hex string
+}
 
 LoginBlob::LoginBlob(std::string name) {
   char hash[32];
   sprintf(hash, "%016zu", std::hash<std::string>{}(name));
   // base is 142137fd329622137a14901634264e6f332e2411
-  this->deviceId = std::string("142137fd329622137a149016") + std::string(hash);
+  std::string mac_string = bell::getMacAddress();
+  CSPOT_LOG(info, "new mac : %s", mac_string.c_str());
+  std::vector<uint8_t> mac(mac_string.begin(), mac_string.end());
+  this->deviceId = sha1_digest(mac);
   this->crypto = std::make_unique<Crypto>();
   this->name = name;
 

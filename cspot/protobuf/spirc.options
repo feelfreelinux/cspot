@@ -7,4 +7,6 @@ DeviceState.sw_version type:FT_POINTER
 DeviceState.name type:FT_POINTER
 DeviceState.capabilities max_count:17, fixed_count:false
 State.context_uri type:FT_POINTER
+State.last_command_ident type:FT_POINTER
+State.context_description type:FT_POINTER
 TrackRef.queued type:FT_CALLBACK

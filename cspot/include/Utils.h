@@ -15,8 +15,10 @@
 #include <memory>     // for unique_ptr
 #include <stdexcept>  // for runtime_error
 #include <string>     // for string
+#include <utility>    // for pair
 
 #define HMAC_SHA1_BLOCKSIZE 64
+enum class SpotifyFileType { TRACK, EPISODE, UNKNOWN };
 
 /**
  * @brief Returns current timestamp
@@ -32,6 +34,14 @@ unsigned long long getCurrentTimestamp();
  * @return uint64_t swapped result
  */
 uint64_t hton64(uint64_t value);
+
+/**
+ * @brief Encodes a bytestream to a base64 string
+ * 
+ * @param v std::vector<uint8_t>
+ * @return std::string
+ */
+std::string base64Encode(const std::vector<uint8_t>& v);
 
 std::vector<uint8_t> bigNumDivide(std::vector<uint8_t> num, int n);
 
@@ -54,6 +64,14 @@ std::vector<uint8_t> bigNumMultiply(std::vector<uint8_t> num, int n);
 std::vector<uint8_t> bigNumAdd(std::vector<uint8_t> num, int n);
 
 unsigned char h2int(char c);
+
+/**
+ * @brief Extracts the spotify id from a spotify uri and decodes its base62-format
+ * 
+ * @param uri spotify uri/spotify id(base62) string
+ * @return std::vector<uint8_t> gid
+ */
+std::pair<SpotifyFileType, std::vector<uint8_t>> base62Decode(std::string uri);
 
 std::string urlDecode(std::string str);
 

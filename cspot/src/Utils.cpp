@@ -11,6 +11,11 @@
 #include <arpa/inet.h>
 #endif
 
+static std::string Base62Alphabet =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static char Base64Alphabet[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 unsigned long long getCurrentTimestamp() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
              std::chrono::system_clock::now().time_since_epoch())
@@ -26,6 +31,34 @@ uint64_t hton64(uint64_t value) {
   } else {
     return value;
   }
+}
+
+std::string base64Encode(const std::vector<uint8_t>& v) {
+  std::string ss;
+  int nLenOut = 0;
+  int index = 0;
+  while (index < v.size()) {
+    size_t decode_size = v.size() - index;
+    unsigned long n = v[index];
+    n <<= 8;
+    n |= (decode_size > 1) ? v[index + 1] : 0;
+    n <<= 8;
+    n |= (decode_size > 2) ? v[index + 2] : 0;
+    uint8_t m4 = n & 0x3f;
+    n >>= 6;
+    uint8_t m3 = n & 0x3f;
+    n >>= 6;
+    uint8_t m2 = n & 0x3f;
+    n >>= 6;
+    uint8_t m1 = n & 0x3f;
+
+    ss.push_back(Base64Alphabet[m1]);
+    ss.push_back(Base64Alphabet[m2]);
+    ss.push_back(decode_size > 1 ? Base64Alphabet[m3] : '=');
+    ss.push_back(decode_size > 2 ? Base64Alphabet[m4] : '=');
+    index += 3;
+  }
+  return ss;
 }
 
 std::vector<uint8_t> stringHexToBytes(const std::string& s) {
@@ -151,4 +184,26 @@ std::string urlDecode(std::string str) {
   }
 
   return encodedString;
+}
+
+std::pair<SpotifyFileType, std::vector<uint8_t>> base62Decode(std::string uri) {
+  std::vector<uint8_t> n = std::vector<uint8_t>({0});
+  SpotifyFileType type = SpotifyFileType::UNKNOWN;
+  auto it = uri.begin();
+  if (uri.find(":") != std::string::npos) {
+    if (uri.find("episode:") != std::string::npos) {
+      type = SpotifyFileType::EPISODE;
+    } else if (uri.find("track:") != std::string::npos) {
+      type = SpotifyFileType::TRACK;
+    }
+    it += uri.rfind(":") + 1;
+  }
+  while (it != uri.end()) {
+    size_t d = Base62Alphabet.find(*it);
+    n = bigNumMultiply(n, 62);
+    n = bigNumAdd(n, d);
+    it++;
+  }
+
+  return std::make_pair(type, n);
 }
