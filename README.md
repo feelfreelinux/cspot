@@ -193,7 +193,7 @@ Now open a real Spotify app and you should see a cspot device on your local netw
 `cspot` is meant to be used as a lightweight C++ library for playing back Spotify music and receive control notifications from Spotify connect. 
 It exposes an interface for starting the communication with Spotify servers and expects the embedding program to provide an interface for playing back raw audio samples ([`AudioSink`](include/AudioSink.h)).
 
-You can view the [`cspot-cli`]([targets/cli/main.cpp) program for a reference on how to include cspot in your program. It provides a few audio sinks for various platforms and uses:
+You can view the [`cspot-cli`](targets/cli/main.cpp) program for a reference on how to include cspot in your program. It provides a few audio sinks for various platforms and uses:
 
 - [`ALSAAudioSink`](cspot/bell/src/sinks/unix/ALSAAudioSink.cpp) - Linux, requires `libasound`
 - [`PortAudioSink`](cspot/bell/src/sinks/unix/PortAudioSink.cpp) - MacOS (PortAudio also supports more platforms, but we currently use it only on MacOS), requires the PortAudio library
