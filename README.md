@@ -195,14 +195,14 @@ It exposes an interface for starting the communication with Spotify servers and 
 
 You can view the [`cspot-cli`]([targets/cli/main.cpp) program for a reference on how to include cspot in your program. It provides a few audio sinks for various platforms and uses:
 
-- [`ALSAAudioSink`](cspot/bell/src/sinks/unix/ALSAAudioSink.cpp) - Linux, requires `libasound`
-- [`PortAudioSink`](cspot/bell/src/sinks/unix/PortAudioSink.cpp) - MacOS (PortAudio also supports more platforms, but we currently use it only on MacOS), requires the PortAudio library
-- [`NamedPipeAudioSink`](cspot/bell/src/sinks/unix/NamedPipeAudioSink.cpp) - all platforms, writes to a file/FIFO pipe called `outputFifo` which can later be played back by FFmpeg. Used mainly for testing and development.
+- [`ALSAAudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/unix/ALSAAudioSink.cpp) - Linux, requires `libasound`
+- [`PortAudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/unix/PortAudioSink.cpp) - MacOS (PortAudio also supports more platforms, but we currently use it only on MacOS), requires the PortAudio library
+- [`NamedPipeAudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/unix/NamedPipeAudioSink.cpp) - all platforms, writes to a file/FIFO pipe called `outputFifo` which can later be played back by FFmpeg. Used mainly for testing and development.
 
 Additionaly the following audio sinks are implemented for the esp32 target:
-- [`ES9018AudioSink`](cspot/bell/src/sinks/esp/ES9018AudioSink.cpp) - provides playback via a ES9018 DAC connected to the ESP32
-- [`AC101AudioSink`](cspot/bell/src/sinks/esp/AC101AudioSink.cpp) - provides playback via the AC101 DAC used in cheap ESP32 A1S audiokit boards, commonly found on aliexpress.
-- [`PCM5102AudioSink`](cspot/bell/src/sinks/esp/PCM5102AudioSink.cpp) - provides playback via a PCM5102 DAC connected to the ESP32, commonly found in the shape of small purple modules at various online retailers. Wiring can be configured in the sink and defaults to:
+- [`ES9018AudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/esp/ES9018AudioSink.cpp) - provides playback via a ES9018 DAC connected to the ESP32
+- [`AC101AudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/esp/AC101AudioSink.cpp) - provides playback via the AC101 DAC used in cheap ESP32 A1S audiokit boards, commonly found on aliexpress.
+- [`PCM5102AudioSink`](https://github.com/feelfreelinux/bell/blob/e83737367a08b5a5a1f652a7ecb97a0d926929dd/main/audio-sinks/esp/PCM5102AudioSink.cpp) - provides playback via a PCM5102 DAC connected to the ESP32, commonly found in the shape of small purple modules at various online retailers. Wiring can be configured in the sink and defaults to:
   - SCK to Ground
   - BCK to PGIO27
   - DIN to GPIO25
