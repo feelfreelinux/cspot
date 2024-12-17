@@ -18,5 +18,5 @@ option(BUILD_TESTING OFF)
 add_subdirectory("../../../cspot" ${CMAKE_CURRENT_BINARY_DIR}/cspot)
 
 # Configure the target
-target_link_libraries(${COMPONENT_LIB} PUBLIC cspot)
+                        target_link_libraries(${COMPONENT_LIB} PUBLIC cspot)
 target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++17)

@@ -2,8 +2,10 @@
 
 #include <stdint.h>
 #include <memory>
+#include <random>  //for random_device and default_random_engine
 
 #include "Crypto.h"
+#include "EventManager.h"
 #include "LoginBlob.h"
 #include "MercurySession.h"
 #include "TimeProvider.h"
@@ -17,6 +19,14 @@
 #include "nlohmann/json_fwd.hpp"  // for json
 #endif
 
+#ifdef ESP_PLATFORM
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT BIT1
+#define CSPOT_CONNECTED_BIT BIT2
+#endif
+
 namespace cspot {
 struct Context {
   struct ConfigState {
@@ -27,6 +37,10 @@ struct Context {
     std::vector<uint8_t> authData;
     int volume;
 
+#ifdef ESP_PLATFORM
+    EventGroupHandle_t s_cspot_event_group;
+#endif
+
     std::string username;
     std::string countryCode;
   };
@@ -35,6 +49,9 @@ struct Context {
 
   std::shared_ptr<TimeProvider> timeProvider;
   std::shared_ptr<cspot::MercurySession> session;
+  std::shared_ptr<PlaybackMetrics> playbackMetrics;
+  std::random_device rd;
+  std::default_random_engine rng;
   std::string getCredentialsJson() {
 #ifdef BELL_ONLY_CJSON
     cJSON* json_obj = cJSON_CreateObject();
@@ -62,12 +79,20 @@ struct Context {
 #endif
   }
 
+  void lost_connection(void*) {
+    //if(!connection)
+  }
+
   static std::shared_ptr<Context> createFromBlob(
       std::shared_ptr<LoginBlob> blob) {
     auto ctx = std::make_shared<Context>();
     ctx->timeProvider = std::make_shared<TimeProvider>();
-
+    ctx->rng = std::default_random_engine{ctx->rd()};
+#ifdef ESP_PLATFORM
+    //s_cspot_event_group = xEventGroupCreate();
+#endif
     ctx->session = std::make_shared<MercurySession>(ctx->timeProvider);
+    ctx->playbackMetrics = std::make_shared<PlaybackMetrics>(ctx);
     ctx->config.deviceId = blob->getDeviceId();
     ctx->config.deviceName = blob->getDeviceName();
     ctx->config.authData = blob->authData;

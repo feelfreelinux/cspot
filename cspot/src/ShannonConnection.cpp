@@ -16,7 +16,9 @@ using namespace cspot;
 
 ShannonConnection::ShannonConnection() {}
 
-ShannonConnection::~ShannonConnection() {}
+ShannonConnection::~ShannonConnection() {
+  std::scoped_lock lock(this->writeMutex, this->readMutex);
+}
 
 void ShannonConnection::wrapConnection(
     std::shared_ptr<cspot::PlainConnection> conn, std::vector<uint8_t>& sendKey,

@@ -1,11 +1,11 @@
-#ifndef ESPSTATUSLED_H
+/*#ifndef ESPSTATUSLED_H
 #define ESPSTATUSLED_H
 
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "led_strip.h"
 #include "sdkconfig.h"
 
@@ -34,3 +34,4 @@ private:
 };
 
 #endif
+*/

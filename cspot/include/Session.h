@@ -23,7 +23,7 @@ class Session {
   std::shared_ptr<cspot::PlainConnection> conn;
   std::shared_ptr<LoginBlob> authBlob;
 
-  std::string deviceId = "142137fd329622137a14901634264e6f332e2411";
+  //std::string deviceId = "142137fd329622137a14901634264e6f332e2411";
 
  public:
   Session();

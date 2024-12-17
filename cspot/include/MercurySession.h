@@ -1,19 +1,25 @@
 #pragma once
 
-#include <atomic>         // for atomic
-#include <cstdint>        // for uint8_t, uint64_t, uint32_t
+#include <atomic>  // for atomic
+#include <condition_variable>
+#include <cstdint>  // for uint8_t, uint64_t, uint32_t
+#include <deque>
 #include <functional>     // for function
 #include <memory>         // for shared_ptr
 #include <mutex>          // for mutex
 #include <string>         // for string
 #include <unordered_map>  // for unordered_map
 #include <vector>         // for vector
+#include "pb_decode.h"
 
 #include "BellTask.h"             // for Task
 #include "Packet.h"               // for Packet
-#include "Queue.h"                // for Queue
 #include "Session.h"              // for Session
 #include "protobuf/mercury.pb.h"  // for Header
+
+namespace bell {
+class WrappedSemaphore;
+};
 
 namespace cspot {
 class TimeProvider;
@@ -25,14 +31,12 @@ class MercurySession : public bell::Task, public cspot::Session {
   typedef std::vector<std::vector<uint8_t>> DataParts;
 
   struct Response {
-    Header mercuryHeader;
-    uint8_t flags;
+    Header mercuryHeader = Header_init_default;
     DataParts parts;
     uint64_t sequenceId;
-    bool fail;
+    bool fail = true;
   };
-
-  typedef std::function<void(Response&)> ResponseCallback;
+  typedef std::function<void(const Response)> ResponseCallback;
   typedef std::function<void(bool, const std::vector<uint8_t>&)>
       AudioKeyCallback;
   typedef std::function<void()> ConnectionEstabilishedCallback;
@@ -42,7 +46,9 @@ class MercurySession : public bell::Task, public cspot::Session {
     UNSUB = 0xb4,
     SUBRES = 0xb5,
     SEND = 0xb2,
-    GET = 0xFF,  // Shitty workaround, it's value is actually same as SEND
+    GET = 0xFF,   // Shitty workaround, it's value is actually same as SEND
+    POST = 0xb6,  //??
+    PUT = 0xb7,   //??
     PING = 0x04,
     PONG_ACK = 0x4a,
     AUDIO_CHUNK_REQUEST_COMMAND = 0x08,
@@ -54,14 +60,21 @@ class MercurySession : public bell::Task, public cspot::Session {
     COUNTRY_CODE_RESPONSE = 0x1B,
   };
 
+  enum class ResponseFlag : uint8_t {
+    FINAL = 0x01,
+    PARTIAL = 0x02,
+  };
+
   std::unordered_map<RequestType, std::string> RequestTypeMap = {
-      {RequestType::GET, "GET"},
-      {RequestType::SEND, "SEND"},
-      {RequestType::SUB, "SUB"},
-      {RequestType::UNSUB, "UNSUB"},
+      {RequestType::GET, "GET"},   {RequestType::SEND, "SEND"},
+      {RequestType::SUB, "SUB"},   {RequestType::UNSUB, "UNSUB"},
+      {RequestType::POST, "POST"}, {RequestType::PUT, "PUT"},
   };
 
   void handlePacket();
+
+  void addSubscriptionListener(const std::string& uri,
+                               ResponseCallback subscription);
 
   uint64_t executeSubscription(RequestType type, const std::string& uri,
                                ResponseCallback callback,
@@ -98,6 +111,8 @@ class MercurySession : public bell::Task, public cspot::Session {
   void setConnectedHandler(ConnectionEstabilishedCallback callback);
 
   bool triggerTimeout() override;
+  bool isReconnecting = false;
+  void reconnect();
 
  private:
   const int PING_TIMEOUT_MS = 2 * 60 * 1000 + 5000;
@@ -106,14 +121,14 @@ class MercurySession : public bell::Task, public cspot::Session {
   Header tempMercuryHeader = {};
   ConnectionEstabilishedCallback connectionReadyCallback = nullptr;
 
-  bell::Queue<cspot::Packet> packetQueue;
+  std::deque<cspot::Packet> packetQueue;
 
   void runTask() override;
-  void reconnect();
-
   std::unordered_map<uint64_t, ResponseCallback> callbacks;
+  std::deque<Response> partials;
   std::unordered_map<std::string, ResponseCallback> subscriptions;
   std::unordered_map<uint32_t, AudioKeyCallback> audioKeyCallbacks;
+  std::shared_ptr<bell::WrappedSemaphore> responseSemaphore;
 
   uint64_t sequenceId = 1;
   uint32_t audioKeySequence = 1;
@@ -122,13 +137,20 @@ class MercurySession : public bell::Task, public cspot::Session {
   unsigned long long lastPingTimestamp = -1;
   std::string countryCode = "";
 
+  std::mutex queueMutex;
   std::mutex isRunningMutex;
+  std::condition_variable queueCV;  // For synchronization with waits
   std::atomic<bool> isRunning = false;
-  std::atomic<bool> isReconnecting = false;
   std::atomic<bool> executeEstabilishedCallback = false;
+  std::atomic<bool> connection_lost = false;
 
   void failAllPending();
 
-  Response decodeResponse(const std::vector<uint8_t>& data);
+  void handleReconnection();
+  bool processPackets();
+  MercurySession::Response decodeResponse(const std::vector<uint8_t>& data);
+  std::vector<uint8_t> prepareSequenceIdPayload(
+      uint64_t sequenceId, const std::vector<uint8_t>& headerBytes,
+      const DataParts& payload);
 };
 }  // namespace cspot

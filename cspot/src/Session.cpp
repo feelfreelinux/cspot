@@ -74,8 +74,8 @@ std::vector<uint8_t> Session::authenticate(std::shared_ptr<LoginBlob> blob) {
   // save auth blob for reconnection purposes
   authBlob = blob;
   // prepare authentication request proto
-  auto data = challenges->prepareAuthPacket(blob->authData, blob->authType,
-                                            deviceId, blob->username);
+  auto data = challenges->prepareAuthPacket(
+      blob->authData, blob->authType, blob->getDeviceId(), blob->username);
 
   // Send login request
   this->shanConn->sendPacket(LOGIN_REQUEST_COMMAND, data);

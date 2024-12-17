@@ -1,4 +1,12 @@
 message Header {
     optional string uri = 0x01;
+    optional string content_type = 0x02;
     optional string method = 0x03;
+    optional int32 status_code = 0x04;
+    repeated UserField user_fields = 0x06;
+}
+
+message UserField {
+    optional string key = 0x01;
+    optional string value = 0x02;
 }

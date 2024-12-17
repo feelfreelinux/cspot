@@ -1,0 +1,345 @@
+syntax = "proto2";
+
+message PlayerState {
+    optional int64 timestamp = 1;
+    optional string context_uri = 2;
+    optional string context_url = 3;
+    optional Restrictions context_restrictions = 4;
+    optional PlayOrigin play_origin = 5;
+    optional ContextIndex index = 6;
+    optional ProvidedTrack track = 7;
+    optional string playback_id = 8;
+    optional double playback_speed = 9;
+    optional int64 position_as_of_timestamp = 10;
+    optional int64 duration = 11;
+    optional bool is_playing = 12;
+    optional bool is_paused = 13;
+    optional bool is_buffering = 14;
+    optional bool is_system_initiated = 15;
+    optional ContextPlayerOptions options = 16;
+    optional Restrictions restrictions = 17;
+    optional Suppressions suppressions = 18;
+    repeated ProvidedTrack prev_tracks = 19;
+    repeated ProvidedTrack next_tracks = 20;
+    map<string, string> context_metadata = 21;
+    map<string, string> page_metadata = 22;
+    optional string session_id = 23;
+    optional string queue_revision = 24;
+    optional int64 position = 25;
+    optional string entity_uri = 26;
+    repeated ProvidedTrack reverse = 27;
+    repeated ProvidedTrack future = 28;
+    optional PlaybackQuality playback_quality = 32;
+    optional string playback_provider = 33;
+    optional string random_message = 35;
+}
+
+message ProvidedTrack {
+    optional string uri = 1;
+    optional string uid = 2;
+    map<string, string> metadata = 3;
+    optional string removed = 4;
+    repeated string blocked = 5;
+    optional string provider = 6;
+    optional Restrictions restrictions = 7;
+    optional string album_uri = 8;
+    repeated string disallow_reasons = 9;
+    optional string artist_uri = 10;
+    repeated string disallow_undecided = 11;
+    optional uint32 page = 253;
+    optional uint32 original_index = 254;
+    optional uint32 full_metadata_count = 255;
+}
+
+message ContextIndex {
+    optional uint32 page = 1;
+    optional uint32 track = 2;
+}
+
+message Restrictions {
+    repeated string disallow_pausing_reasons = 1;
+    repeated string disallow_resuming_reasons = 2;
+    repeated string disallow_seeking_reasons = 3;
+    repeated string disallow_peeking_prev_reasons = 4;
+    repeated string disallow_peeking_next_reasons = 5;
+    repeated string disallow_skipping_prev_reasons = 6;
+    repeated string disallow_skipping_next_reasons = 7;
+    repeated string disallow_toggling_repeat_context_reasons = 8;
+    repeated string disallow_toggling_repeat_track_reasons = 9;
+    repeated string disallow_toggling_shuffle_reasons = 10;
+    repeated string disallow_set_queue_reasons = 11;
+    repeated string disallow_interrupting_playback_reasons = 12;
+    repeated string disallow_transferring_playback_reasons = 13;
+    repeated string disallow_remote_control_reasons = 14;
+    repeated string disallow_inserting_into_next_tracks_reasons = 15;
+    repeated string disallow_inserting_into_context_tracks_reasons = 16;
+    repeated string disallow_reordering_in_next_tracks_reasons = 17;
+    repeated string disallow_reordering_in_context_tracks_reasons = 18;
+    repeated string disallow_removing_from_next_tracks_reasons = 19;
+    repeated string disallow_removing_from_context_tracks_reasons = 20;
+    repeated string disallow_updating_context_reasons = 21;
+    repeated string disallow_playing_reasons = 22;
+    repeated string disallow_stopping_reasons = 23;
+    repeated string disallow_loading_context_reasons = 25;
+}
+
+message PlayOrigin {
+    optional string feature_identifier = 1;
+    optional string feature_version = 2;
+    optional string view_uri = 3;
+    optional string external_referrer = 4;
+    optional string referrer_identifier = 5;
+    optional string device_identifier = 6;
+    optional string feature_classes = 7;
+}
+
+message ContextEnhancement{
+  optional string key = 1;
+  optional string value = 2;
+}
+
+message ContextPlayerOptions {
+    optional bool shuffling_context = 1;
+    optional bool repeating_context = 2;
+    optional bool repeating_track = 3;
+    
+    map<string, string> context_enhancement = 5;
+}
+
+message Suppressions {
+    repeated string providers = 1;
+}
+
+enum BitrateLevel {
+    unknown = 0;
+    low = 1;
+    normal = 2;
+    high = 3;
+    veryhigh = 4;
+    normalized = 5;
+}
+
+enum BitrateStrategy {
+    unknown_strategy = 0;
+    best_matching = 1;
+    backend_advised = 2;
+    offlined_file = 3;
+    cached_file = 4;
+    local_file = 5;
+}
+
+enum HiFiStatus {
+    none = 0;
+    off = 1;
+    on = 2;
+}
+
+message PlaybackQuality {
+    optional BitrateLevel bitrate_level = 1;
+    optional BitrateStrategy strategy = 2;
+    optional BitrateLevel target_bitrate_level = 3;
+    optional bool target_bitrate_available = 4;
+    optional HiFiStatus hifi_status = 5;
+}
+
+message ClusterUpdate {
+    optional Cluster cluster = 1;
+    optional ClusterUpdateReason update_reason = 2;
+    optional string ack_id = 3;
+    repeated string devices_that_changed = 4;
+}
+
+message Device {
+    optional DeviceInfo device_info = 1;
+    optional PlayerState player_state = 2;
+    optional PrivateDeviceInfo private_device_info = 3;
+    optional bytes transfer_data = 4; // TransferState
+}
+
+message Cluster {
+    optional uint64 timestamp = 1;
+    optional string active_device_id = 2;
+    optional PlayerState player_state = 3;
+    map<string, DeviceInfo> device = 4;
+    optional bytes transfer_data = 5;
+    optional uint64 transfer_data_timestamp = 6;
+    optional int64 not_playing_since_timestamp = 7;
+    optional bool need_full_player_state = 8;
+    optional int64 server_timestamp_ms = 9;
+}
+
+message PutStateRequest {
+    optional string callback_url = 1;
+    optional Device device = 2;
+    optional MemberType member_type = 3;
+    optional bool is_active = 4;
+    optional PutStateReason put_state_reason = 5;
+    optional uint32 message_id = 6;
+    optional string last_command_sent_by_device_id = 7;
+    optional uint32 last_command_message_id = 8;
+    optional uint64 started_playing_at = 9;
+    optional uint64 has_been_playing_for_ms = 11;
+    optional uint64 client_side_timestamp = 12;
+    optional bool only_write_player_state = 13;
+}
+
+message PrivateDeviceInfo {
+    optional string platform = 1;
+}
+
+message SubscribeRequest {
+    optional string callback_url = 1;
+}
+
+message DeviceInfo {
+    message DeviceAliasesEntry {
+        optional uint32 key = 1;
+        optional DeviceAlias value = 2;
+    }
+    optional bool can_play = 1;
+    optional uint32 volume = 2;
+    optional string name = 3;
+    optional Capabilities capabilities = 4;
+    optional string device_software_version = 6;
+    optional DeviceType device_type = 7;
+    optional string spirc_version = 9;
+    optional string device_id = 10;
+    optional bool is_private_session = 11;
+    optional bool is_social_connect = 12;
+    optional string client_id = 13;
+    optional string brand = 14;
+    optional string model = 15;
+    map<string, string> metadata_map = 16;
+    optional string product_id = 17;
+    optional string deduplication_id = 18;
+    optional uint32 selected_alias_id = 19;
+    repeated DeviceAliasesEntry device_aliases = 20;
+    optional bool is_offline = 21;
+    optional string public_ip = 22;
+    optional string license = 23;
+}
+
+message DeviceAlias {
+    optional uint32 id = 1;
+    optional string name = 2;
+    optional bool is_group = 3;
+}
+
+message Capabilities {
+    optional bool can_be_player = 2;
+    optional bool restrict_to_local = 3;
+    optional bool gaia_eq_connect_id = 5;
+    optional bool supports_logout = 6;
+    optional bool is_observable = 7;
+    optional int32 volume_steps = 8;
+    repeated string supported_types = 9;
+    optional bool command_acks = 10;
+    optional bool supports_rename = 11;
+    optional bool hidden = 12;
+    optional bool disable_volume = 13;
+    optional bool connect_disabled = 14;
+    optional bool supports_playlist_v2 = 15;
+    optional bool is_controllable = 16;
+    optional bool supports_external_episodes = 17;
+    optional bool supports_set_backend_metadata = 18;
+    optional bool supports_transfer_command = 19;
+    optional bool supports_command_request = 20;
+    optional bool is_voice_enabled = 21;
+    optional bool needs_full_player_state = 22;
+    optional bool supports_gzip_pushes = 23;
+    optional bool supports_lossless_audio = 24;
+    optional bool supports_set_options_command = 25;
+    optional CapabilitySupportDetails supports_hifi = 26;
+    // reserved 1, "supported_contexts";
+}
+
+message CapabilitySupportDetails {
+    optional bool fully_supported = 1;
+    optional bool user_eligible = 2;
+    optional bool device_supported = 3;
+}
+
+message ConnectCommandOptions {
+    optional int32 message_id = 1;
+}
+
+message LogoutCommand {
+    optional ConnectCommandOptions command_options = 1;
+}
+
+message SetVolumeCommand {
+    optional int32 volume = 1;
+    optional ConnectCommandOptions command_options = 2;
+}
+
+message RenameCommand {
+    optional string rename_to = 1;
+    optional ConnectCommandOptions command_options = 2;
+}
+
+message SetBackendMetadataCommand {
+    map<string, string> metadata = 1;
+}
+
+enum SendCommandResult {
+    UNKNOWN_SEND_COMMAND_RESULT = 0;
+    SUCCESS = 1;
+    DEVICE_NOT_FOUND = 2;
+    CONTEXT_PLAYER_ERROR = 3;
+    DEVICE_DISAPPEARED = 4;
+    UPSTREAM_ERROR = 5;
+    DEVICE_DOES_NOT_SUPPORT_COMMAND = 6;
+    RATE_LIMITED = 7;
+}
+
+enum PutStateReason {
+    UNKNOWN_PUT_STATE_REASON = 0;
+    SPIRC_HELLO = 1;
+    SPIRC_NOTIFY = 2;
+    NEW_DEVICE = 3;
+    PLAYER_STATE_CHANGED = 4;
+    VOLUME_CHANGED = 5;
+    PICKER_OPENED = 6;
+    BECAME_INACTIVE = 7;
+    ALIAS_CHANGED = 8;
+}
+
+enum MemberType {
+    SPIRC_V2 = 0;
+    SPIRC_V3 = 1;
+    CONNECT_STATE = 2;
+    CONNECT_STATE_EXTENDED = 5;
+    ACTIVE_DEVICE_TRACKER = 6;
+    PLAY_TOKEN = 7;
+}
+
+enum ClusterUpdateReason {
+    UNKNOWN_CLUSTER_UPDATE_REASON = 0;
+    DEVICES_DISAPPEARED = 1;
+    DEVICE_STATE_CHANGED = 2;
+    NEW_DEVICE_APPEARED = 3;
+    DEVICE_VOLUME_CHANGED = 4;
+    DEVICE_ALIAS_CHANGED = 5;
+}
+
+enum DeviceType {
+    UNKNOWN = 0;
+    COMPUTER = 1;
+    TABLET = 2;
+    SMARTPHONE = 3;
+    SPEAKER = 4;
+    TV = 5;
+    AVR = 6;
+    STB = 7;
+    AUDIO_DONGLE = 8;
+    GAME_CONSOLE = 9;
+    CAST_VIDEO = 10;
+    CAST_AUDIO = 11;
+    AUTOMOBILE = 12;
+    SMARTWATCH = 13;
+    CHROMEBOOK = 14;
+    UNKNOWN_SPOTIFY = 100;
+    CAR_THING = 101;
+    OBSERVER = 102;
+    HOME_THING = 103;
+}

@@ -18,74 +18,125 @@
 #include "ShannonConnection.h"  // for ShannonConnection
 #include "TimeProvider.h"       // for TimeProvider
 #include "Utils.h"              // for extract, pack, hton64
+#include "WrappedSemaphore.h"
 
 using namespace cspot;
 
+template <typename T>
+T extractData(const std::vector<uint8_t>& data, size_t& pos) {
+  static_assert(std::is_integral<T>::value,
+                "extractData only supports integral types");
+
+  // Check that we have enough bytes to extract
+  if (pos + sizeof(T) > data.size()) {
+    throw std::out_of_range("Not enough data to extract");
+  }
+
+  T value;
+  memcpy(&value, &data[pos], sizeof(T));
+  pos += sizeof(T);
+
+  // Convert to host byte order based on the size of T
+  if constexpr (sizeof(T) == 2) {
+    return ntohs(value);
+  } else if constexpr (sizeof(T) == 4) {
+    return ntohl(value);
+  } else if constexpr (sizeof(T) == 8) {
+    return hton64(
+        value);  // Assuming you have defined `hton64` similarly to `htonl` for 64-bit values
+  } else {
+    return 0;  //   static_assert(false, "Unsupported type size for extractData");
+  }
+}
+
 MercurySession::MercurySession(std::shared_ptr<TimeProvider> timeProvider)
-    : bell::Task("mercury_dispatcher", 4 * 1024, 3, 1) {
+    : bell::Task("mercury_dispatcher", 8 * 1024, 3,
+                 1) {  //double the size for reconnecting
+  responseSemaphore = std::make_shared<bell::WrappedSemaphore>();
   this->timeProvider = timeProvider;
 }
 
 MercurySession::~MercurySession() {
+  this->responseSemaphore->give();
   std::scoped_lock lock(this->isRunningMutex);
 }
 
 void MercurySession::runTask() {
-  isRunning = true;
+  isRunning.store(true);
   std::scoped_lock lock(this->isRunningMutex);
-
   this->executeEstabilishedCallback = true;
+
   while (isRunning) {
-    cspot::Packet packet = {};
-    try {
-      packet = shanConn->recvPacket();
-      CSPOT_LOG(info, "Received packet, command: %d", packet.command);
-
-      if (static_cast<RequestType>(packet.command) == RequestType::PING) {
-        timeProvider->syncWithPingPacket(packet.data);
-
-        this->lastPingTimestamp = timeProvider->getSyncedTimestamp();
-        this->shanConn->sendPacket(0x49, packet.data);
-      } else {
-        this->packetQueue.push(packet);
-      }
-    } catch (const std::runtime_error& e) {
-      CSPOT_LOG(error, "Error while receiving packet: %s", e.what());
-      failAllPending();
-
-      if (!isRunning)
-        return;
-
-      reconnect();
-      continue;
+    if (!processPackets()) {
+      handleReconnection();
     }
   }
 }
 
-void MercurySession::reconnect() {
-  isReconnecting = true;
-
+bool MercurySession::processPackets() {
   try {
-    this->conn = nullptr;
-    this->shanConn = nullptr;
+    cspot::Packet packet = shanConn->recvPacket();
+    CSPOT_LOG(info, "Received packet, command: %d", packet.command);
+    if (static_cast<RequestType>(packet.command) == RequestType::PING) {
+      timeProvider->syncWithPingPacket(packet.data);
 
-    this->connectWithRandomAp();
-    this->authenticate(this->authBlob);
-
-    CSPOT_LOG(info, "Reconnection successful");
-
-    BELL_SLEEP_MS(100);
-
-    lastPingTimestamp = timeProvider->getSyncedTimestamp();
-    isReconnecting = false;
-
-    this->executeEstabilishedCallback = true;
+      this->lastPingTimestamp = timeProvider->getSyncedTimestamp();
+      this->shanConn->sendPacket(0x49, packet.data);
+    } else if (packet.data.size()) {
+      std::unique_lock<std::mutex> lock(queueMutex);
+      this->packetQueue.push_back(packet);
+      lock.unlock();  // Optional, the destructor will unlock it
+      this->responseSemaphore->give();
+    }
+    return true;
+  } catch (const std::runtime_error& e) {
+    CSPOT_LOG(error, "Error while receiving packet: %s", e.what());
+    failAllPending();  // Fail all pending requests
+    return false;
+  } catch (const std::exception& e) {
+    CSPOT_LOG(error, "Unexpected exception: %s", e.what());
+    failAllPending();  // Fail all pending requests
+    return false;
   } catch (...) {
-    CSPOT_LOG(error, "Cannot reconnect, will retry in 5s");
-    BELL_SLEEP_MS(5000);
+    CSPOT_LOG(error, "Unknown error occurred while receiving packet.");
+    failAllPending();  // Fail all pending requests
+    return false;
+  }
+}
 
-    if (isRunning) {
-      return reconnect();
+void MercurySession::handleReconnection() {
+  if (isReconnecting)
+    return;
+
+  isReconnecting = true;
+  reconnect();
+  isReconnecting = false;
+}
+
+void MercurySession::reconnect() {
+  while (isRunning) {
+    try {
+      this->shanConn = nullptr;
+      this->conn = nullptr;
+      this->partials.clear();
+      // Reset connections
+      this->connectWithRandomAp();
+      this->authenticate(this->authBlob);
+
+      CSPOT_LOG(info, "Reconnection successful");
+
+      BELL_SLEEP_MS(100);
+
+      lastPingTimestamp = timeProvider->getSyncedTimestamp();
+      isReconnecting = false;
+      this->executeEstabilishedCallback = true;
+      return;  // Successful connection, exit loop
+    } catch (...) {
+      CSPOT_LOG(error, "Cannot reconnect, will retry in 5s");
+      BELL_SLEEP_MS(1000);
+      if (!isRunning) {  // Stop retrying if session is not running
+        return;
+      }
     }
   }
 }
@@ -126,9 +177,9 @@ void MercurySession::unregisterAudioKey(uint32_t sequenceId) {
 
 void MercurySession::disconnect() {
   CSPOT_LOG(info, "Disconnecting mercury session");
-  this->isRunning = false;
-  conn->close();
+  isRunning.store(false);
   std::scoped_lock lock(this->isRunningMutex);
+  conn->close();
 }
 
 std::string MercurySession::getCountryCode() {
@@ -136,9 +187,13 @@ std::string MercurySession::getCountryCode() {
 }
 
 void MercurySession::handlePacket() {
-  Packet packet = {};
-
-  this->packetQueue.wtpop(packet, 200);
+  this->responseSemaphore->wait();
+  std::unique_lock<std::mutex> lock(queueMutex);
+  if (!packetQueue.size())
+    return;
+  Packet packet = std::move(*packetQueue.begin());
+  packetQueue.pop_front();
+  lock.unlock();  // Optional, the destructor will unlock it
 
   if (executeEstabilishedCallback && this->connectionReadyCallback != nullptr) {
     executeEstabilishedCallback = false;
@@ -165,28 +220,34 @@ void MercurySession::handlePacket() {
                        RequestType::AUDIO_KEY_SUCCESS_RESPONSE;
         this->audioKeyCallbacks[seqId](success, packet.data);
       }
-
       break;
     }
     case RequestType::SEND:
     case RequestType::SUB:
     case RequestType::UNSUB: {
       CSPOT_LOG(debug, "Received mercury packet");
-
       auto response = this->decodeResponse(packet.data);
-      if (this->callbacks.count(response.sequenceId) > 0) {
-        auto seqId = response.sequenceId;
-        this->callbacks[response.sequenceId](response);
-        this->callbacks.erase(this->callbacks.find(seqId));
+      if (!response.fail) {
+        if (this->callbacks.count(response.sequenceId)) {
+          uint64_t tempSequenceId = response.sequenceId;
+          this->callbacks[response.sequenceId](response);
+          this->callbacks.erase(this->callbacks.find(tempSequenceId));
+        }
+        pb_release(Header_fields, &response.mercuryHeader);
       }
       break;
     }
     case RequestType::SUBRES: {
       auto response = decodeResponse(packet.data);
-
-      auto uri = std::string(response.mercuryHeader.uri);
-      if (this->subscriptions.count(uri) > 0) {
-        this->subscriptions[uri](response);
+      if (!response.fail) {
+        std::string uri(response.mercuryHeader.uri);
+        for (const auto& [subUri, callback] : subscriptions) {
+          if (uri.find(subUri) != std::string::npos) {
+            callback(response);
+            break;
+          }
+        }
+        pb_release(Header_fields, &response.mercuryHeader);
       }
       break;
     }
@@ -204,43 +265,88 @@ void MercurySession::failAllPending() {
     it.second(response);
   }
 
-  // Fail all subscriptions
-  for (auto& it : this->subscriptions) {
-    it.second(response);
-  }
-
   // Remove references
-  this->subscriptions = {};
   this->callbacks = {};
 }
 
 MercurySession::Response MercurySession::decodeResponse(
     const std::vector<uint8_t>& data) {
-  Response response = {};
-  response.parts = {};
+  size_t pos = 0;
+  auto sequenceLength = extractData<uint16_t>(data, pos);
+  uint64_t sequenceId;
+  uint8_t flag;
+  Response resp;
+  resp.mercuryHeader = Header_init_default;
+  if (sequenceLength == 2)
+    sequenceId = extractData<uint16_t>(data, pos);
+  else if (sequenceLength == 4)
+    sequenceId = extractData<uint32_t>(data, pos);
+  else if (sequenceLength == 8)
+    sequenceId = extractData<uint64_t>(data, pos);
+  else
+    return resp;
 
-  auto sequenceLength = ntohs(extract<uint16_t>(data, 0));
-  response.sequenceId = hton64(extract<uint64_t>(data, 2));
+  flag = (uint8_t)data[pos];
+  pos++;
+  uint16_t parts = extractData<uint16_t>(data, pos);
+  auto partial = std::find_if(
+      partials.begin(), partials.end(),
+      [sequenceId](const Response& p) { return p.sequenceId == sequenceId; });
+  if (partial == partials.end()) {
+    if (flag == 2)
+      return resp;
+    CSPOT_LOG(debug,
+              "Creating new Mercury Response, seq: %lli, flags: %i, parts: %i",
+              sequenceId, flag, parts);
+    this->partials.push_back(Response());
+    partial = partials.end() - 1;
+    partial->parts = {};
+    partial->sequenceId = sequenceId;
+  } else
+    CSPOT_LOG(debug,
+              "Adding to Mercury Response, seq: %lli, flags: %i, parts: %i",
+              sequenceId, flag, parts);
+  uint8_t index = 0;
+  while (parts) {
+    if (data.size() <= pos)
+      break;
+    auto partSize = extractData<uint16_t>(data, pos);
+    if (partial->mercuryHeader.uri == NULL) {
+      auto headerBytes = std::vector<uint8_t>(data.begin() + pos,
+                                              data.begin() + pos + partSize);
+      pbDecode(partial->mercuryHeader, Header_fields, headerBytes);
+      pb_istream_t stream =
+          pb_istream_from_buffer(&headerBytes[0], headerBytes.size());
 
-  auto partsNumber = ntohs(extract<uint16_t>(data, 11));
-
-  auto headerSize = ntohs(extract<uint16_t>(data, 13));
-  auto headerBytes =
-      std::vector<uint8_t>(data.begin() + 15, data.begin() + 15 + headerSize);
-
-  auto pos = 15 + headerSize;
-  while (pos < data.size()) {
-    auto partSize = ntohs(extract<uint16_t>(data, pos));
-
-    response.parts.push_back(std::vector<uint8_t>(
-        data.begin() + pos + 2, data.begin() + pos + 2 + partSize));
-    pos += 2 + partSize;
+      // Decode the message
+      if (pb_decode(&stream, Header_fields, &partial->mercuryHeader) == false) {
+        pb_release(Header_fields, &partial->mercuryHeader);
+        partials.erase(partial);
+        return resp;
+      }
+    } else {
+      if (index >= partial->parts.size())
+        partial->parts.push_back(std::vector<uint8_t>{});
+      partial->parts[index].insert(partial->parts[index].end(),
+                                   data.begin() + pos,
+                                   data.begin() + pos + partSize);
+      index++;
+    }
+    pos += partSize;
+    parts--;
   }
+  if (flag == static_cast<uint8_t>(ResponseFlag::FINAL) &&
+      partial->mercuryHeader.uri != NULL) {
+    resp = std::move(*partial);
+    partials.erase(partial);
+    resp.fail = false;
+  }
+  return resp;
+}
 
-  pbDecode(response.mercuryHeader, Header_fields, headerBytes);
-  response.fail = false;
-
-  return response;
+void MercurySession::addSubscriptionListener(const std::string& uri,
+                                             ResponseCallback subscription) {
+  this->subscriptions.insert({uri, subscription});
 }
 
 uint64_t MercurySession::executeSubscription(RequestType method,
@@ -248,19 +354,19 @@ uint64_t MercurySession::executeSubscription(RequestType method,
                                              ResponseCallback callback,
                                              ResponseCallback subscription,
                                              DataParts& payload) {
+  while (isReconnecting)
+    BELL_SLEEP_MS(100);
   CSPOT_LOG(debug, "Executing Mercury Request, type %s",
             RequestTypeMap[method].c_str());
 
   // Encode header
-  pbPutString(uri, tempMercuryHeader.uri);
-  pbPutString(RequestTypeMap[method], tempMercuryHeader.method);
+  pb_release(Header_fields, &tempMercuryHeader);
+  tempMercuryHeader.uri = strdup(uri.c_str());
+  tempMercuryHeader.method = strdup(RequestTypeMap[method].c_str());
 
-  tempMercuryHeader.has_method = true;
-  tempMercuryHeader.has_uri = true;
-
-  // GET and SEND are actually the same. Therefore the override
-  // The difference between them is only in header's method
-  if (method == RequestType::GET) {
+  // Map logical request type to the appropriate wire request type (SEND for POST, GET, PUT)
+  if (method == RequestType::GET || method == RequestType::POST ||
+      method == RequestType::PUT) {
     method = RequestType::SEND;
   }
 
@@ -269,43 +375,22 @@ uint64_t MercurySession::executeSubscription(RequestType method,
   }
 
   auto headerBytes = pbEncode(Header_fields, &tempMercuryHeader);
+  pb_release(Header_fields, &tempMercuryHeader);
 
-  this->callbacks.insert({sequenceId, callback});
+  if (callback != nullptr)
+    this->callbacks.insert({sequenceId, callback});
 
-  // Structure: [Sequence size] [SequenceId] [0x1] [Payloads number]
-  // [Header size] [Header] [Payloads (size + data)]
+  // Prepare the data packet structure:
+  // [Sequence size] [SequenceId] [0x1] [Payloads number] [Header size] [Header] [Payloads (size + data)]
+  auto sequenceIdBytes =
+      prepareSequenceIdPayload(sequenceId, headerBytes, payload);
 
-  // Pack sequenceId
-  auto sequenceIdBytes = pack<uint64_t>(hton64(this->sequenceId));
-  auto sequenceSizeBytes = pack<uint16_t>(htons(sequenceIdBytes.size()));
-
-  sequenceIdBytes.insert(sequenceIdBytes.begin(), sequenceSizeBytes.begin(),
-                         sequenceSizeBytes.end());
-  sequenceIdBytes.push_back(0x01);
-
-  auto payloadNum = pack<uint16_t>(htons(payload.size() + 1));
-  sequenceIdBytes.insert(sequenceIdBytes.end(), payloadNum.begin(),
-                         payloadNum.end());
-
-  auto headerSizePayload = pack<uint16_t>(htons(headerBytes.size()));
-  sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(),
-                         headerSizePayload.end());
-  sequenceIdBytes.insert(sequenceIdBytes.end(), headerBytes.begin(),
-                         headerBytes.end());
-
-  // Encode all the payload parts
-  for (int x = 0; x < payload.size(); x++) {
-    headerSizePayload = pack<uint16_t>(htons(payload[x].size()));
-    sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(),
-                           headerSizePayload.end());
-    sequenceIdBytes.insert(sequenceIdBytes.end(), payload[x].begin(),
-                           payload[x].end());
-  }
-
-  // Bump sequence id
+  // Bump sequence ID for the next request
   this->sequenceId += 1;
 
   try {
+    while (isReconnecting)
+      BELL_SLEEP_MS(100);
     this->shanConn->sendPacket(
         static_cast<std::underlying_type<RequestType>::type>(method),
         sequenceIdBytes);
@@ -314,6 +399,40 @@ uint64_t MercurySession::executeSubscription(RequestType method,
   }
 
   return this->sequenceId - 1;
+}
+
+std::vector<uint8_t> MercurySession::prepareSequenceIdPayload(
+    uint64_t sequenceId, const std::vector<uint8_t>& headerBytes,
+    const DataParts& payload) {
+  // Pack sequenceId
+  auto sequenceIdBytes = pack<uint64_t>(hton64(sequenceId));
+  auto sequenceSizeBytes = pack<uint16_t>(htons(sequenceIdBytes.size()));
+
+  // Initial parts of the packet
+  sequenceIdBytes.insert(sequenceIdBytes.begin(), sequenceSizeBytes.begin(),
+                         sequenceSizeBytes.end());
+  sequenceIdBytes.push_back(0x01);
+
+  auto payloadNum = pack<uint16_t>(htons(payload.size() + 1));
+  sequenceIdBytes.insert(sequenceIdBytes.end(), payloadNum.begin(),
+                         payloadNum.end());
+
+  // Encode the header size and the header data
+  auto headerSizePayload = pack<uint16_t>(htons(headerBytes.size()));
+  sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(),
+                         headerSizePayload.end());
+  sequenceIdBytes.insert(sequenceIdBytes.end(), headerBytes.begin(),
+                         headerBytes.end());
+
+  // Encode all the payload parts
+  for (const auto& part : payload) {
+    headerSizePayload = pack<uint16_t>(htons(part.size()));
+    sequenceIdBytes.insert(sequenceIdBytes.end(), headerSizePayload.begin(),
+                           headerSizePayload.end());
+    sequenceIdBytes.insert(sequenceIdBytes.end(), part.begin(), part.end());
+  }
+
+  return sequenceIdBytes;
 }
 
 uint32_t MercurySession::requestAudioKey(const std::vector<uint8_t>& trackId,

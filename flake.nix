@@ -30,15 +30,7 @@
 
       clang-tools = pkgs.clang-tools.override {llvmPackages = llvm;};
 
-      apps = {
-      };
-
-      packages = {
-        target-cli = llvm.stdenv.mkDerivation {
-          name = "cspotcli";
-          src = ./.;
-          cmakeFlags = ["-DCSPOT_TARGET_CLI=ON"];
-          nativeBuildInputs = with pkgs; [
+      cspot-pkgs = with pkgs; [
             avahi
             avahi-compat
             cmake
@@ -50,6 +42,16 @@
             portaudio
             protobuf
           ];
+
+      apps = {
+      };
+
+      packages = {
+        target-cli = llvm.stdenv.mkDerivation {
+          name = "cspotcli";
+          src = ./.;
+          cmakeFlags = ["-DCSPOT_TARGET_CLI=ON"];
+          nativeBuildInputs = cspot-pkgs;
           # Patch nanopb shebangs to refer to provided python
           postPatch = ''
             patchShebangs cspot/bell/external/nanopb/generator/*
@@ -60,7 +62,7 @@
 
       devShells = {
         default = pkgs.mkShell {
-          packages = with pkgs; [cmake unstable.mbedtls ninja python3] ++ [clang-tools llvm.clang];
+          packages = cspot-pkgs;
         };
       };
     in {

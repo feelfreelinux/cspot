@@ -1,0 +1,69 @@
+menu "VS1053 Configuration"
+
+        menu "VS1053 PIN Configuration"
+
+        config GPIO_MISO
+                int "GPIO pin MISO"
+        range -1 39
+                default 19
+
+        config GPIO_MOSI
+                int "GPIO pin MOSI"
+        range -1 39
+                default 23
+
+        config GPIO_CLK
+                int "GPIO pin CLK"
+        range -1 39
+                default 18
+
+        config GPIO_VS_CS
+                int "GPIO pin VS CS"
+        range -1 39
+                default 4
+
+        config GPIO_VS_DCS
+                int "GPIO pin VS DCS"
+        range -1 39
+                default 21
+
+        config GPIO_VS_RESET
+                int "GPIO pin VS RESET"
+        range -1 39
+                default 0
+
+        config GPIO_VS_DREQ
+                int "GPIO pin VS DREQ"
+        range -1 39
+                default 22
+
+        config GPIO_SD_CS
+                int "GPIO pin SD CS"
+        range -1 39
+                default 5
+        endmenu
+
+choice VS_PLUGIN
+        prompt "VS1053 plugin"
+        default VS_FLAC
+        help 
+                you have to choose between special audio compability or a spectrum analyzer
+        config VS_DSD64
+                bool "with dsd patch"
+        config VS_FLAC
+                bool "with flac patch"
+        config VS_FLAC_LATM
+                bool "with flac & latm/loas patch"
+        config VS_LATM
+                bool "with latm/loas patch"
+        config VS_PITCH
+                bool "with pitch plugin"
+        config VS_SPECTRUM_ANALYZER
+                bool "with spectrum analyzer plugin"
+endchoice
+
+
+config REPORT_ON_SCREEN
+        bool "REPORT_ON_SCREEN"
+        
+endmenu

@@ -1,4 +1,4 @@
-#include "ESPStatusLed.h"
+/*#include "ESPStatusLed.h"
 
 static const char* TAG = "statusled";
 
@@ -81,3 +81,4 @@ void ESPStatusLed::setStatus(StatusLed newStatus)
     ESP_LOGI(TAG, "Chaing status to %d", this->status);
     this->status = newStatus;
 }
+*/

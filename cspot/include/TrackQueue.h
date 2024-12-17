@@ -5,11 +5,14 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <utility>  // for pair
 
 #include "BellTask.h"
-#include "PlaybackState.h"
+#include "EventManager.h"  // for TrackMetrics
 #include "TrackReference.h"
+#include "Utils.h"
 
+#include "protobuf/connect.pb.h"   // for ProvidedTrack
 #include "protobuf/metadata.pb.h"  // for Track, _Track, AudioFile, Episode
 
 namespace bell {
@@ -32,8 +35,9 @@ struct TrackInfo {
 
 class QueuedTrack {
  public:
-  QueuedTrack(TrackReference& ref, std::shared_ptr<cspot::Context> ctx,
-              uint32_t requestedPosition = 0);
+  QueuedTrack(ProvidedTrack& ref, std::shared_ptr<cspot::Context> ctx,
+              std::shared_ptr<bell::WrappedSemaphore> playableSemaphore,
+              int64_t requestedPosition = 0);
   ~QueuedTrack();
 
   enum class State {
@@ -49,12 +53,22 @@ class QueuedTrack {
   std::shared_ptr<bell::WrappedSemaphore> loadedSemaphore;
 
   State state = State::QUEUED;  // Current state of the track
-  TrackReference ref;           // Holds GID, URI and Context
   TrackInfo trackInfo;  // Full track information fetched from spotify, name etc
-
-  uint32_t requestedPosition;
+  ProvidedTrack ref;
   std::string identifier;
+  uint32_t playingTrackIndex;
+  uint32_t requestedPosition;
+  AudioFormat audioFormat;
   bool loading = false;
+  uint8_t retries = 0;
+
+  // PB data
+  Track pbTrack = Track_init_zero;
+  Episode pbEpisode = Episode_init_zero;
+
+  // EventManager data
+  int64_t written_bytes = 0;
+  std::shared_ptr<cspot::TrackMetrics> trackMetrics;
 
   // Will return nullptr if the track is not ready
   std::shared_ptr<cspot::CDNAudioFile> getAudioFile();
@@ -72,63 +86,50 @@ class QueuedTrack {
 
   void stepLoadCDNUrl(const std::string& accessKey);
 
-  void expire();
-
  private:
   std::shared_ptr<cspot::Context> ctx;
+  std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
 
   uint64_t pendingMercuryRequest = 0;
   uint32_t pendingAudioKeyRequest = 0;
 
   std::vector<uint8_t> trackId, fileId, audioKey;
   std::string cdnUrl;
+  std::pair<SpotifyFileType, std::vector<uint8_t>> gid = {
+      SpotifyFileType::UNKNOWN,
+      {}};
 };
 
 class TrackQueue : public bell::Task {
  public:
-  TrackQueue(std::shared_ptr<cspot::Context> ctx,
-             std::shared_ptr<cspot::PlaybackState> playbackState);
+  TrackQueue(std::shared_ptr<cspot::Context> ctx);
   ~TrackQueue();
 
   enum class SkipDirection { NEXT, PREV };
 
   std::shared_ptr<bell::WrappedSemaphore> playableSemaphore;
+  std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
   std::atomic<bool> notifyPending = false;
+  std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
+  bool repeat = false;
 
   void runTask() override;
   void stopTask();
 
-  bool hasTracks();
-  bool isFinished();
-  bool skipTrack(SkipDirection dir, bool expectNotify = true);
-  bool updateTracks(uint32_t requestedPosition = 0, bool initial = false);
+  bool skipTrack(SkipDirection dir, bool expectNotify = false);
   TrackInfo getTrackInfo(std::string_view identifier);
   std::shared_ptr<QueuedTrack> consumeTrack(
       std::shared_ptr<QueuedTrack> prevSong, int& offset);
+  std::mutex tracksMutex, runningMutex;
 
  private:
-  static const int MAX_TRACKS_PRELOAD = 3;
-
-  std::shared_ptr<cspot::AccessKeyFetcher> accessKeyFetcher;
-  std::shared_ptr<PlaybackState> playbackState;
   std::shared_ptr<cspot::Context> ctx;
   std::shared_ptr<bell::WrappedSemaphore> processSemaphore;
 
-  std::deque<std::shared_ptr<QueuedTrack>> preloadedTracks;
-  std::vector<TrackReference> currentTracks;
-  std::mutex tracksMutex, runningMutex;
-
-  // PB data
-  Track pbTrack;
-  Episode pbEpisode;
+  std::atomic<bool> isRunning = false;
 
   std::string accessKey;
 
-  int16_t currentTracksIndex = -1;
-
-  bool isRunning = false;
-
-  void processTrack(std::shared_ptr<QueuedTrack> track);
-  bool queueNextTrack(int offset = 0, uint32_t positionMs = 0);
+  bool processTrack(std::shared_ptr<QueuedTrack> track);
 };
 }  // namespace cspot
