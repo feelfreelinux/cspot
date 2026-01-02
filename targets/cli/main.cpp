@@ -36,7 +36,15 @@
 #include "NamedPipeAudioSink.h"  // for NamedPipeAudioSink
 #endif
 
-#include "ClientInfo.h"
+#if __has_include("client_info.h")
+#include "client_info.h"
+#endif
+
+#if !defined(CLIENT_ID) || !defined(CLIENT_SECRET)
+#pragma message "missing Spotify's CLIENT_ID and/or CLIENT_SECRET (set environment variables or in client_info.h"
+#define CLIENT_ID "<your client id>"
+#define CLIENT_SECRET "<your client secret>"
+#endif
 
 class ZeroconfAuthenticator {
  public:
