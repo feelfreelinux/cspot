@@ -1,3 +1,6 @@
+# invoke with 
+# cmake .. [-A Win32|x64] -DUSE_PORTAUDIO=ON [-DBELL_EXTERNAL_MBEDTLS=<mbedtls_build_dir>/cmake>] [-DMBEDTLS_RELEASE=<release_name>]
+
 cmake_minimum_required(VERSION 3.3)
 
 project(cspotcli)
