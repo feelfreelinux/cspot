@@ -124,6 +124,12 @@ QueuedTrack::QueuedTrack(TrackReference& ref,
                          std::shared_ptr<cspot::Context> ctx,
                          uint32_t requestedPosition)
     : requestedPosition(requestedPosition), ctx(ctx) {
+  // A file id alone cannot prove which playback instance a notification is
+  // about (same track queued twice, PREV restart), so every queue entry gets
+  // a process-unique sequence number woven into its identifier
+  static std::atomic<uint32_t> seq(0);
+  instanceSeq = ++seq;
+
   this->ref = ref;
 
   loadedSemaphore = std::make_shared<bell::WrappedSemaphore>();
@@ -236,8 +242,8 @@ void QueuedTrack::stepParseMetadata(Track* pbTrack, Episode* pbEpisode) {
     return;
   }
 
-  // Assign track identifier
-  identifier = bytesToHexString(fileId);
+  // Assign track identifier, unique per queue entry, not just per file
+  identifier = bytesToHexString(fileId) + "#" + std::to_string(instanceSeq);
 
   state = State::KEY_REQUIRED;
 }
@@ -537,8 +543,13 @@ bool TrackQueue::queueNextTrack(int offset, uint32_t positionMs) {
 }
 
 bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
-  bool skipped = true;
   std::scoped_lock lock(tracksMutex);
+
+  return skipTrackUnlocked(dir, expectNotify);
+}
+
+bool TrackQueue::skipTrackUnlocked(SkipDirection dir, bool expectNotify) {
+  bool skipped = true;
 
   if (dir == SkipDirection::PREV) {
     uint64_t position =
@@ -584,6 +595,61 @@ bool TrackQueue::skipTrack(SkipDirection dir, bool expectNotify) {
   }
 
   return skipped;
+}
+
+TrackQueue::Reached TrackQueue::notifyTrackReached(
+    std::string_view identifier, std::shared_ptr<QueuedTrack>& current) {
+  std::scoped_lock lock(tracksMutex);
+
+  if (currentTracksIndex == -1 || currentTracksIndex >= currentTracks.size() ||
+      preloadedTracks.empty()) {
+    return Reached::IGNORED;
+  }
+
+  // deque may be popped below, keep the head alive
+  auto head = preloadedTracks[0];
+
+  // Do not execute when meta is already updated
+  if (notifyPending) {
+    /* The pending notification belongs to the queue head; a stale streamer
+     * (e.g. one started right before a Load frame rebuilt the queue) must not
+     * consume it, or every later notification pops the queue one track early
+     * and playback never resyncs */
+    if (!identifier.empty() && head->identifier != identifier) {
+      CSPOT_LOG(info, "stale notification for %s while expecting %s => ignored",
+                std::string(identifier).c_str(), head->identifier.c_str());
+      return Reached::IGNORED;
+    }
+    notifyPending = false;
+    current = head;
+    return Reached::CONSUMED_PENDING;
+  }
+
+  if (!identifier.empty()) {
+    if (head->identifier == identifier) {
+      // re-announcement of the entry we already advanced to
+      CSPOT_LOG(info, "duplicate notification for %s => ignored",
+                std::string(identifier).c_str());
+      return Reached::IGNORED;
+    }
+    if (preloadedTracks.size() < 2 ||
+        preloadedTracks[1]->identifier != identifier) {
+      CSPOT_LOG(info, "stale notification for %s while playing %s => ignored",
+                std::string(identifier).c_str(), head->identifier.c_str());
+      return Reached::IGNORED;
+    }
+  }
+
+  skipTrackUnlocked(SkipDirection::NEXT, false);
+
+  // with an empty identifier the skip may fail at the end of the queue; the
+  // legacy behavior is to re-notify the head in that case
+  if (preloadedTracks.empty()) {
+    return Reached::IGNORED;
+  }
+
+  current = preloadedTracks[0];
+  return Reached::ADVANCED;
 }
 
 bool TrackQueue::hasTracks() {

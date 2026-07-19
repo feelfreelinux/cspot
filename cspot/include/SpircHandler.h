@@ -3,8 +3,9 @@
 #include <stdint.h>    // for uint32_t, uint8_t
 #include <functional>  // for function
 #include <memory>      // for shared_ptr, unique_ptr
-#include <string>      // for string
-#include <variant>     // for variant
+#include <string>       // for string
+#include <string_view>  // for string_view
+#include <variant>      // for variant
 #include <vector>      // for vector
 
 #include "CDNAudioFile.h"  // for CDNTrackStream, CDNTrackStream::Track...
@@ -52,7 +53,7 @@ class SpircHandler {
 
   bool nextSong();
 
-  void notifyAudioReachedPlayback();
+  void notifyAudioReachedPlayback(std::string_view identifier = {});
   void notifyAudioEnded();
   void updatePositionMs(uint32_t position);
   void setRemoteVolume(int volume);
