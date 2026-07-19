@@ -378,10 +378,12 @@ TrackQueue::TrackQueue(std::shared_ptr<cspot::Context> ctx,
   processSemaphore = std::make_shared<bell::WrappedSemaphore>();
   playableSemaphore = std::make_shared<bell::WrappedSemaphore>();
 
-  // Assign encode callback to track list
+  // Assign encode callback to track list; the encoder runs on whatever
+  // thread sends a frame, so hand it the list together with its guard
+  pbTracksArg = {&tracksMutex, &currentTracks};
   playbackState->innerFrame.state.track.funcs.encode =
       &TrackReference::pbEncodeTrackList;
-  playbackState->innerFrame.state.track.arg = &currentTracks;
+  playbackState->innerFrame.state.track.arg = &pbTracksArg;
   pbTrack = Track_init_zero;
   pbEpisode = Episode_init_zero;
 
@@ -399,6 +401,9 @@ TrackQueue::~TrackQueue() {
 }
 
 TrackInfo TrackQueue::getTrackInfo(std::string_view identifier) {
+  // preloadedTracks can be rebuilt by the mercury thread at any moment
+  std::scoped_lock lock(tracksMutex);
+
   for (auto& track : preloadedTracks) {
     if (track->identifier == identifier)
       return track->trackInfo;

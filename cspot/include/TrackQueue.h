@@ -137,6 +137,10 @@ class TrackQueue : public bell::Task {
   std::vector<TrackReference> currentTracks;
   std::mutex tracksMutex, runningMutex;
 
+  // nanopb encode argument: currentTracks plus its guard (see
+  // TrackReference::pbEncodeTrackList)
+  TrackReference::LockedTrackList pbTracksArg;
+
   // PB data
   Track pbTrack;
   Episode pbEpisode;
