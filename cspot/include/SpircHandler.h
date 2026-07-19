@@ -1,12 +1,12 @@
 #pragma once
 
-#include <stdint.h>    // for uint32_t, uint8_t
-#include <functional>  // for function
-#include <memory>      // for shared_ptr, unique_ptr
+#include <stdint.h>     // for uint32_t, uint8_t
+#include <functional>   // for function
+#include <memory>       // for shared_ptr, unique_ptr
 #include <string>       // for string
 #include <string_view>  // for string_view
 #include <variant>      // for variant
-#include <vector>      // for vector
+#include <vector>       // for vector
 
 #include "CDNAudioFile.h"  // for CDNTrackStream, CDNTrackStream::Track...
 #include "TrackQueue.h"
