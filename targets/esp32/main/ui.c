@@ -7,6 +7,7 @@
 
 #include "esp_lvgl_port.h"
 #include "lvgl.h"
+#include "wifi_ui.h"
 
 static lv_obj_t* lbl_temp;
 static lv_obj_t* lbl_hum;
@@ -22,7 +23,14 @@ static void btn_event_cb(lv_event_t* e) {
   ui_command_t cmd = (ui_command_t)(uintptr_t)lv_event_get_user_data(e);
   if (control_cb) {
     control_cb(cmd, control_user);
+  } else if (lbl_status) {
+    // Feedback: touch funciona pero aun no hay sesion Spotify
+    lv_label_set_text(lbl_status, "Vincula Spotify primero");
   }
+}
+
+static void wifi_btn_cb(lv_event_t* e) {
+  wifi_ui_open_settings();
 }
 
 static lv_obj_t* make_btn(lv_obj_t* parent, const char* symbol,
@@ -59,6 +67,16 @@ void ui_init(void) {
   lv_obj_set_style_text_color(lbl_hum, lv_color_hex(0x7ec8e3), 0);
   lv_label_set_text(lbl_hum, LV_SYMBOL_TINT " --%");
   lv_obj_align(lbl_hum, LV_ALIGN_TOP_MID, 0, 84);
+
+  // Boton de ajustes WiFi (abre el portal de seleccion de red)
+  lv_obj_t* btn_wifi = lv_button_create(scr);
+  lv_obj_set_size(btn_wifi, 40, 36);
+  lv_obj_set_style_bg_color(btn_wifi, lv_color_hex(0x2a2a2a), 0);
+  lv_obj_align(btn_wifi, LV_ALIGN_TOP_RIGHT, -6, 6);
+  lv_obj_add_event_cb(btn_wifi, wifi_btn_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_t* lbl_wifi = lv_label_create(btn_wifi);
+  lv_label_set_text(lbl_wifi, LV_SYMBOL_WIFI);
+  lv_obj_center(lbl_wifi);
 
   lbl_status = lv_label_create(scr);
   lv_obj_set_style_text_font(lbl_status, &lv_font_montserrat_14, 0);
@@ -115,9 +133,13 @@ void ui_set_env(float temp_c, float hum_pct) {
   if (!lbl_temp) {
     return;
   }
+  // snprintf estandar: el lv_snprintf interno no soporta %f
+  char t[16], h[16];
+  snprintf(t, sizeof(t), "%.1f\xC2\xB0""C", (double)temp_c);
+  snprintf(h, sizeof(h), LV_SYMBOL_TINT " %.0f%%", (double)hum_pct);
   lvgl_port_lock(0);
-  lv_label_set_text_fmt(lbl_temp, "%.1f\xC2\xB0""C", (double)temp_c);
-  lv_label_set_text_fmt(lbl_hum, LV_SYMBOL_TINT " %.0f%%", (double)hum_pct);
+  lv_label_set_text(lbl_temp, t);
+  lv_label_set_text(lbl_hum, h);
   lvgl_port_unlock();
 }
 

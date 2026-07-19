@@ -36,6 +36,7 @@
 #include "board_display.h"
 #include "sht31.h"
 #include "ui.h"
+#include "wifi_ui.h"
 #include "Logger.h"
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
@@ -431,10 +432,10 @@ void app_main(void) {
 
   // statusLed->setStatus(StatusLed::WIFI_CONNECTING);
 
-  esp_wifi_set_ps(WIFI_PS_NONE);
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
-  ESP_ERROR_CHECK(example_connect());
+  // Conexion con credenciales guardadas o portal tactil en pantalla
+  wifi_ui_connect();
 
   // statusLed->setStatus(StatusLed::WIFI_CONNECTED);
 
