@@ -103,6 +103,7 @@ void board_display_init(void) {
   esp_lcd_panel_io_handle_t tp_io_handle = NULL;
   esp_lcd_panel_io_i2c_config_t tp_io_cfg =
       ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
+  tp_io_cfg.scl_speed_hz = 0;  // driver i2c legado: lo rechaza si != 0
   ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)I2C_PORT,
                                            &tp_io_cfg, &tp_io_handle));
 
