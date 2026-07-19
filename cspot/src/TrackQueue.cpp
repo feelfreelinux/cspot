@@ -413,13 +413,15 @@ void TrackQueue::runTask() {
     // Make sure we have the newest access key
     accessKey = accessKeyFetcher->getAccessKey();
 
-    int loadedIndex = currentTracksIndex;
-
-    // No tracks loaded yet
-    if (loadedIndex < 0) {
-      continue;
-    } else {
+    {
+      // currentTracksIndex and preloadedTracks are mutated by other threads
+      // under tracksMutex, read them under it as well
       std::scoped_lock lock(tracksMutex);
+
+      // No tracks loaded yet
+      if (currentTracksIndex < 0) {
+        continue;
+      }
 
       trackQueue = preloadedTracks;
     }
@@ -444,7 +446,8 @@ std::shared_ptr<QueuedTrack> TrackQueue::consumeTrack(
     std::shared_ptr<QueuedTrack> prevTrack, int& offset) {
   std::scoped_lock lock(tracksMutex);
 
-  if (currentTracksIndex == -1 || currentTracksIndex >= currentTracks.size()) {
+  if (currentTracksIndex == -1 || currentTracksIndex >= currentTracks.size() ||
+      preloadedTracks.empty()) {
     return nullptr;
   }
 
@@ -494,6 +497,9 @@ void TrackQueue::processTrack(std::shared_ptr<QueuedTrack> track) {
       track->stepLoadCDNUrl(accessKey);
 
       if (track->state == QueuedTrack::State::READY) {
+        // queueNextTrack() mutates preloadedTracks, which other threads
+        // access under tracksMutex; this runs on the queue task
+        std::scoped_lock lock(tracksMutex);
         if (preloadedTracks.size() < MAX_TRACKS_PRELOAD) {
           // Queue a new track to preload
           queueNextTrack(preloadedTracks.size());
@@ -612,7 +618,7 @@ bool TrackQueue::updateTracks(uint32_t requestedPosition, bool initial) {
     notifyPending = true;
 
     playableSemaphore->give();
-  } else if (preloadedTracks[0]->loading) {
+  } else if (!preloadedTracks.empty() && preloadedTracks[0]->loading) {
     // try to not re-load track if we are still loading it
 
     // remove everything except first track
