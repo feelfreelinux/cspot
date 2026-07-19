@@ -1,0 +1,7 @@
+dependencies:
+  espressif/mdns: "*"
+  espressif/led_strip: "*"
+  lvgl/lvgl: "^9.2.0"
+  espressif/esp_lvgl_port: "^2.4.0"
+  espressif/esp_lcd_ili9341: "^2.0.0"
+  espressif/esp_lcd_touch_ft5x06: "^1.0.6"
