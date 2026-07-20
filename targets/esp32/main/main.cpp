@@ -38,6 +38,7 @@
 #include "ui.h"
 #include "wifi_ui.h"
 #include "Logger.h"
+#include "freertos/queue.h"
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
@@ -78,6 +79,26 @@ class CSpotPlayer : public bell::Task {
   std::unique_ptr<ES8311AudioSink> audioSink;
   std::unique_ptr<bell::CircularBuffer> circularBuffer;
   std::atomic<bool> isPaused;
+
+  static inline QueueHandle_t uiCmdQueue = nullptr;
+
+  static void uiCmdTask(void* arg) {
+    auto* self = static_cast<CSpotPlayer*>(arg);
+    ui_command_t cmd;
+    while (xQueueReceive(uiCmdQueue, &cmd, portMAX_DELAY)) {
+      switch (cmd) {
+        case UI_CMD_PLAY_PAUSE:
+          self->handler->setPause(!self->isPaused);
+          break;
+        case UI_CMD_NEXT:
+          self->handler->nextSong();
+          break;
+        case UI_CMD_PREV:
+          self->handler->previousSong();
+          break;
+      }
+    }
+  }
 
  public:
   CSpotPlayer(std::shared_ptr<cspot::SpircHandler> handler)
@@ -127,20 +148,14 @@ class CSpotPlayer : public bell::Task {
           }
         });
 
-    // Botones táctiles -> comandos Spotify (corre en la tarea LVGL)
+    // Botones táctiles: la tarea LVGL solo encola; una tarea propia ejecuta
+    // los comandos Spotify (protobuf+cifrado+red desbordan el stack de LVGL)
+    uiCmdQueue = xQueueCreate(4, sizeof(ui_command_t));
+    xTaskCreatePinnedToCore(uiCmdTask, "ui_cmd", 8192, this, 5, nullptr, 0);
     ui_set_control_cb(
         [](ui_command_t cmd, void* user) {
-          auto* self = static_cast<CSpotPlayer*>(user);
-          switch (cmd) {
-            case UI_CMD_PLAY_PAUSE:
-              self->handler->setPause(!self->isPaused);
-              break;
-            case UI_CMD_NEXT:
-              self->handler->nextSong();
-              break;
-            case UI_CMD_PREV:
-              self->handler->previousSong();
-              break;
+          if (uiCmdQueue) {
+            xQueueSend(uiCmdQueue, &cmd, 0);
           }
         },
         this);
@@ -236,24 +251,29 @@ class CSpotTask : public bell::Task {
 
     BELL_LOG(info, "cspot", "Got blob!");
     if (gotBlob) {
-      auto ctx = cspot::Context::createFromBlob(blob);
-      CSPOT_LOG(info, "Creating player");
-      ctx->session->connectWithRandomAp();
-      auto token = ctx->session->authenticate(blob);
+      try {
+        auto ctx = cspot::Context::createFromBlob(blob);
+        CSPOT_LOG(info, "Creating player");
+        ctx->session->connectWithRandomAp();
+        auto token = ctx->session->authenticate(blob);
 
-      // Auth successful
-      if (token.size() > 0) {
-        ctx->session->startTask();
-        auto handler = std::make_shared<cspot::SpircHandler>(ctx);
-        handler->subscribeToMercury();
-        auto player = std::make_shared<CSpotPlayer>(handler);
+        // Auth successful
+        if (token.size() > 0) {
+          ctx->session->startTask();
+          auto handler = std::make_shared<cspot::SpircHandler>(ctx);
+          handler->subscribeToMercury();
+          auto player = std::make_shared<CSpotPlayer>(handler);
 
-        while (true) {
-          ctx->session->handlePacket();
+          while (true) {
+            ctx->session->handlePacket();
+          }
+
+          handler->disconnect();
+          //   player->disconnect();
         }
-
-        handler->disconnect();
-        //   player->disconnect();
+      } catch (std::exception& e) {
+        BELL_LOG(error, "cspot", "Fallo del player: %s", e.what());
+        ui_set_status("Error Spotify — reinicia la placa");
       }
     }
   }

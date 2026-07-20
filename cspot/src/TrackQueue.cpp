@@ -305,6 +305,10 @@ void QueuedTrack::stepLoadCDNUrl(const std::string& accessKey) {
     CSPOT_LOG(info, "Received CDN URL, %s", cdnUrl.c_str());
     state = State::READY;
     loadedSemaphore->give();
+  } catch (std::exception& e) {
+    CSPOT_LOG(error, "Cannot fetch CDN URL: %s", e.what());
+    state = State::FAILED;
+    loadedSemaphore->give();
   } catch (...) {
     CSPOT_LOG(error, "Cannot fetch CDN URL");
     state = State::FAILED;
