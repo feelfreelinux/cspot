@@ -24,6 +24,7 @@
 #include <CSpotContext.h>
 #include <LoginBlob.h>
 #include <SpircHandler.h>
+#include <TrackPlayer.h>
 
 #include <inttypes.h>
 #include "BellTask.h"
@@ -32,7 +33,12 @@
 #include "BellUtils.h"
 #include "ES8311AudioSink.h"
 #include "ESPStatusLed.h"
+#include "board_display.h"
+#include "sht31.h"
+#include "ui.h"
+#include "wifi_ui.h"
 #include "Logger.h"
+#include "freertos/queue.h"
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
@@ -74,6 +80,26 @@ class CSpotPlayer : public bell::Task {
   std::unique_ptr<bell::CircularBuffer> circularBuffer;
   std::atomic<bool> isPaused;
 
+  static inline QueueHandle_t uiCmdQueue = nullptr;
+
+  static void uiCmdTask(void* arg) {
+    auto* self = static_cast<CSpotPlayer*>(arg);
+    ui_command_t cmd;
+    while (xQueueReceive(uiCmdQueue, &cmd, portMAX_DELAY)) {
+      switch (cmd) {
+        case UI_CMD_PLAY_PAUSE:
+          self->handler->setPause(!self->isPaused);
+          break;
+        case UI_CMD_NEXT:
+          self->handler->nextSong();
+          break;
+        case UI_CMD_PREV:
+          self->handler->previousSong();
+          break;
+      }
+    }
+  }
+
  public:
   CSpotPlayer(std::shared_ptr<cspot::SpircHandler> handler)
       : bell::Task("cspot", 8 * 1024, 0, 0) {
@@ -86,7 +112,9 @@ class CSpotPlayer : public bell::Task {
         std::make_unique<bell::CircularBuffer>(1024 * 128 * 8);
 
     this->handler->getTrackPlayer()->setDataCallback(
-        [this](uint8_t* data, size_t bytes) { this->feedData(data, bytes); });
+        [this](uint8_t* data, size_t bytes, std::string_view trackId) {
+          return this->feedData(data, bytes);
+        });
     this->isPaused = false;
 
     this->handler->setEventHandler(
@@ -94,6 +122,16 @@ class CSpotPlayer : public bell::Task {
           switch (event->eventType) {
             case cspot::SpircHandler::EventType::PLAY_PAUSE:
               this->isPaused = std::get<bool>(event->data);
+              ui_set_playing(!this->isPaused);
+              break;
+            case cspot::SpircHandler::EventType::TRACK_INFO: {
+              auto& info = std::get<cspot::TrackInfo>(event->data);
+              ui_set_track(info.name.c_str(), info.artist.c_str());
+              break;
+            }
+            case cspot::SpircHandler::EventType::DISC:
+              ui_set_playing(false);
+              ui_set_status("Desconectado");
               break;
             case cspot::SpircHandler::EventType::FLUSH:
               this->circularBuffer->emptyBuffer();
@@ -103,14 +141,28 @@ class CSpotPlayer : public bell::Task {
               break;
             case cspot::SpircHandler::EventType::PLAYBACK_START:
               this->circularBuffer->emptyBuffer();
+              ui_set_playing(true);
+              ui_set_status("Reproduciendo");
             default:
               break;
           }
         });
+
+    // Botones táctiles: la tarea LVGL solo encola; una tarea propia ejecuta
+    // los comandos Spotify (protobuf+cifrado+red desbordan el stack de LVGL)
+    uiCmdQueue = xQueueCreate(4, sizeof(ui_command_t));
+    xTaskCreatePinnedToCore(uiCmdTask, "ui_cmd", 8192, this, 5, nullptr, 0);
+    ui_set_control_cb(
+        [](ui_command_t cmd, void* user) {
+          if (uiCmdQueue) {
+            xQueueSend(uiCmdQueue, &cmd, 0);
+          }
+        },
+        this);
     startTask();
   }
 
-  void feedData(uint8_t* data, size_t len) {
+  size_t feedData(uint8_t* data, size_t len) {
     size_t toWrite = len;
 
     while (toWrite > 0) {
@@ -122,6 +174,8 @@ class CSpotPlayer : public bell::Task {
 
       toWrite -= written;
     }
+
+    return len;
   }
 
   void runTask() {
@@ -151,7 +205,7 @@ class CSpotTask : public bell::Task {
     mdns_hostname_set("cspot");
     std::atomic<bool> gotBlob = false;
 
-    auto blob = std::make_shared<LoginBlob>(DEVICE_NAME);
+    auto blob = std::make_shared<cspot::LoginBlob>(DEVICE_NAME);
 
     auto server = std::make_unique<bell::BellHTTPServer>(8080);
     server->registerGet(
@@ -197,24 +251,29 @@ class CSpotTask : public bell::Task {
 
     BELL_LOG(info, "cspot", "Got blob!");
     if (gotBlob) {
-      auto ctx = cspot::Context::createFromBlob(blob);
-      CSPOT_LOG(info, "Creating player");
-      ctx->session->connectWithRandomAp();
-      auto token = ctx->session->authenticate(blob);
+      try {
+        auto ctx = cspot::Context::createFromBlob(blob);
+        CSPOT_LOG(info, "Creating player");
+        ctx->session->connectWithRandomAp();
+        auto token = ctx->session->authenticate(blob);
 
-      // Auth successful
-      if (token.size() > 0) {
-        ctx->session->startTask();
-        auto handler = std::make_shared<cspot::SpircHandler>(ctx);
-        handler->subscribeToMercury();
-        auto player = std::make_shared<CSpotPlayer>(handler);
+        // Auth successful
+        if (token.size() > 0) {
+          ctx->session->startTask();
+          auto handler = std::make_shared<cspot::SpircHandler>(ctx);
+          handler->subscribeToMercury();
+          auto player = std::make_shared<CSpotPlayer>(handler);
 
-        while (true) {
-          ctx->session->handlePacket();
+          while (true) {
+            ctx->session->handlePacket();
+          }
+
+          handler->disconnect();
+          //   player->disconnect();
         }
-
-        handler->disconnect();
-        //   player->disconnect();
+      } catch (std::exception& e) {
+        BELL_LOG(error, "cspot", "Fallo del player: %s", e.what());
+        ui_set_status("Error Spotify — reinicia la placa");
       }
     }
   }
@@ -385,16 +444,23 @@ void app_main(void) {
 
   init_spiffs();
 
+  // Pantalla + UI + sensor antes de la red: feedback inmediato al encender
+  board_display_init();
+  ui_init();
+  sht31_start();
+  ui_set_status("Conectando WiFi...");
+
   // statusLed->setStatus(StatusLed::WIFI_CONNECTING);
 
-  esp_wifi_set_ps(WIFI_PS_NONE);
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
-  ESP_ERROR_CHECK(example_connect());
+  // Conexion con credenciales guardadas o portal tactil en pantalla
+  wifi_ui_connect();
 
   // statusLed->setStatus(StatusLed::WIFI_CONNECTED);
 
   ESP_LOGI(TAG, "Connected to AP, start spotify receiver");
+  ui_set_status("Esperando Spotify...");
   //auto taskHandle = xTaskCreatePinnedToCore(&cspotTask, "cspot", 12*1024, NULL, 5, NULL, 1);
   /*auto taskHandle = */
   bell::setDefaultLogger();
