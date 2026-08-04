@@ -37,7 +37,12 @@ bool TrackReference::operator==(const TrackReference& other) const {
 bool TrackReference::pbEncodeTrackList(pb_ostream_t* stream,
                                        const pb_field_t* field,
                                        void* const* arg) {
-  auto trackQueue = *static_cast<std::vector<TrackReference>*>(*arg);
+  auto* locked = static_cast<LockedTrackList*>(*arg);
+
+  // hold the list's guard for the duration of the (memory-only) encode so a
+  // concurrent rebuild cannot reallocate the vector under us
+  std::scoped_lock lock(*locked->mutex);
+  auto& trackQueue = *locked->tracks;
   static TrackRef msg = TrackRef_init_zero;
 
   // Prepare nanopb callbacks
